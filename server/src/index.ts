@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { networkInterfaces } from 'node:os';
-import { DATA_DIR, DEFAULT_SEED_PASSWORD, ROOT, dbPathOf, loadEnv, randomPassword } from './env.ts';
+import { DATA_DIR, DEFAULT_SEED_PASSWORD, ROOT, dbPathOf, loadEnv } from './env.ts';
 import { Store } from './db.ts';
 import { OrderService } from './orders.ts';
 import { TokenSigner } from './auth.ts';
@@ -31,16 +31,10 @@ if (secret.length < 32) {
 }
 
 const store = new Store(dbPathOf(env));
-// Trên cloud (Render đặt sẵn biến RENDER=true) server nằm thẳng trên Internet: KHÔNG BAO GIỜ tạo tài khoản
-// với mật khẩu mẫu công khai. Dùng RESQ_SEED_PASSWORD; thiếu thì tạo ngẫu nhiên và chỉ in vào log (riêng chủ dự án xem).
-const onCloud = !!env.RENDER || env.NODE_ENV === 'production';
-let seedPassword = env.RESQ_SEED_PASSWORD || '';
-if (onCloud && (!seedPassword || seedPassword === DEFAULT_SEED_PASSWORD)) {
-  seedPassword = randomPassword();
-  console.warn('[seed] Chạy trên cloud mà chưa đặt RESQ_SEED_PASSWORD (hoặc đặt mật khẩu mẫu): dùng mật khẩu ngẫu nhiên cho lần tạo tài khoản này:');
-  console.warn(`[seed]   ${seedPassword}   ← đặt RESQ_SEED_PASSWORD trong Render → Environment để cố định`);
-}
-store.seedIfEmpty(seedPassword || DEFAULT_SEED_PASSWORD);
+// Mật khẩu CỐ ĐỊNH cho mọi tài khoản mẫu (dễ đăng nhập khi thử nghiệm): RESQ_SEED_PASSWORD nếu có, mặc định ResQ@2026.
+// Gói free của Render xóa DB mỗi lần khởi động lại → tài khoản được tạo lại với đúng mật khẩu này.
+// Lưu ý: mật khẩu mặc định ghi công khai trong README — chỉ dùng cho dữ liệu thử nghiệm.
+store.seedIfEmpty(env.RESQ_SEED_PASSWORD || DEFAULT_SEED_PASSWORD);
 
 let realtime: RealtimeHub | null = null;
 const orders = new OrderService(store, (o, notify) => realtime?.publishOrder(o, notify));

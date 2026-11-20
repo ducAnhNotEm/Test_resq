@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +14,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthHeroLayout } from '../../components/AuthHeroLayout';
 import { AUTH_PALETTE, FONTS, METRICS, TYPOGRAPHY } from '../../theme/tokens';
 import { useAuth } from '../../context/AuthContext';
-import { CONFIG_HELP } from '../../config';
+import { CONFIG_HELP, probeServer } from '../../config';
 import { ServerSettingsModal } from '../../components/ServerSettingsModal';
 
 // Tài khoản mẫu do server tạo khi DB rỗng (RESQ_SEED_PASSWORD). Mỗi điện thoại đăng nhập 1 vai trò.
@@ -30,6 +30,15 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const deviceType = route.params?.deviceType ?? 'phone';
   const { login, serverUrl, serverSource } = useAuth();
   const [serverModal, setServerModal] = useState(false);
+  // Render gói free ngủ sau ~15 phút: gọi trước để đánh thức (mất 30-60 s) trong lúc người dùng nhập mật khẩu
+  const [wake, setWake] = useState<'idle' | 'waking' | 'ok' | 'fail'>('idle');
+  useEffect(() => {
+    if (!serverUrl) return;
+    let cancelled = false;
+    setWake('waking');
+    probeServer(serverUrl, 75_000).then(r => { if (!cancelled) setWake(r.ok ? 'ok' : 'fail'); });
+    return () => { cancelled = true; };
+  }, [serverUrl]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -136,6 +145,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
         {shownError ? <Text accessibilityRole="alert" style={styles.errorText}>{shownError}</Text> : null}
         <Pressable onPress={() => setServerModal(true)} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.serverText}>
+            {wake === 'waking' ? '⏳ Đang kết nối máy chủ (lần đầu có thể mất tới 1 phút)… ' : wake === 'ok' ? '● ' : wake === 'fail' ? '✕ Không kết nối được · ' : ''}
             Máy chủ: {serverUrl || '(chưa có)'}{serverSource === 'auto' ? ' (cùng Wi-Fi)' : ''} · <Text style={styles.serverLink}>Đổi máy chủ</Text>
           </Text>
         </Pressable>

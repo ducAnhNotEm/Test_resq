@@ -16,7 +16,7 @@ import { join } from 'node:path';
 import { Tunnel, bin, install } from 'cloudflared';
 import qrcode from 'qrcode-terminal';
 import { Store } from '../src/db.ts';
-import { DEFAULT_SEED_PASSWORD, ROOT, dbPathOf, loadEnv, randomPassword } from '../src/env.ts';
+import { DEFAULT_SEED_PASSWORD, ROOT, dbPathOf, loadEnv } from '../src/env.ts';
 import { accountsWithDefaultPassword, printAccounts } from './accounts.ts';
 
 const env = loadEnv();
@@ -71,8 +71,8 @@ const portFree = (p: number) => new Promise<boolean>(resolve => {
   const store = new Store(dbPathOf(env));
   const n = (store.db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n;
   if (n === 0) {
-    // lần đầu chạy thẳng ở chế độ online: tạo tài khoản mẫu với mật khẩu NGẪU NHIÊN, không dùng mật khẩu công khai
-    const pw = env.RESQ_SEED_PASSWORD && env.RESQ_SEED_PASSWORD !== DEFAULT_SEED_PASSWORD ? env.RESQ_SEED_PASSWORD : randomPassword();
+    // lần đầu: tạo tài khoản mẫu với mật khẩu cố định (RESQ_SEED_PASSWORD hoặc ResQ@2026)
+    const pw = env.RESQ_SEED_PASSWORD || DEFAULT_SEED_PASSWORD;
     store.seedIfEmpty(pw, () => {});
     seeded = (store.db.prepare('SELECT email, role FROM users ORDER BY id').all() as Array<{ email: string; role: string }>).map(u => ({ ...u, password: pw }));
     console.log('\nĐã tạo tài khoản mẫu (LƯU LẠI mật khẩu này — sẽ in lại ở cuối):');
@@ -81,12 +81,10 @@ const portFree = (p: number) => new Promise<boolean>(resolve => {
   const weak = accountsWithDefaultPassword(store);
   store.db.close();
   if (weak.length) {
-    console.error(`\n✖ Không mở ra Internet: ${weak.length} tài khoản còn dùng mật khẩu mẫu "${DEFAULT_SEED_PASSWORD}" (đang ghi công khai trong README):`);
-    for (const u of weak) console.error(`    - ${u.email} (${u.role})`);
-    console.error('\n  Đổi mật khẩu bằng một trong hai cách rồi chạy lại:');
-    console.error('    npm run rotate-passwords        # tạo mật khẩu ngẫu nhiên cho các tài khoản trên, in ra để gửi cho thành viên');
-    console.error(`    hoặc Trang admin (http://localhost:${port}/admin) → Người dùng → Sửa → Mật khẩu mới\n`);
-    process.exit(1);
+    // chế độ thử nghiệm: chỉ cảnh báo, không chặn
+    console.warn(`\n⚠ ${weak.length} tài khoản dùng mật khẩu mẫu "${DEFAULT_SEED_PASSWORD}" (ghi công khai trong README) — ai có địa chỉ server cũng đăng nhập được:`);
+    for (const u of weak) console.warn(`    - ${u.email} (${u.role})`);
+    console.warn('  Muốn bảo mật hơn: npm run rotate-passwords\n');
   }
 }
 

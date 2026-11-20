@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -191,7 +192,9 @@ const SosDispatch: React.FC<{
     if (!family || !pos) return;
     const link = `https://maps.google.com/?q=${pos.lat},${pos.lng}`;
     const body = encodeURIComponent(`Mình vừa gặp sự cố giao thông, đã gọi cứu hộ ResQ${order ? ` (đơn ${order.id})` : ''}. Vị trí: ${link}`);
-    void Linking.openURL(`sms:${family.phone.replace(/\s/g, '')}?body=${body}`);
+    // iOS: sms:<số>&body=…  ·  Android: sms:<số>?body=…  (sai cú pháp thì iOS bỏ mất nội dung soạn sẵn)
+    const sep = Platform.OS === 'ios' ? '&' : '?';
+    void Linking.openURL(`sms:${family.phone.replace(/\s/g, '')}${sep}body=${body}`);
   };
 
   const rows: Array<{ ok: boolean | null; title: string; sub: string }> = [

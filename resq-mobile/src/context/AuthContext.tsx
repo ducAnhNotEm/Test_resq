@@ -113,7 +113,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [changeServer]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const r = await api<{ token: string; user: User }>('POST', '/api/auth/login', { email: email.trim(), password });
+    // 60 s: server trên Render free có thể đang thức dậy
+    const r = await api<{ token: string; user: User }>('POST', '/api/auth/login', { email: email.trim(), password }, 60_000);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(r)).catch(() => {});
     activate(r);
     return r.user;

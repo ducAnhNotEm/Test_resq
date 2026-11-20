@@ -1,18 +1,16 @@
 {
   "expo": {
     "name": "ResQ",
-    "slug": "resq-mobile",
+    "slug": "ducanh",
     "version": "3.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "vn.resq.mobile"
     },
     "android": {
       "package": "vn.resq.mobile",
-      "edgeToEdgeEnabled": true,
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
@@ -31,6 +29,12 @@
         "projectId": "1084ff9c-d0aa-492a-90b0-d9ef5738fcfa"
       }
     },
-    "scheme": "resq"
+    "scheme": "resq",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1084ff9c-d0aa-492a-90b0-d9ef5738fcfa"
+    }
   }
 }
