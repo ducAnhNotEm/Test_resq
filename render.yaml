@@ -1,15 +1,27 @@
+# Render Blueprint — server ResQ (thư mục server/).
+# KHÔNG ghi key / mật khẩu vào file này: repo công khai, ai cũng đọc được.
+# Biến có `sync: false` → Render hỏi giá trị lúc tạo service (hoặc nhập ở Dashboard → Environment).
 services:
   - type: web
     name: resq-server
     runtime: node
     plan: free
     rootDir: server
-    buildCommand: npm install
+    # devDependencies (cloudflared, typescript…) chỉ dùng ở máy local
+    buildCommand: npm ci --omit=dev
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
+      # Server chạy thẳng file .ts → cần Node >= 22.18 (bản 22.13 báo ERR_UNKNOWN_FILE_EXTENSION ".ts")
       - key: NODE_VERSION
-        value: 22.13.0
+        value: "24"
       - key: GOONG_API_KEY
-        value: CGluykv91nOq8gS1k8aJXWK6r7hsjdPUgRY7y8OK
+        sync: false
       - key: GOONG_MAP_KEY
-        value: IwFGJU9gwi7MGheGbEfX0AvPDzJUa3aY2nsjMiRp
+        sync: false
+      # Mật khẩu cho các tài khoản mẫu (admin@resq.vn, khachhang@resq.vn, cuuho@resq.vn…) khi DB trống
+      - key: RESQ_SEED_PASSWORD
+        sync: false
+      # Khóa ký phiên đăng nhập — Render tự sinh, giữ nguyên qua các lần deploy
+      - key: RESQ_JWT_SECRET
+        generateValue: true
