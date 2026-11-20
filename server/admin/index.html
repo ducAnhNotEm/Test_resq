@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ResQ Điều phối</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.js"></script>
+</head>
+<body>
+  <!-- Đăng nhập -->
+  <section id="login" class="login" hidden>
+    <form id="loginForm" class="login-card">
+      <div class="brand"><span class="brand-mark">R</span> ResQ <small>Điều phối</small></div>
+      <label>Email<input name="email" type="email" autocomplete="username" required value="admin@resq.vn" /></label>
+      <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required /></label>
+      <p id="loginError" class="error" role="alert"></p>
+      <button class="btn primary" type="submit">Đăng nhập</button>
+      <p class="muted small">Chỉ tài khoản vai trò <b>admin</b> truy cập được trang này.</p>
+      <p class="muted small">Quên mật khẩu? Trên máy chạy server: <code>npm run set-password -- admin@resq.vn MatKhauMoi</code></p>
+    </form>
+  </section>
+
+  <!-- Ứng dụng -->
+  <div id="app" class="shell" hidden>
+    <aside class="nav">
+      <div class="brand"><span class="brand-mark">R</span> ResQ</div>
+      <a href="#/overview" data-route="overview">Tổng quan</a>
+      <a href="#/ops" data-route="ops">Bản đồ điều hành</a>
+      <a href="#/orders" data-route="orders">Đơn cứu hộ</a>
+      <a href="#/users" data-route="users">Người dùng</a>
+      <div class="nav-foot">
+        <div id="wsState" class="ws-state" title="Kết nối realtime"><i></i><span>Đang kết nối…</span></div>
+        <div id="meName" class="muted small"></div>
+        <button id="logoutBtn" class="btn ghost small">Đăng xuất</button>
+      </div>
+    </aside>
+    <main id="view" class="view"></main>
+  </div>
+
+  <!-- Ngăn kéo chi tiết đơn -->
+  <aside id="drawer" class="drawer" hidden aria-label="Chi tiết đơn"></aside>
+  <!-- Hộp thoại -->
+  <dialog id="modal" class="modal"></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

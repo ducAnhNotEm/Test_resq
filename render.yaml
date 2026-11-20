@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: resq-server
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: GOONG_API_KEY
+        value: CGluykv91nOq8gS1k8aJXWK6r7hsjdPUgRY7y8OK
+      - key: GOONG_MAP_KEY
+        value: IwFGJU9gwi7MGheGbEfX0AvPDzJUa3aY2nsjMiRp
