@@ -23,6 +23,9 @@ html,body,#map{margin:0;padding:0;height:100%;width:100%;background:#e8eff7;over
 .veh .arrow svg{display:block}
 .veh.alert .halo{background:rgba(239,68,68,.25)} .veh.muted .halo{background:rgba(100,116,139,.25)}
 .pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#e11d48;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.poi{width:26px;height:26px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font:800 11px system-ui;cursor:pointer;transition:transform .15s}
+.poi.sel{transform:scale(1.4);z-index:5;box-shadow:0 0 0 4px rgba(15,23,42,.35)}
+.me{width:16px;height:16px;border-radius:50%;background:#2563eb;border:3px solid #fff;box-shadow:0 0 0 7px rgba(37,99,235,.22),0 1px 4px rgba(0,0,0,.35)}
 #recenter{position:absolute;right:12px;bottom:12px;display:none;border:0;border-radius:22px;padding:10px 14px;background:#0f172a;color:#fff;font:600 14px system-ui;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 </style></head><body><div id="map"></div><button id="recenter">◎ Về vị trí xe</button>
 <script src="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@${GOONG_JS_VERSION}/dist/goong-js.js"></script>
@@ -37,6 +40,8 @@ var map = null, ready = false, mode = 'overview', pausedUntil = 0;
 var routeCoords = null, destPos = null, needFit = true, raf = 0;
 var veh = { el:null, arrow:null, marker:null, from:null, to:null, start:0, dur:0, lastPush:0, cur:null };
 var destMarker = null;
+var poiMarkers = {}, poiPos = {}, selectedPoi = null, meMarker = null, mePos = null;
+var CAT = { garage: ['#2563eb','G'], fuel: ['#ea580c','X'], charging: ['#059669','S'], parking: ['#7c3aed','P'] };
 var COLOR_LEFT = '#2563eb', COLOR_DONE = '#94a3b8';
 
 function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
@@ -63,6 +68,8 @@ function init(){
     map.addSource('acc', { type:'geojson', data: fc() });
     map.addLayer({ id:'acc-fill', type:'fill', source:'acc', paint:{ 'fill-color':'#e11d48', 'fill-opacity':0.1 } });
     map.addLayer({ id:'acc-line', type:'line', source:'acc', paint:{ 'line-color':'#e11d48', 'line-width':1, 'line-opacity':0.5 } });
+    map.addSource('meacc', { type:'geojson', data: fc() });
+    map.addLayer({ id:'meacc-fill', type:'fill', source:'meacc', paint:{ 'fill-color':'#2563eb', 'fill-opacity':0.1 } });
     map.addSource('fallback', { type:'geojson', data: fc() });
     map.addLayer({ id:'fallback', type:'line', source:'fallback', paint:{ 'line-color':'#64748b', 'line-width':3, 'line-dasharray':[2,2] } });
     map.addSource('route', { type:'geojson', lineMetrics:true, data: fc() });
@@ -92,6 +99,7 @@ function fitAll(){
   if (routeCoords) for (var i=0;i<routeCoords.length;i++){ b.extend(routeCoords[i]); n++; }
   if (destPos){ b.extend(destPos); n++; }
   if (veh.cur){ b.extend(veh.cur.pos); n++; }
+  if (mePos){ b.extend(mePos); n++; }
   if (!n) return;
   if (n === 1){ map.easeTo({ center: b.getCenter(), zoom: 16, duration: 500 }); return; }
   map.fitBounds(b, { padding: { top: 70, bottom: 70, left: 50, right: 50 }, maxZoom: 16, duration: 600 });
@@ -161,6 +169,53 @@ function setVehicle(v){
   loop();
 }
 
+function setMe(m){
+  if (!map) return;
+  if (!m){ if (meMarker){ meMarker.remove(); meMarker = null; } mePos = null; return; }
+  mePos = m.pos;
+  if (!meMarker){ var el = document.createElement('div'); el.className = 'me'; meMarker = new goongjs.Marker({ element: el }).setLngLat(m.pos).addTo(map); }
+  else meMarker.setLngLat(m.pos);
+  var acc = m.accuracyM && m.accuracyM > 5 ? Math.min(m.accuracyM, 2000) : 0;
+  if (map.getSource('meacc')) map.getSource('meacc').setData(acc ? fc([{ type:'Feature', properties:{}, geometry:{ type:'Polygon', coordinates:[circle(m.pos, acc)] } }]) : fc());
+}
+
+function setPois(items){
+  if (!map) return;
+  var seen = {};
+  (items || []).forEach(function(it){
+    seen[it.id] = 1; poiPos[it.id] = it.pos;
+    var c = CAT[it.cat] || ['#334155','•'];
+    var mk = poiMarkers[it.id];
+    if (!mk){
+      var el = document.createElement('div');
+      el.className = 'poi'; el.style.background = c[0]; el.textContent = it.rank ? String(it.rank) : c[1]; el.title = it.label || '';
+      el.addEventListener('click', function(e){ e.stopPropagation(); post({ type:'poiPress', id: it.id }); });
+      poiMarkers[it.id] = new goongjs.Marker({ element: el }).setLngLat(it.pos).addTo(map);
+    } else {
+      mk.setLngLat(it.pos);
+      var e2 = mk.getElement(); e2.style.background = c[0]; e2.textContent = it.rank ? String(it.rank) : c[1];
+    }
+  });
+  Object.keys(poiMarkers).forEach(function(id){ if (!seen[id]){ poiMarkers[id].remove(); delete poiMarkers[id]; delete poiPos[id]; } });
+  if (selectedPoi && !poiMarkers[selectedPoi]) selectedPoi = null;
+}
+
+function selectPoi(id){
+  if (selectedPoi && poiMarkers[selectedPoi]) poiMarkers[selectedPoi].getElement().classList.remove('sel');
+  selectedPoi = id && poiMarkers[id] ? id : null;
+  if (selectedPoi){ poiMarkers[selectedPoi].getElement().classList.add('sel'); map.easeTo({ center: poiPos[selectedPoi], duration: 400 }); }
+}
+
+function fitPois(){
+  if (!map) return;
+  var b = new goongjs.LngLatBounds(), n = 0;
+  Object.keys(poiPos).forEach(function(id){ b.extend(poiPos[id]); n++; });
+  if (mePos){ b.extend(mePos); n++; }
+  if (n === 0) return;
+  if (n === 1){ map.easeTo({ center: b.getCenter(), zoom: 15, duration: 400 }); return; }
+  map.fitBounds(b, { padding: { top: 50, bottom: 50, left: 40, right: 40 }, maxZoom: 16, duration: 500 });
+}
+
 function setDest(d){
   if (!map) return;
   if (!d){ if (destMarker){ destMarker.remove(); destMarker = null; } destPos = null; map.getSource('acc').setData(fc()); return; }
@@ -185,6 +240,10 @@ window.__resq = function(m){
     else if (m.type === 'mode'){ mode = m.mode; pausedUntil = 0; showRecenter(false);
       if (mode === 'overview'){ map.easeTo({ pitch: 0, bearing: 0, duration: 400 }); fitAll(); } else if (veh.to) follow(veh.to, 500); }
     else if (m.type === 'fit'){ fitAll(); }
+    else if (m.type === 'me'){ setMe(m.me); }
+    else if (m.type === 'pois'){ setPois(m.items); }
+    else if (m.type === 'selectPoi'){ selectPoi(m.id); }
+    else if (m.type === 'fitPois'){ fitPois(); }
   } catch (e) { post({ type:'error', code:'js', message: String(e && e.message || e) }); }
 };
 init();

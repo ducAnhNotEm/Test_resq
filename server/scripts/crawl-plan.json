@@ -1,0 +1,162 @@
+{
+  "note": "Đợt cào chính: chỉ ảnh đại diện (miễn phí). Ảnh bổ sung cho top địa điểm chạy riêng bằng crawl-enrich.",
+  "jobs": [
+    {
+      "name": "garage-ba-dinh",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Ba Đình, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-hoan-kiem",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Hoàn Kiếm, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-tay-ho",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Tây Hồ, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-long-bien",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Long Biên, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-cau-giay",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Cầu Giấy, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-dong-da",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Đống Đa, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-hai-ba-trung",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Hai Bà Trưng, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-hoang-mai",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Hoàng Mai, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-thanh-xuan",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Thanh Xuân, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-nam-tu-liem",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Nam Từ Liêm, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-bac-tu-liem",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Bắc Từ Liêm, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "garage-ha-dong",
+      "searchStringsArray": [
+        "gara ô tô",
+        "sửa chữa ô tô"
+      ],
+      "locationQuery": "Hà Đông, Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 15,
+      "maxImages": 0
+    },
+    {
+      "name": "tire-tow-hanoi",
+      "searchStringsArray": [
+        "lốp ô tô",
+        "cứu hộ ô tô"
+      ],
+      "locationQuery": "Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 40,
+      "maxImages": 0
+    },
+    {
+      "name": "fuel-hanoi",
+      "searchStringsArray": [
+        "cây xăng"
+      ],
+      "locationQuery": "Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 120,
+      "maxImages": 0
+    },
+    {
+      "name": "charging-hanoi",
+      "searchStringsArray": [
+        "trạm sạc xe điện VinFast"
+      ],
+      "locationQuery": "Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 100,
+      "maxImages": 0
+    },
+    {
+      "name": "parking-hanoi",
+      "searchStringsArray": [
+        "bãi đỗ xe ô tô"
+      ],
+      "locationQuery": "Hà Nội, Việt Nam",
+      "maxCrawledPlacesPerSearch": 80,
+      "maxImages": 0
+    }
+  ]
+}

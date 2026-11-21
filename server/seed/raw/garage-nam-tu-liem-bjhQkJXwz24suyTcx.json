@@ -1,0 +1,30 @@
+{
+ "job": {
+  "name": "garage-nam-tu-liem",
+  "searchStringsArray": [
+   "gara ô tô",
+   "sửa chữa ô tô"
+  ],
+  "locationQuery": "Nam Từ Liêm, Hà Nội, Việt Nam",
+  "maxCrawledPlacesPerSearch": 15,
+  "maxImages": 0
+ },
+ "runId": "bjhQkJXwz24suyTcx",
+ "status": "SUCCEEDED",
+ "usd": 0.0002,
+ "charged": {
+  "place-scraped": 0,
+  "filter-applied": 0,
+  "place-details-scraped": 0,
+  "contact-details-scraped": 0,
+  "lead-scraped": 0,
+  "lead-email-verified": 0,
+  "social-profile-scraped": 0,
+  "review-scraped": 0,
+  "image-scraped": 0,
+  "competitor-analyzed": 0,
+  "apify-actor-start": 4
+ },
+ "crawledAt": 1795249778557,
+ "items": []
+}

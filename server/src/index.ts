@@ -12,6 +12,7 @@ import { TokenSigner } from './auth.ts';
 import { GoongClient } from './goong.ts';
 import { RealtimeHub } from './realtime.ts';
 import { createApp } from './http.ts';
+import { PlaceStore } from './placeStore.ts';
 
 const root = ROOT;
 const env = loadEnv();
@@ -46,7 +47,9 @@ if (!goongMapKey) console.warn('Chưa có key Goong Map (biến GOONG_MAP_KEY, h
 const server = createServer();
 realtime = new RealtimeHub({ store, orders, signer });
 realtime.attach(server, '/ws');
-const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin') });
+const places = PlaceStore.load(root);
+console.log(places.size ? `Địa điểm: ${places.size} ${JSON.stringify(places.counts())}` : 'Chưa có dữ liệu địa điểm — chạy npm run build-places');
+const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin'), places, placeImagesDir: join(root, 'seed', 'place-images') });
 server.on('request', (req, res) => { void handle(req, res); });
 
 // điều phối lại đơn hết hạn nhận / đơn đang chờ; dọn hành trình cũ (quyền riêng tư)

@@ -433,6 +433,7 @@ async function openOrder(id, refresh = false) {
         <dt>Sự cố</dt><dd>${esc(ISSUE[o.issue] ?? o.issue)} · <span class="mono">${esc(o.vehiclePlate)}</span></dd>
         <dt>Vị trí</dt><dd>${esc(o.address || '—')}<div class="muted small mono">${o.location.lat.toFixed(6)}, ${o.location.lng.toFixed(6)}${o.location.accuracyM != null ? ` · sai số ±${Math.round(o.location.accuracyM)} m` : ''}</div></dd>
         <dt>Ghi chú</dt><dd>${esc(o.note || '—')}</dd>
+        ${o.place ? `<dt>Khách chọn</dt><dd><b>${esc(o.place.name)}</b></dd>` : ''}
         <dt>Tài xế</dt><dd>${o.staff ? `${esc(o.staff.name)} · ${esc(o.staff.vehiclePlate)} · <a href="tel:${esc(o.staff.phone)}">${esc(o.staff.phone)}</a>` : '<span class="muted">Chưa điều phối</span>'}</dd>
         ${o.cancelReason ? `<dt>Lý do hủy</dt><dd>${esc(o.cancelReason)}</dd>` : ''}
         ${o.rating ? `<dt>Đánh giá</dt><dd>${'★'.repeat(o.rating)}${'☆'.repeat(5 - o.rating)}</dd>` : ''}
@@ -446,6 +447,7 @@ async function openOrder(id, refresh = false) {
         ${o.status === 'cancelled' ? '<button class="btn danger" id="aDelete">Xóa đơn</button>' : ''}
       </div>
       <div id="cands"></div>
+      <div id="nearPlaces"></div>
       <div><h2>Hành trình xe ${track.length ? `<span class="muted small">(${track.length} điểm, lưu mỗi 10 giây)</span>` : ''}</h2><div class="mini-map" id="miniMap"></div></div>
       <div><h2>Nhật ký</h2><ul class="timeline">${events.map(e => `<li><b>${esc(EVENT[e.type] ?? e.type)}</b> <span class="muted small">· ${fmtTime(e.at)} · ${esc(ACTOR[e.actorRole] ?? e.actorRole)}</span>${e.data?.reason ? `<div class="muted small">${esc(e.data.reason)}</div>` : ''}${e.data?.staffName ? `<div class="muted small">→ ${esc(e.data.staffName)}</div>` : ''}</li>`).join('')}</ul></div>`;
     $('#closeDrawer').onclick = closeDrawer;
@@ -457,6 +459,7 @@ async function openOrder(id, refresh = false) {
     act('#aCancel', async () => { const r = prompt('Lý do hủy đơn'); if (r === null) return; await api('POST', `/api/orders/${o.id}/cancel`, { reason: r }); toast('Đã hủy đơn'); });
     act('#aDelete', async () => { if (!confirm(`Xóa vĩnh viễn đơn ${o.id}?`)) return; await api('DELETE', `/api/admin/orders/${o.id}`); closeDrawer(); toast('Đã xóa đơn'); emit('order'); });
     act('#aEdit', () => editOrderModal(o));
+    if (active) loadNearPlaces(o);
 
     if (!refresh || !drawerMap) {
       drawerMap?.remove();
@@ -474,6 +477,28 @@ async function openOrder(id, refresh = false) {
     }
   } catch (e) { toast(e.message, true); }
 }
+/** Gara phù hợp nhất quanh vị trí khách (cùng thuật toán xếp hạng của app). */
+async function loadNearPlaces(o) {
+  const box = $('#nearPlaces');
+  if (!box) return;
+  try {
+    const { items } = await api('GET', `/api/admin/orders/${encodeURIComponent(o.id)}/places`);
+    if (!items.length) { box.innerHTML = '<h2>Gara gần khách</h2><div class="empty">Chưa có dữ liệu gara quanh vị trí này.</div>'; return; }
+    box.innerHTML = '<h2>Gara phù hợp gần khách</h2>' + items.slice(0, 5).map((p, i) => `
+      <div class="cand">
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          ${p.images[0] ? `<img src="${esc(p.images[0])}" alt="" style="width:64px;height:48px;object-fit:cover;border-radius:6px">` : ''}
+          <div><b>${i + 1}. ${esc(p.name)}</b>${p.trust === 'low' ? ' <span class="chip off">chưa xác minh</span>' : ''}
+          <div class="muted small">${esc(p.reasons.join(' · '))}</div>
+          <div class="muted small">${esc(p.address)}</div></div>
+        </div>
+        ${p.phone ? `<a class="btn small" href="tel:${esc(p.phone)}">Gọi</a>` : ''}
+      </div>`).join('');
+  } catch (e) {
+    box.innerHTML = `<div class="muted small">Không tải được gara gần khách: ${esc(e.message)}</div>`;
+  }
+}
+
 function closeDrawer() { $('#drawer').hidden = true; drawerOrderId = null; drawerMap?.remove(); drawerMap = null; }
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#drawer').hidden && !$('#modal').open) closeDrawer(); });
 

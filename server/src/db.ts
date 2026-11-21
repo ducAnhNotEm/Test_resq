@@ -90,6 +90,7 @@ export interface OrderRow {
   id: string; customer_id: number; staff_id: number | null; status: OrderStatus; priority: 'normal' | 'sos';
   issue: string; note: string; injured: number | null; lat: number; lng: number; accuracy_m: number | null;
   address: string; vehicle_plate: string; declined_by: string; cancel_reason: string | null; rating: number | null;
+  place_id: string | null; place_name: string | null;
   created_at: number; updated_at: number; assigned_at: number | null; enroute_at: number | null; arrived_at: number | null;
   in_service_at: number | null; completed_at: number | null; cancelled_at: number | null;
 }
@@ -113,6 +114,8 @@ export interface Order {
   staff: { id: number; name: string; phone: string; vehiclePlate: string; unit: string } | null;
   cancelReason: string | null;
   rating: number | null;
+  /** Đơn vị khách chọn trong danh sách gara (nếu có). */
+  place: { id: string; name: string } | null;
   createdAt: number;
   updatedAt: number;
   times: Partial<Record<'assigned' | 'enroute' | 'arrived' | 'inService' | 'completed' | 'cancelled', number>>;
@@ -139,6 +142,7 @@ function toOrder(r: JoinedOrder): Order {
       ? { id: r.staff_id, name: r.s_name ?? '', phone: r.s_phone ?? '', vehiclePlate: r.s_plate ?? '', unit: r.s_unit ?? '' }
       : null,
     cancelReason: r.cancel_reason, rating: r.rating,
+    place: r.place_id ? { id: r.place_id, name: r.place_name ?? '' } : null,
     createdAt: r.created_at, updatedAt: r.updated_at, times, declinedBy,
   };
 }
@@ -173,6 +177,14 @@ export class Store {
     this.now = now;
     this.db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 3000;');
     this.db.exec(SCHEMA);
+    this.migrate();
+  }
+
+  /** Thêm cột mới cho DB đã tồn tại (CREATE TABLE IF NOT EXISTS không thêm cột). */
+  private migrate(): void {
+    const cols = new Set((this.db.prepare('PRAGMA table_info(orders)').all() as Array<{ name: string }>).map(c => c.name));
+    if (!cols.has('place_id')) this.db.exec('ALTER TABLE orders ADD COLUMN place_id TEXT');
+    if (!cols.has('place_name')) this.db.exec('ALTER TABLE orders ADD COLUMN place_name TEXT');
   }
 
   tx<T>(fn: () => T): T {
@@ -253,13 +265,13 @@ export class Store {
       .all(...args, Math.min(f.limit ?? 50, 500), f.offset ?? 0) as unknown as JoinedOrder[];
     return { items: rows.map(toOrder), total };
   }
-  insertOrder(o: { customerId: number; priority: 'normal' | 'sos'; issue: string; note: string; injured: boolean | null; lat: number; lng: number; accuracyM: number | null; address: string; vehiclePlate: string }): Order {
+  insertOrder(o: { customerId: number; priority: 'normal' | 'sos'; issue: string; note: string; injured: boolean | null; lat: number; lng: number; accuracyM: number | null; address: string; vehiclePlate: string; placeId?: string | null; placeName?: string | null }): Order {
     const t = this.now();
     let id = newOrderId();
     while (this.orderRow(id)) id = newOrderId();
-    this.db.prepare(`INSERT INTO orders (id, customer_id, status, priority, issue, note, injured, lat, lng, accuracy_m, address, vehicle_plate, created_at, updated_at)
-      VALUES (?, ?, 'requested', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-      .run(id, o.customerId, o.priority, o.issue, o.note, o.injured == null ? null : o.injured ? 1 : 0, o.lat, o.lng, o.accuracyM, o.address, o.vehiclePlate, t, t);
+    this.db.prepare(`INSERT INTO orders (id, customer_id, status, priority, issue, note, injured, lat, lng, accuracy_m, address, vehicle_plate, place_id, place_name, created_at, updated_at)
+      VALUES (?, ?, 'requested', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(id, o.customerId, o.priority, o.issue, o.note, o.injured == null ? null : o.injured ? 1 : 0, o.lat, o.lng, o.accuracyM, o.address, o.vehiclePlate, o.placeId ?? null, o.placeName ?? null, t, t);
     return this.order(id)!;
   }
   /** Cập nhật trạng thái + mốc thời gian tương ứng. Chỉ gọi sau khi state machine đã cho phép. */

@@ -32,6 +32,7 @@ const WebView = RNWebView as unknown as React.ComponentType<MapWebViewProps>;
 
 export interface MapVehicle { pos: LngLat; heading: number | null; tone?: 'normal' | 'alert' | 'muted' }
 export interface MapDest { pos: LngLat; accuracyM?: number | null }
+export interface MapPoi { id: string; pos: LngLat; cat: 'garage' | 'fuel' | 'charging' | 'parking'; label?: string; rank?: number }
 
 interface Props {
   mapKey: string;
@@ -43,6 +44,10 @@ interface Props {
   fallback?: LngLat[] | null;
   style?: StyleProp<ViewStyle>;
   onFollowPausedChange?: (paused: boolean) => void;
+  me?: { pos: LngLat; accuracyM?: number | null } | null;
+  pois?: MapPoi[] | null;
+  selectedPoiId?: string | null;
+  onPoiPress?: (id: string) => void;
 }
 
 type Phase = 'loading' | 'ready' | 'error';
@@ -75,13 +80,25 @@ export const GoongMapView = memo(function GoongMapView(p: Props) {
     if (ready) post({ type: 'vehicle', vehicle: v ? { pos: v.pos, heading: v.heading, tone: v.tone ?? 'normal' } : null });
   }, [ready, v?.pos[0], v?.pos[1], v?.heading, v?.tone, post]);
 
+  const me = p.me;
+  useEffect(() => {
+    if (ready) post({ type: 'me', me: me ? { pos: me.pos, accuracyM: me.accuracyM ?? null } : null });
+  }, [ready, me?.pos[0], me?.pos[1], me?.accuracyM, post]);
+  useEffect(() => {
+    if (!ready || !p.pois) return;
+    post({ type: 'pois', items: p.pois });
+    post({ type: 'fitPois' });
+  }, [ready, p.pois, post]);
+  useEffect(() => { if (ready) post({ type: 'selectPoi', id: p.selectedPoiId ?? null }); }, [ready, p.selectedPoiId, post]);
+
   const onMessage = useCallback((e: WebViewMessageEvent) => {
-    let m: { type?: string; message?: string; paused?: boolean };
+    let m: { type?: string; message?: string; paused?: boolean; id?: string };
     try { m = JSON.parse(e.nativeEvent.data); } catch { return; }
     if (m.type === 'ready') { setPhase('ready'); setErr(''); }
     else if (m.type === 'error') { setPhase('error'); setErr(m.message ?? 'Lỗi bản đồ'); }
     else if (m.type === 'follow') p.onFollowPausedChange?.(!!m.paused);
-  }, [p.onFollowPausedChange]);
+    else if (m.type === 'poiPress' && m.id) p.onPoiPress?.(m.id);
+  }, [p.onFollowPausedChange, p.onPoiPress]);
 
   const reload = useCallback(() => { setPhase('loading'); setErr(''); setReloadKey(k => k + 1); }, []);
 

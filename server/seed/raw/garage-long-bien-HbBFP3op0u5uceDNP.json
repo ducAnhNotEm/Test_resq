@@ -1,0 +1,3259 @@
+{
+ "job": {
+  "name": "garage-long-bien",
+  "searchStringsArray": [
+   "gara ô tô",
+   "sửa chữa ô tô"
+  ],
+  "locationQuery": "Long Biên, Hà Nội, Việt Nam",
+  "maxCrawledPlacesPerSearch": 15,
+  "maxImages": 0
+ },
+ "runId": "HbBFP3op0u5uceDNP",
+ "status": "SUCCEEDED",
+ "usd": 0.1202,
+ "charged": {
+  "place-scraped": 30,
+  "filter-applied": 0,
+  "place-details-scraped": 0,
+  "contact-details-scraped": 0,
+  "lead-scraped": 0,
+  "lead-email-verified": 0,
+  "social-profile-scraped": 0,
+  "review-scraped": 0,
+  "image-scraped": 0,
+  "competitor-analyzed": 0,
+  "apify-actor-start": 4
+ },
+ "crawledAt": 1795247758926,
+ "items": [
+  {
+   "title": "Hà Thành Garage - Số 8 Thạch Bàn, Long Biên",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "8 Thạch Bàn, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "8 Thạch Bàn",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://otohathanh.com/",
+   "phone": "+84 963 860 303",
+   "phoneUnformatted": "+84963860303",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0286771,
+    "lng": 105.9117294
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.8,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJI2FKSACpNTERrcGqfLpbNgc",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a900484a6123:0x7365bba7caac1ad",
+   "cid": "519703663521481133",
+   "reviewsCount": 151,
+   "reviewsDistribution": {
+    "oneStar": 5,
+    "twoStar": 1,
+    "threeStar": 0,
+    "fourStar": 2,
+    "fiveStar": 143
+   },
+   "imagesCount": 95,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.376Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "08:00 to 17:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Dịch vụ": [
+     {
+      "Thay dầu": true
+     }
+    ],
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Nên đặt hẹn": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=H%C3%A0%20Th%C3%A0nh%20Garage%20-%20S%E1%BB%91%208%20Th%E1%BA%A1ch%20B%C3%A0n%2C%20Long%20Bi%C3%AAn&query_place_id=ChIJI2FKSACpNTERrcGqfLpbNgc",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 1,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLf_6Tj94rlhJpOUtrDKjC_oLrHhubEwXDPgbjaoj4E0PHwwJZLMLg0MxAkZeFneIAIm7YHbAf28DPhkmAO0A4dIuBRrdzlqFbbYZIvPxOO6g6WYrqUjM9m88YH7p7XpCBaHLoE3=w408-h382-k-no",
+   "kgmid": "/g/11y3yt5n4q",
+   "businessProfileId": "16330602620472735152"
+  },
+  {
+   "title": "Gara Ô Tô Hà Triệu",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "39 Đàm Quang Trung, Làng Trạm, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "39 Đàm Quang Trung",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 984 348 580",
+   "phoneUnformatted": "+84984348580",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0238383,
+    "lng": 105.8940583
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJs-fyEQCpNTER50r3y4MWPBQ",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a90011f2e7b3:0x143c1683cbf74ae7",
+   "cid": "1458065134679706343",
+   "reviewsCount": 3,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 3
+   },
+   "imagesCount": 3,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%94%20T%C3%B4%20H%C3%A0%20Tri%E1%BB%87u&query_place_id=ChIJs-fyEQCpNTER50r3y4MWPBQ",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 2,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLechz99QLpoL4-3qix7aIiDSBW1-cjitpbxIdIi2sDhSjcRCVJaKGINYmGuT8GIln59pVeySUIdvwWFgkXwaqBKe4G5UWRw8r6Wy-a1X36IXGzXFMejk---eJLb-j0nZjLD7fB2ACF_zque=w425-h240-k-no",
+   "kgmid": "/g/11p1b7310s",
+   "businessProfileId": null
+  },
+  {
+   "title": "Gara Ô Tô Phong Thủy",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng bảo trì và sửa chữ ô tô",
+   "address": "Ng. 3 Đ. Thạch Bàn, Long Biên, Hà Nội 000084, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "Ng. 3 Đ. Thạch Bàn",
+   "city": "Hà Nội",
+   "postalCode": "000084",
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 966 889 382",
+   "phoneUnformatted": "+84966889382",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0270038,
+    "lng": 105.9122105
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJEbLPUSupNTER0-TmBwnfzDc",
+   "categories": [
+    "Cửa hàng bảo trì và sửa chữ ô tô"
+   ],
+   "fid": "0x3135a92b51cfb211:0x37ccdf0907e6e4d3",
+   "cid": "4020833797215282387",
+   "reviewsCount": 93,
+   "reviewsDistribution": {
+    "oneStar": 7,
+    "twoStar": 2,
+    "threeStar": 3,
+    "fourStar": 8,
+    "fiveStar": 73
+   },
+   "imagesCount": 125,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "08:00 to 12:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 17:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Phù hợp cho người khuyết tật": [
+     {
+      "Lối vào cho xe lăn": false
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%94%20T%C3%B4%20Phong%20Th%E1%BB%A7y&query_place_id=ChIJEbLPUSupNTER0-TmBwnfzDc",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 3,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcxCMx3INrfrU8t2_w2qW6ypuuIhcYzb5_pXOVxGP2i-PZLu1KqpgBbiSxw_C9Y8b2fx4yYPJXTDSzUfkaN_xePLO6kAXBV4dIDWpF1QBeriVlQeZ5PxuCBmB9oFjdcV-LCfVTpVw=w408-h306-k-no",
+   "kgmid": "/g/11f9x_j8f8",
+   "businessProfileId": "9721113536309328108"
+  },
+  {
+   "title": "Cứu Hộ Xe Máy 24h - Minh Thành Motor",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "2 Ng. 202 Đ. Cổ Linh, Làng Trạm, Long Biên, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "2 Ng. 202 Đ. Cổ Linh",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://minhthanhmotor.com/",
+   "phone": "+84 944 883 288",
+   "phoneUnformatted": "+84944883288",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.027219,
+    "lng": 105.8949942
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.6,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJn4p3RcmpNTEROvftdiKHXOc",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135a9c945778a9f:0xe75c872276edf73a",
+   "cid": "16671348502712678202",
+   "reviewsCount": 9,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 8
+   },
+   "imagesCount": 69,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20H%E1%BB%99%20Xe%20M%C3%A1y%2024h%20-%20Minh%20Th%C3%A0nh%20Motor&query_place_id=ChIJn4p3RcmpNTEROvftdiKHXOc",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 4,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLdiXZta4UxKfRTN8XF1JQqZl3bF2JKHRvTAMPaH7O_rKtC2mxCICDOXwBvnWZtEkYEfWeIwHmal-lY-Cq5Q0PztiYfMtl4VYX7EG17wR1LtC8-OC7nrdlgJbRh4rAilV1wVjtllgClM7bc=w408-h544-k-no",
+   "kgmid": "/g/11mlv0hsdm",
+   "businessProfileId": "15814214726840051764"
+  },
+  {
+   "title": "Garage Ô Tô Duy Cường",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "39 Đàm Quang Trung, Làng Trạm, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "39 Đàm Quang Trung",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 984 348 580",
+   "phoneUnformatted": "+84984348580",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0238383,
+    "lng": 105.8940583
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJGeSjg0GpNTERVhKPDEkyow0",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a94183a3e419:0xda332490c8f1256",
+   "cid": "982684433021604438",
+   "reviewsCount": 11,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 3,
+    "fourStar": 1,
+    "fiveStar": 6
+   },
+   "imagesCount": 29,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Garage%20%C3%94%20T%C3%B4%20Duy%20C%C6%B0%E1%BB%9Dng&query_place_id=ChIJGeSjg0GpNTERVhKPDEkyow0",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 5,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLebnPgRExvSR3Gc0iZtTbziNvlnlemat41H7_x-8faPnEG5VsQDQZd2OYqaSSgKh17kOUV560lleOwyaYRmsAPR04Sd9tB9EhvxE99gODckuLMjtb8CEDFjyvLVk6Js7ObFVtDFN4gFHBsl=w408-h407-k-no",
+   "kgmid": "/g/11b7s_wf08",
+   "businessProfileId": "11541784237431030820"
+  },
+  {
+   "title": "Cứu hộ xe hơi Bản Việt",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "421 Đ. Bát Khối, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "421 Đ. Bát Khối",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://www.facebook.com/phongthutoibeat",
+   "phone": "+84 973 126 009",
+   "phoneUnformatted": "+84973126009",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0214168,
+    "lng": 105.8995045
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.3,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJVbispJerNTERwJmQ1HZUirM",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab97a4acb855:0xb38a5476d49099c0",
+   "cid": "12937245748924291520",
+   "reviewsCount": 16,
+   "reviewsDistribution": {
+    "oneStar": 2,
+    "twoStar": 1,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 13
+   },
+   "imagesCount": 26,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "09:00 to 03:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "09:00 to 03:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "09:00 to 03:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "09:00 to 03:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "09:00 to 03:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "09:00 to 03:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "09:00 to 03:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20h%E1%BB%99%20xe%20h%C6%A1i%20B%E1%BA%A3n%20Vi%E1%BB%87t&query_place_id=ChIJVbispJerNTERwJmQ1HZUirM",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 6,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfCKxt5Ip9xoFPi9YERGnTIDwboEi3tsxeaDhogL_Fp9BPxJkmk4c6GN5h-6gqxVDejlw4kUSQlyuMqrgXi1zR2YeXJUB3f4r-M9cEQvA8ONjW3qg0mX-u9S-hRjoXozfgcWDgveCtLDjra=w408-h306-k-no",
+   "kgmid": "/g/11qqqp11k1",
+   "businessProfileId": "5703007514552411533"
+  },
+  {
+   "title": "Sửa Xe Máy Tận Nơi Nguyễn Văn Linh - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "507 Đ. Nguyễn Văn Linh, Phúc Lợi, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Phúc Lợi",
+   "street": "507 Đ. Nguyễn Văn Linh",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Phúc Lợi, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0322785,
+    "lng": 105.909441
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJ1VB8pAepNTERMVKy_6w0XH4",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135a907a47c50d5:0x7e5c34acffb25231",
+   "cid": "9105210464265196081",
+   "reviewsCount": 1,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 1
+   },
+   "imagesCount": 31,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20M%C3%A1y%20T%E1%BA%ADn%20N%C6%A1i%20Nguy%E1%BB%85n%20V%C4%83n%20Linh%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJ1VB8pAepNTERMVKy_6w0XH4",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 7,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfpc88L2aL4kNyWWlBLBvGJUyOkdQq_vMCHgCFmWb_rayXneFW4mk_8kP-m9qSFUZPRaGS0V509vCuOeYVHniy8Ntlc8PNncVdIXUGKNMCQatuGc1j9zZpCehc4f02mRsMeZQJ7qtmUNog=w408-h408-k-no",
+   "kgmid": "/g/11nqp31689",
+   "businessProfileId": "7591917249171065696"
+  },
+  {
+   "title": "Sửa Xe Máy Tận Nơi Long Biên - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "69-7 Thạch Bàn, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "69-7 Thạch Bàn",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0259555,
+    "lng": 105.9098291
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJv_8ixyKpNTERtiwDfEvTKg4",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135a922c722ffbf:0xe2ad34b7c032cb6",
+   "cid": "1020860586709429430",
+   "reviewsCount": 4,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 4
+   },
+   "imagesCount": 30,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20M%C3%A1y%20T%E1%BA%ADn%20N%C6%A1i%20Long%20Bi%C3%AAn%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJv_8ixyKpNTERtiwDfEvTKg4",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 8,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLc9t3qOrXUmvEI2VvQcvWrA7_JXbIfSd75YB7Fq-VTX5QVrcU_BeXg5vCNdNbvmHjyhwBw1tguRbIrUXo6pSUAww4RpTUo6aViFOnvFh3uo7hEGKexPruBJ8oFbUJ3n3nTcIDgC-PiPAJCh=w408-h408-k-no",
+   "kgmid": "/g/11zgcm5m3n",
+   "businessProfileId": "5833064260437744540"
+  },
+  {
+   "title": "Cứu Hộ Xe Máy - Sửa Xe Lưu Động Quận Long Biên Minh Thành Motor",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "135 Thạch Bàn, Long Biên, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "135 Thạch Bàn",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://minhthanhmotor.com/",
+   "phone": "+84 944 883 288",
+   "phoneUnformatted": "+84944883288",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0250294,
+    "lng": 105.9081438
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJi0QH8eGpNTERXfFpcktfNnE",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135a9e1f107448b:0x71365f4b7269f15d",
+   "cid": "8157812552674963805",
+   "reviewsCount": 5,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 5
+   },
+   "imagesCount": 36,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20H%E1%BB%99%20Xe%20M%C3%A1y%20-%20S%E1%BB%ADa%20Xe%20L%C6%B0u%20%C4%90%E1%BB%99ng%20Qu%E1%BA%ADn%20Long%20Bi%C3%AAn%20Minh%20Th%C3%A0nh%20Motor&query_place_id=ChIJi0QH8eGpNTERXfFpcktfNnE",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 9,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfl3gsJAB5pPcPILb9rMNj5Q8pCYA-xu2h5EDz6XsMluY4Ncy2ZGCyWgA-JW49EFxGqGgMo-mnNj64qKb2raL1hDm6cnoriW8mglMYicj4SxmYgKILP7VP3F8kZSelkvrxhQEDGT3Ahef0=w408-h306-k-no",
+   "kgmid": "/g/11z3mj331s",
+   "businessProfileId": "17353615197875975963"
+  },
+  {
+   "title": "Cửa hàng sửa xe tuấn béo Motul",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "102 Đ. Cổ Linh, Làng Trạm, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "102 Đ. Cổ Linh",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 813 127 583",
+   "phoneUnformatted": "+84813127583",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0263407,
+    "lng": 105.8963434
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJo5w7xt6pNTERxf3rd8s4uP8",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135a9dec63b9ca3:0xffb838cb77ebfdc5",
+   "cid": "18426540321927855557",
+   "reviewsCount": 5,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 5
+   },
+   "imagesCount": 5,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%ADa%20h%C3%A0ng%20s%E1%BB%ADa%20xe%20tu%E1%BA%A5n%20b%C3%A9o%20Motul&query_place_id=ChIJo5w7xt6pNTERxf3rd8s4uP8",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 10,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcdZ24TIOJtHQ5ucNJOEvwZh9n4Qhv7N-OR_rdCcIpIIhHGpMajyBkSFEgf9xoEd-ggHtI3mC2IGVWVcYNRxeQ9UM_LPTqZ_yIaYnTeN1t4sUdhMULHlCCROBIWOd5x1FVpKLG-=w408-h544-k-no",
+   "kgmid": "/g/11qlbfjlzm",
+   "businessProfileId": null
+  },
+  {
+   "title": "Cứu Hộ Xe Máy - Sửa Xe Tận Nơi Minh Nhật Motor",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "31 Ng. 206 Đ. Cổ Linh, Long Biên, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "31 Ng. 206 Đ. Cổ Linh",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://minhnhatmotor.com/",
+   "phone": "+84 376 779 893",
+   "phoneUnformatted": "+84376779893",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0242971,
+    "lng": 105.8983634
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJ64sDDlepNTER_j4lmcjRcQc",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135a9570e038beb:0x771d1c899253efe",
+   "cid": "536440490126819070",
+   "reviewsCount": 9,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 9
+   },
+   "imagesCount": 10,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.377Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "06:30 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "06:30 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "06:30 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "06:30 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "06:30 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "06:30 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "06:30 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20H%E1%BB%99%20Xe%20M%C3%A1y%20-%20S%E1%BB%ADa%20Xe%20T%E1%BA%ADn%20N%C6%A1i%20Minh%20Nh%E1%BA%ADt%20Motor&query_place_id=ChIJ64sDDlepNTER_j4lmcjRcQc",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 11,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcuBzkWmUKOQTY32uR5z8160_CbiMfmreEmufewiIgHEaFX-4U9AcmWyCM4coEV6KTQHrCFskrz1Z8wAEPka1-Sqkd_SU9bQL1fF5KjqFDxuBW9tphAXJFr8XlSInChRwkXiU7zw80I1mcw=w408-h306-k-no",
+   "kgmid": "/g/11p2bts1mw",
+   "businessProfileId": "9013159499642193191"
+  },
+  {
+   "title": "Cứu Hộ Xe Máy Long Biên - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "204 Đ. Cổ Linh, Làng Trạm, Long Biên, Hà Nội 10000, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "204 Đ. Cổ Linh",
+   "city": "Hà Nội",
+   "postalCode": "10000",
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0262864,
+    "lng": 105.8975996
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJQxO43WKpNTERoQDtPO2JO1U",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135a962ddb81343:0x553b89ed3ced00a1",
+   "cid": "6141654168872222881",
+   "reviewsCount": 3,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 3
+   },
+   "imagesCount": 32,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.378Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20H%E1%BB%99%20Xe%20M%C3%A1y%20Long%20Bi%C3%AAn%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJQxO43WKpNTERoQDtPO2JO1U",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 12,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcdoh0MbQwGQx5ipb156vA8i_NTAWdi7dR7ew-ZpeHCa-lVv_qvKHA4upkkTyChIRFWvt7-_u_c1YQpxcacmNQ0JXwKOQ65uWtBuuVtBZ52Wu-73KRiSYFaHCMCttqnJdKKsGlfzJfDw527=w408-h408-k-no",
+   "kgmid": "/g/11z9dwdkh0",
+   "businessProfileId": "2420005884133253101"
+  },
+  {
+   "title": "Gara sửa chữa ô tô Gia Phát",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "48 Ngh. 68/198 Đ. Nguyễn Văn Linh, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "48 Ngh. 68/198 Đ. Nguyễn Văn Linh",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://www.facebook.com/suachuaotocar?mibextid=ZbWKwL",
+   "phone": "+84 976 334 598",
+   "phoneUnformatted": "+84976334598",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0240751,
+    "lng": 105.9162418
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.9,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJKfatewCpNTERc5_RJz88umk",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a9007badf629:0x69ba3c3f27d19f73",
+   "cid": "7618467961599270771",
+   "reviewsCount": 58,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 57
+   },
+   "imagesCount": 14,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.378Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "08:00 to 17:30"
+    }
+   ],
+   "additionalOpeningHours": {
+    "Giờ phục vụ trực tuyến": [
+     {
+      "day": "Thứ Bảy",
+      "hours": "08:00–17:00"
+     },
+     {
+      "day": "Chủ Nhật",
+      "hours": "08:00–17:00"
+     },
+     {
+      "day": "Thứ Hai",
+      "hours": "08:00–17:00"
+     },
+     {
+      "day": "Thứ Ba",
+      "hours": "08:00–17:00"
+     },
+     {
+      "day": "Thứ Tư",
+      "hours": "08:00–17:00"
+     },
+     {
+      "day": "Thứ Năm",
+      "hours": "08:00–17:00"
+     },
+     {
+      "day": "Thứ Sáu",
+      "hours": "08:00–17:00"
+     }
+    ]
+   },
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Từ doanh nghiệp": [
+     {
+      "Tự nhận là do phụ nữ sở hữu": true
+     }
+    ],
+    "Các tùy chọn dịch vụ": [
+     {
+      "Dịch vụ tại chỗ": true
+     }
+    ],
+    "Phù hợp cho người khuyết tật": [
+     {
+      "Chỗ đỗ xe cho xe lăn": true
+     },
+     {
+      "Chỗ ngồi cho xe lăn": true
+     },
+     {
+      "Lối vào cho xe lăn": true
+     },
+     {
+      "Nhà vệ sinh cho xe lăn": true
+     }
+    ],
+    "Dịch vụ": [
+     {
+      "Thay dầu": true
+     }
+    ],
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Khách hàng": [
+     {
+      "Chào đón những người thuộc giới LGBTQ+": true
+     },
+     {
+      "Nơi an toàn cho người chuyển giới": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Nên đặt hẹn": true
+     }
+    ],
+    "Thanh toán": [
+     {
+      "Thẻ ghi nợ": true
+     },
+     {
+      "Thẻ tín dụng": true
+     },
+     {
+      "Thẻ tín dụng": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4%20Gia%20Ph%C3%A1t&query_place_id=ChIJKfatewCpNTERc5_RJz88umk",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 13,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcCabCVaoa7tkaH-ZQGEYMH-KH5FLESEquk80TfP-z_ay22w8qQYGCaaO9os1sPK5wRF2I3SJztv_3yCXQbN-HoypjbnZ8cHv9tTsco0LFM4DD4DqY0fVN9p0-aCmIoTjYZcJyvYSOtyvE=w408-h306-k-no",
+   "kgmid": "/g/11y3qb6zbd",
+   "businessProfileId": "17076844312792598408"
+  },
+  {
+   "title": "GARA Ô TÔ PHÚC THÀNH",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "188/17 P. Tư Đình, Tổ Dân Phố Số 10, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Tổ Dân Phố Số 10, Long Biên",
+   "street": "188/17 P. Tư Đình",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 368 294 113",
+   "phoneUnformatted": "+84368294113",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0305797,
+    "lng": 105.8897386
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJeb0EtIWpNTERdHM2fXctZwQ",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a985b404bd79:0x4672d777d367374",
+   "cid": "317272289977987956",
+   "reviewsCount": 16,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 16
+   },
+   "imagesCount": 18,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.378Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Đóng cửa"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "08:00 to 18:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=GARA%20%C3%94%20T%C3%94%20PH%C3%9AC%20TH%C3%80NH&query_place_id=ChIJeb0EtIWpNTERdHM2fXctZwQ",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 15,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcrhDTDmBON7LWTeA1nQjeaF0CK41ptrBq2YtlK-XeDOfBvOF8x1iIY65dlxrDKaJLPviaxnJYsJfNJ_fIBhxBopABaY7ifreLwXxX6NT801IyKZr9jAQVV7Fq233z-lXyPS2XcP1oHZmK-=w617-h240-k-no",
+   "kgmid": "/g/11ykvpc217",
+   "businessProfileId": "4039607205101396820"
+  },
+  {
+   "title": "Gara ô tô Đăng Nguyên",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "Đàm Quang Trung/89 Phố Trạm, Làng Trạm, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "Đàm Quang Trung/89 Phố Trạm",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 934 526 263",
+   "phoneUnformatted": "+84934526263",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0251465,
+    "lng": 105.894928
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJbRFy4OKpNTEROT8vnfq3xjQ",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a9e2e072116d:0x34c6b7fa9d2f3f39",
+   "cid": "3802929222367788857",
+   "reviewsCount": 5,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 5
+   },
+   "imagesCount": 12,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:53:49.378Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Đóng cửa"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "08:00 to 18:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "08:00 to 17:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Nên đặt hẹn": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%B4%20t%C3%B4%20%C4%90%C4%83ng%20Nguy%C3%AAn&query_place_id=ChIJbRFy4OKpNTEROT8vnfq3xjQ",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.026699074348887,105.90239374307679,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 16,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLc0iJbK3AIkG1ItMU8BiXGxPkkSpFKDb-Cf5JdqPhpQ_ocha2WewDo7ivXuuZZgmAPq1HbSI0C9_eaj7hFWybBBUETEnTo5pW3Dq1cGppbZtXjfrTI-FHFTihSXJevj7Bkcu9rh40nAZkw=w417-h240-k-no",
+   "kgmid": "/g/11vq260cv8",
+   "businessProfileId": "12156647823457597021"
+  },
+  {
+   "title": "Gara ô tô Nhật Hàn",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng bảo trì và sửa chữ ô tô",
+   "address": "459 Đ. Nguyễn Văn Linh, Phúc Lợi, Hà Nội, Việt Nam",
+   "neighborhood": "Phúc Lợi",
+   "street": "459 Đ. Nguyễn Văn Linh",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Phúc Lợi, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 989 535 352",
+   "phoneUnformatted": "+84989535352",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0337432,
+    "lng": 105.9064381
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.4,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJueazdhGpNTER5IYs0CEkj9s",
+   "categories": [
+    "Cửa hàng bảo trì và sửa chữ ô tô"
+   ],
+   "fid": "0x3135a91176b3e6b9:0xdb8f2421d02c86e4",
+   "cid": "15820903743620941540",
+   "reviewsCount": 8,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 1,
+    "fiveStar": 6
+   },
+   "imagesCount": 6,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:50.265Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 17:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 17:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%B4%20t%C3%B4%20Nh%E1%BA%ADt%20H%C3%A0n&query_place_id=ChIJueazdhGpNTER5IYs0CEkj9s",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.034718223046674,105.91098302923041,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 7,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfDrDEF1stYE47dKaSjEtSeoUKL3v_RJRSOLb0oLEzPZy4vofRYPi0CpQ87gPOraGqLYHm14_PiQgx_i0vu1qaL1DsfH4aXPmmYtxuA6iiDsj0b0cYcdl-CkYcaUVGA_-hJJ-53=w408-h544-k-no",
+   "kgmid": "/g/11flt8rrg8",
+   "businessProfileId": "9392217171157948842"
+  },
+  {
+   "title": "Gara Ô Tô Trương Tuyến",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "2WGC+XFJ, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "2WGC+XFJ",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 987 795 075",
+   "phoneUnformatted": "+84987795075",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0274548,
+    "lng": 105.921141
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJ1W9W5oypNTERg4WGaPSKw1U",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a98ce6566fd5:0x55c38af468868583",
+   "cid": "6179935896012752259",
+   "reviewsCount": 3,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 3
+   },
+   "imagesCount": 3,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:50.265Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%94%20T%C3%B4%20Tr%C6%B0%C6%A1ng%20Tuy%E1%BA%BFn&query_place_id=ChIJ1W9W5oypNTERg4WGaPSKw1U",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.034718223046674,105.91098302923041,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 15,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcrk4wU4mUAFlmlyMMGRnETJN90hj56LRXNxMY2MvBap8I4EE-rf3K1vXq4xOfoNnmWcnrBFX_tXg1l26iYw_U2Ec3sv8c4F3DWgqATLyf54bt8C_h2B0pHV1mkogMc9kw47j0f4w=w408-h306-k-no",
+   "kgmid": "/g/11ptngxcyc",
+   "businessProfileId": null
+  },
+  {
+   "title": "Gara ô tô Ngọc Luật",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "2WG7+HPX, Ng. 3 Đ. Thạch Bàn, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "2WG7+HPX, Ng. 3 Đ. Thạch Bàn",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 904 215 386",
+   "phoneUnformatted": "+84904215386",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.027644,
+    "lng": 105.9139021
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJeVFlSQCpNTER-ntHE3ESO28",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a90049655179:0x6f3b127113477bfa",
+   "cid": "8015020238699985914",
+   "reviewsCount": null,
+   "imagesCount": 3,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:50.266Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%B4%20t%C3%B4%20Ng%E1%BB%8Dc%20Lu%E1%BA%ADt&query_place_id=ChIJeVFlSQCpNTER-ntHE3ESO28",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.034718223046674,105.91098302923041,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 19,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLeI6mNX_01ueZ50Ej1Qy9c-6sRDDlfI-cE0tbUzCuqAMwa1QvstM6xE5Gj2vX4nudTSaYnPa_9Js2wMqSPeVfx_HCCg_d4GlHBQiUw6gIDU9Ol2dXTmE0kkDRQoetA0TrBFC1vuSx9yf1Nc=w408-h725-k-no",
+   "kgmid": "/g/11ynx8qg9g",
+   "businessProfileId": null
+  },
+  {
+   "title": "Garage Thuận Phát",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "52 Ng. 318 P. Ngọc Trì, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "52 Ng. 318 P. Ngọc Trì",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 936 194 858",
+   "phoneUnformatted": "+84936194858",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0208854,
+    "lng": 105.9159919
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.4,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJmYjoi6OpNTERu6WdMogG-GM",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a9a38be88899:0x63f80688329da5bb",
+   "cid": "7203514786013619643",
+   "reviewsCount": 9,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 1,
+    "fiveStar": 7
+   },
+   "imagesCount": 18,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:50.340Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Đóng cửa"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "08:00 to 17:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Garage%20Thu%E1%BA%ADn%20Ph%C3%A1t&query_place_id=ChIJmYjoi6OpNTERu6WdMogG-GM",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.0186799256511,105.91957231538403,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 2,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLeHaUh4pKxSO6gAyXnza1hUI1__NVEGAXxqYUdldb-OCxzsySP7--FN0Akh8x3p0cm7g4_TrsUO6r6BERE5LB723EykPtjurhaFqh10HreLqmmQPMCS9TDjS3QZPP-fqAoL4vHYixSDiYJW=w408-h305-k-no",
+   "kgmid": "/g/11krjzr67d",
+   "businessProfileId": "12642022348046167056"
+  },
+  {
+   "title": "Gara Ô Tô Hoà Nam",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "Dốc Đê/Số 2 Đ. Hạ Trại, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "Dốc Đê/Số 2 Đ. Hạ Trại",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 972 937 367",
+   "phoneUnformatted": "+84972937367",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0112994,
+    "lng": 105.9038095
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.3,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJL80e__-pNTERspL37a7N2WU",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a9ffff1ecd2f:0x65d9cdaeedf792b2",
+   "cid": "7339123218977362610",
+   "reviewsCount": 16,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 2,
+    "fourStar": 3,
+    "fiveStar": 10
+   },
+   "imagesCount": 13,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:50.340Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Phù hợp cho người khuyết tật": [
+     {
+      "Chỗ đỗ xe cho xe lăn": false
+     }
+    ],
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Nên đặt hẹn": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%94%20T%C3%B4%20Ho%C3%A0%20Nam&query_place_id=ChIJL80e__-pNTERspL37a7N2WU",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.0186799256511,105.91957231538403,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 12,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcUGd6pgEDOoL-ofEdDhww1P3sVTzaU8HJ25slTxhIZ9IO9tabhjQ-uz4WAg7ksqZmaT_vZ8LOgyJeleKxW6WrxDmzFw-FGC-fXZWWGU75E4aMMhynFFA2dnp0zRQ3Zd2Cdm5bwVmKbkCTw=w408-h306-k-no",
+   "kgmid": "/g/11s__mjm9g",
+   "businessProfileId": "354598649413333776"
+  },
+  {
+   "title": "Gara Ô Tô Tuấn Linh Chevrolet",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng bảo trì và sửa chữ ô tô",
+   "address": "Tổ 13 P. Xuân Đỗ, Xuân Đỗ Hạ, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Xuân Đỗ Hạ, Long Biên",
+   "street": "Tổ 13 P. Xuân Đỗ",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 981 629 198",
+   "phoneUnformatted": "+84981629198",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0091242,
+    "lng": 105.914834
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJjxpYPVapNTER0r4NOvBs4no",
+   "categories": [
+    "Cửa hàng bảo trì và sửa chữ ô tô"
+   ],
+   "fid": "0x3135a9563d581a8f:0x7ae26cf03a0dbed2",
+   "cid": "8854759596385746642",
+   "reviewsCount": 54,
+   "reviewsDistribution": {
+    "oneStar": 3,
+    "twoStar": 5,
+    "threeStar": 11,
+    "fourStar": 4,
+    "fiveStar": 31
+   },
+   "imagesCount": 6990,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:50.340Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 22:15"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Đóng cửa"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 22:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 22:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 22:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "00:00 to 22:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "00:00 to 23:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%94%20T%C3%B4%20Tu%E1%BA%A5n%20Linh%20Chevrolet&query_place_id=ChIJjxpYPVapNTER0r4NOvBs4no",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.0186799256511,105.91957231538403,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 13,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLeMs4AzToUBd-pOF44b5khjwyzU-T5l0oMPuJWjGuuqKefHTZZjs4Az7toyolzt5ZGxO4ul9utnUX4DRjV934Wjm8j7wlAsdCRKBVvc-3ucAHBXsG7RTghIn-ttD99QdX3-5A=w408-h306-k-no",
+   "kgmid": "/g/11h4gzlvt0",
+   "businessProfileId": "5926754896860346724"
+  },
+  {
+   "title": "gara ô tô nhật lâm",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "39 P. Nguyễn Thời Trung, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "39 P. Nguyễn Thời Trung",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 902 256 273",
+   "phoneUnformatted": "+84902256273",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0274764,
+    "lng": 105.9204301
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.1,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJO7aqeYmpNTER_A9GPoXISp8",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a98979aab63b:0x9f4ac8853e460ffc",
+   "cid": "11478207074908114940",
+   "reviewsCount": 10,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 1,
+    "fourStar": 3,
+    "fiveStar": 5
+   },
+   "imagesCount": 23,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:50.340Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 19:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 19:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 19:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 19:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 19:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 19:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 19:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=gara%20%C3%B4%20t%C3%B4%20nh%E1%BA%ADt%20l%C3%A2m&query_place_id=ChIJO7aqeYmpNTER_A9GPoXISp8",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.0186799256511,105.91957231538403,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 17,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLd6ePcImMInPFCUOezODC8l7h6e6235bPMfyN1dnqV5j5Ei48esjxDUl2ECSYBVP4qCVVlS_1F2XELwmL92fYMx8qELu-cRZHMrd7NG-VwKP8A8IE7NWH0nSceQFskuSgbj7Q=w408-h305-k-no",
+   "kgmid": "/g/11rcbnj3fr",
+   "businessProfileId": "7728324089848327388"
+  },
+  {
+   "title": "Garage AZ 419 bát khối, Long biên - Gia lâm.",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "Đ. Bát Khối/419 Thạch Bàn, Long Biên, Hà Nội 10000, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "Đ. Bát Khối/419 Thạch Bàn",
+   "city": "Hà Nội",
+   "postalCode": "10000",
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 987 336 357",
+   "phoneUnformatted": "+84987336357",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0213593,
+    "lng": 105.8994833
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.7,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJRxx10WKpNTERrHfVZjQ68aM",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a962d1751c47:0xa3f13a3466d577ac",
+   "cid": "11813287294307497900",
+   "reviewsCount": 18,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 1,
+    "fourStar": 3,
+    "fiveStar": 14
+   },
+   "imagesCount": 46,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [],
+   "wasOpenAtScrapeTime": null,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Dịch vụ": [
+     {
+      "Thay dầu": true
+     }
+    ],
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Yêu cầu hẹn trước": true
+     },
+     {
+      "Nên đặt hẹn": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Garage%20AZ%20419%20b%C3%A1t%20kh%E1%BB%91i%2C%20Long%20bi%C3%AAn%20-%20Gia%20l%C3%A2m.&query_place_id=ChIJRxx10WKpNTERrHfVZjQ68aM",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 4,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLf4mgSvNg1_JI5NBveJaeMJHs8vfa5HjYUZY5oHwH2i6nxcCji2qhtTcAxZXeDKnF61Uefg4BqUfEQ5PkBEOPdrZoY5RTtu_cMcpp9EtIcCcaVC776_3nLsbnF_8KhmbQcLOgghXg=w426-h240-k-no",
+   "kgmid": "/g/11qbkvqpqk",
+   "businessProfileId": "1197867117207467477"
+  },
+  {
+   "title": "Garage Đồng Tiến",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng bảo trì và sửa chữ ô tô",
+   "address": "16 Chân Cầu Vĩnh Tuy, Làng Trạm, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "16 Chân Cầu Vĩnh Tuy",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 904 139 800",
+   "phoneUnformatted": "+84904139800",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0224699,
+    "lng": 105.8940558
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJD6bhY0GpNTER-KFMSGwEGRI",
+   "categories": [
+    "Cửa hàng bảo trì và sửa chữ ô tô"
+   ],
+   "fid": "0x3135a94163e1a60f:0x1219046c484ca1f8",
+   "cid": "1304078430216430072",
+   "reviewsCount": 43,
+   "reviewsDistribution": {
+    "oneStar": 2,
+    "twoStar": 4,
+    "threeStar": 8,
+    "fourStar": 7,
+    "fiveStar": 22
+   },
+   "imagesCount": 12,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 18:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 18:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 19:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 18:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 19:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 18:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 18:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Garage%20%C4%90%E1%BB%93ng%20Ti%E1%BA%BFn&query_place_id=ChIJD6bhY0GpNTER-KFMSGwEGRI",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 5,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfBILJLMq7ijbnOCSYQI5WaYTflx2F38Qm_hLb7AGEBVy-CZdtGcG252mQWC_-DptyYe365YzONKWS7raR38fNswEV-Gdob6n7Rsfd7TJR91W3iFZ_Aike3q3S2ktyDZndl5n3w=w426-h240-k-no",
+   "kgmid": "/g/12mj_ll1_",
+   "businessProfileId": null
+  },
+  {
+   "title": "Gara ô tô Hoàng Vũ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng bán thiết bị âm thanh ô tô",
+   "address": "52 Đàm Quang Trung, Làng Trạm, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Làng Trạm, Long Biên",
+   "street": "52 Đàm Quang Trung",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://www.facebook.com/autohoangvu/",
+   "phone": "+84 912 023 713",
+   "phoneUnformatted": "+84912023713",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0236806,
+    "lng": 105.8947302
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJq6nQNwqpNTERvCR1779xIns",
+   "categories": [
+    "Cửa hàng bán thiết bị âm thanh ô tô"
+   ],
+   "fid": "0x3135a90a37d0a9ab:0x7b2271bfef7524bc",
+   "cid": "8872779285043422396",
+   "reviewsCount": 3,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 1,
+    "fourStar": 1,
+    "fiveStar": 1
+   },
+   "imagesCount": 11,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "06:30 to 18:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "06:30 to 18:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "06:30 to 18:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "06:30 to 18:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "06:30 to 18:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "06:30 to 18:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "06:30 to 18:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%B4%20t%C3%B4%20Ho%C3%A0ng%20V%C5%A9&query_place_id=ChIJq6nQNwqpNTERvCR1779xIns",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 6,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLe7N46rbrEv70JBEEnhU3MbxwjTTkSRYrvVHgDMkAsud77nidK5kvQVuGUzbkc2r5xtfKf2cxVtcC3v0Bn2SgP8u8H61ZbhOXsXuFlyWdUeECXvWvOD0ul-dNuvqr4aZAFIv7c8=w408-h303-k-no",
+   "kgmid": "/g/11r48pmdrv",
+   "businessProfileId": "6809617196071247893"
+  },
+  {
+   "title": "Gara Ô tô Bảo Sài Gòn",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "2VCV+V43, Unnamed Road,p, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "2VCV+V43, Unnamed Road,p",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 907 521 633",
+   "phoneUnformatted": "+84907521633",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0221356,
+    "lng": 105.8928063
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 3,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJiatY6EOpNTER6KNOC6qf5C8",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a943e858ab89:0x2fe49faa0b4ea3e8",
+   "cid": "3451058767155602408",
+   "reviewsCount": 2,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 1
+   },
+   "imagesCount": 1,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "08:00 to 17:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "08:00 to 17:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Nên đặt hẹn": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%94%20t%C3%B4%20B%E1%BA%A3o%20S%C3%A0i%20G%C3%B2n&query_place_id=ChIJiatY6EOpNTER6KNOC6qf5C8",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 7,
+   "isAdvertisement": false,
+   "imageUrl": "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=YE9W9aZ3MjkZxP1fQF9xww&cb_client=search.gws-prod.grass&w=408&h=240&yaw=17.363127&pitch=-9.010695&thumbfov=100",
+   "kgmid": "/g/11f_zfvgnq",
+   "businessProfileId": null
+  },
+  {
+   "title": "Gara ô tô Đặng Tiệp",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Sơn ô tô",
+   "address": "309 Đ. Bát Khối, Long Biên, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "309 Đ. Bát Khối",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "",
+   "phoneUnformatted": "",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0219162,
+    "lng": 105.8943029
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJE5oNOXKpNTERltynmq1ZuA8",
+   "categories": [
+    "Sơn ô tô"
+   ],
+   "fid": "0x3135a972390d9a13:0xfb859ad9aa7dc96",
+   "cid": "1132753908442586262",
+   "reviewsCount": 2,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 2
+   },
+   "imagesCount": 9,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "08:00 to 18:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "08:00 to 18:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%B4%20t%C3%B4%20%C4%90%E1%BA%B7ng%20Ti%E1%BB%87p&query_place_id=ChIJE5oNOXKpNTERltynmq1ZuA8",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 9,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLf0ZVpEOWbdNr_z6cd3cUoiVvFC5hWrbbK0zldhOwGL5zlHB3kbQ5jiZeP5xypSADKx74FS1WaTuioZkp1ajrJeQScHCt5CyQ05ZiPfl9pBbukhkFzao3O_5p2CM9OceUmxoLpY=w408-h408-k-no",
+   "kgmid": "/g/11wqb57d8f",
+   "businessProfileId": "8093091196328437227"
+  },
+  {
+   "title": "Garage Phạm Gia",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng bảo trì và sửa chữ ô tô",
+   "address": "55 Đ. Cổ Linh, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Long Biên",
+   "street": "55 Đ. Cổ Linh",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 24 2246 5700",
+   "phoneUnformatted": "+842422465700",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0278133,
+    "lng": 105.8940313
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJAe8rGWqpNTERb1_Tb0_pgKM",
+   "categories": [
+    "Cửa hàng bảo trì và sửa chữ ô tô"
+   ],
+   "fid": "0x3135a96a192bef01:0xa380e94f6fd35f6f",
+   "cid": "11781673152589029231",
+   "reviewsCount": 1,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 1
+   },
+   "imagesCount": 1,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [],
+   "wasOpenAtScrapeTime": null,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Garage%20Ph%E1%BA%A1m%20Gia&query_place_id=ChIJAe8rGWqpNTERb1_Tb0_pgKM",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 11,
+   "isAdvertisement": false,
+   "imageUrl": "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=zQ-mHYsx7v24EN2_KNv2pw&cb_client=search.gws-prod.grass&w=408&h=240&yaw=238.77536&pitch=0&thumbfov=100",
+   "kgmid": "/g/1jkwf2qcn",
+   "businessProfileId": null
+  },
+  {
+   "title": "Ga ra ô tô Phú Hải",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "177 Đ. Bát Khối, Tư Đình, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Tư Đình, Long Biên",
+   "street": "177 Đ. Bát Khối",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "",
+   "phoneUnformatted": "",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.023657,
+    "lng": 105.887155
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJtwa5PQCpNTERSljBRI7UjVg",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135a9003db906b7:0x588dd48e44c1584a",
+   "cid": "6380989954557827146",
+   "reviewsCount": 1,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 1
+   },
+   "imagesCount": 1,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [],
+   "wasOpenAtScrapeTime": null,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Ga%20ra%20%C3%B4%20t%C3%B4%20Ph%C3%BA%20H%E1%BA%A3i&query_place_id=ChIJtwa5PQCpNTERSljBRI7UjVg",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 12,
+   "isAdvertisement": false,
+   "imageUrl": "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=Uzdb5-ybqfJ5EL-PpyM0Zw&cb_client=search.gws-prod.grass&w=408&h=240&yaw=26.940989&pitch=0&thumbfov=100",
+   "kgmid": "/g/11m68f6jzc",
+   "businessProfileId": null
+  },
+  {
+   "title": "Gara Ô Tô Thành Dũng",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa xe RV",
+   "address": "97 Đ. Bát Khối, Tư Đình, Long Biên, Hà Nội, Việt Nam",
+   "neighborhood": "Tư Đình, Long Biên",
+   "street": "97 Đ. Bát Khối",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Long Biên, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 904 266 119",
+   "phoneUnformatted": "+84904266119",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0253141,
+    "lng": 105.8847453
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.4,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJ6T1GwzCpNTERlV3qH76tvRc",
+   "categories": [
+    "Xưởng sửa chữa xe RV"
+   ],
+   "fid": "0x3135a930c3463de9:0x17bdadbe1fea5d95",
+   "cid": "1710714465561501077",
+   "reviewsCount": 7,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 2,
+    "fourStar": 0,
+    "fiveStar": 5
+   },
+   "imagesCount": 25,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:55:52.895Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Gara%20%C3%94%20T%C3%B4%20Th%C3%A0nh%20D%C5%A9ng&query_place_id=ChIJ6T1GwzCpNTERlV3qH76tvRc",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.026699074348887,105.89380445692316,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 13,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLd8RPI_bl_3LQN3anHZTQs8d7lGpts6WVkjwTnCKDQAhoyZbck1Jfzo5u4OjCYs5srjjW0YWlcfUY8Nu1q0PvZ5yZLtceewEliPxTP9dMml3wf25cK86YJO2bUoYrApRt5CIIF--A=w408-h306-k-no",
+   "kgmid": "/g/11h465hdzf",
+   "businessProfileId": null
+  }
+ ]
+}

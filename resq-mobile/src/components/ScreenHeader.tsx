@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../context/ThemeContext';
 import { FONTS, METRICS, TYPOGRAPHY } from '../theme/tokens';
-import { USER_PROFILE } from '../data/mockData';
+import { locationLabel, useLocation } from '../features/location/LocationProvider';
 
 interface ScreenHeaderProps {
   title?: string;
@@ -19,6 +19,16 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
 }) => {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const loc = useLocation();
+  const locText = locationLabel(loc.status, loc.place, loc.fix);
+  const locOk = loc.status === 'ready';
+  // bấm pill: đúng việc theo trạng thái — xin quyền / mở Cài đặt / thử lại / mở bản đồ
+  const onPill = () => {
+    if (loc.status === 'ready') onLocationPress?.();
+    else if (loc.status === 'blocked' || loc.status === 'services-off') loc.openSettings();
+    else if (loc.status === 'error') loc.refresh();
+    else if (loc.status !== 'checking') loc.request();
+  };
 
   if (title) {
     return (
@@ -89,18 +99,20 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
 
       <View style={styles.rightActions}>
         <Pressable
-          onPress={onLocationPress}
+          onPress={onPill}
+          accessibilityRole="button"
+          accessibilityLabel={locOk ? `Vị trí hiện tại: ${locText}. Mở bản đồ` : locText}
           style={[
             styles.locationPill,
-            { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
+            { backgroundColor: colors.bgCard, borderColor: locOk ? colors.borderSubtle : colors.blue },
           ]}
         >
-          <Ionicons name="location" size={16} color={colors.blue} />
+          <Ionicons name={locOk ? 'location' : 'location-outline'} size={16} color={colors.blue} />
           <Text
             numberOfLines={1}
-            style={[styles.locationText, { color: colors.textPrimary }]}
+            style={[styles.locationText, { color: locOk ? colors.textPrimary : colors.blue }]}
           >
-            {USER_PROFILE.locationShort}
+            {locText}
           </Text>
         </Pressable>
 

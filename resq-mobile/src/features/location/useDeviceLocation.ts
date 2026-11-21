@@ -96,7 +96,8 @@ export function useDeviceLocation(o: LocOptions = {}) {
   return { status, fix, error, recheck, openSettings };
 }
 
-export const LOCATION_MESSAGES: Record<Exclude<LocStatus, 'ready'>, { title: string; body: string; action: string }> = {
+export const LOCATION_MESSAGES: Record<Exclude<LocStatus, 'ready'> | 'idle', { title: string; body: string; action: string }> = {
+  idle: { title: 'Bật định vị để tìm gara gần bạn', body: 'ResQ chỉ dùng vị trí khi bạn cần cứu hộ hoặc tìm địa điểm.', action: 'Bật định vị' },
   checking: { title: 'Đang xác định vị trí…', body: 'Đang bật GPS của thiết bị.', action: '' },
   'services-off': { title: 'Định vị đang tắt', body: 'Bật Vị trí (GPS) trong cài đặt điện thoại để đội cứu hộ tìm đúng chỗ bạn.', action: 'Mở cài đặt' },
   denied: { title: 'Cần quyền vị trí', body: 'ResQ cần vị trí chính xác để gửi xe cứu hộ tới đúng chỗ và dẫn đường.', action: 'Cho phép' },

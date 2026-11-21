@@ -1,155 +1,125 @@
-import React, { useMemo, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+// ReMapsSearchScreen: bản đồ Goong thật + gara / trạm xăng / trạm sạc / bãi đỗ quanh vị trí GPS thật,
+// xếp hạng bởi server. Marker đánh số theo thứ hạng; chạm marker ↔ nổi bật thẻ.
+// Bản đồ chỉ mount ở màn này (không ở Trang chủ) để tiết kiệm quota tải bản đồ Goong.
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { LocationGate } from '../../components/LocationGate';
+import { PlaceCard } from '../../components/PlaceCard';
 import { useAppTheme } from '../../context/ThemeContext';
-import { NEARBY_PLACES, USER_PROFILE } from '../../data/mockData';
-import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
-import { PlaceCategory, RootStackParamList } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { FONTS, METRICS, TYPOGRAPHY } from '../../theme/tokens';
+import { RootStackParamList } from '../../types';
+import { useLocation } from '../../features/location/LocationProvider';
+import { GoongMapView, type MapPoi } from '../../features/route/map/GoongMapView';
+import { CATEGORY_LABEL, placesApi, type PlaceCategory, type RankedPlaceDto } from '../../services/api';
 
-const CHIPS: PlaceCategory[] = ['Gara', 'Trạm xăng', 'Trạm sạc', 'Bãi đỗ'];
+const CATS: Array<{ k: PlaceCategory; icon: React.ComponentProps<typeof Ionicons>['name'] }> = [
+  { k: 'garage', icon: 'construct' },
+  { k: 'fuel', icon: 'flame' },
+  { k: 'charging', icon: 'flash' },
+  { k: 'parking', icon: 'car' },
+];
 
 export const ReMapsSearchScreen: React.FC = () => {
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
+  const { mapKey } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [filter, setFilter] = useState<PlaceCategory>('Gara');
+  const [cat, setCat] = useState<PlaceCategory>('garage');
   const [query, setQuery] = useState('');
+  const [q, setQ] = useState('');
+  const [items, setItems] = useState<RankedPlaceDto[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
 
-  const filtered = useMemo(
-    () =>
-      NEARBY_PLACES.filter(
-        (p) =>
-          p.cat === filter &&
-          (!query.trim() || p.name.toLowerCase().includes(query.trim().toLowerCase()))
-      ),
-    [filter, query]
-  );
+  // Duyệt bản đồ: dùng vị trí chung (Balanced, 30 s / 50 m) — không mở watcher riêng
+  const loc = useLocation();
+  const fix = loc.fix;
+
+  useEffect(() => { const t = setTimeout(() => setQ(query.trim()), 350); return () => clearTimeout(t); }, [query]);
+
+  // chỉ tải lại khi vị trí dịch > ~100 m (làm tròn 3 chữ số thập phân) / đổi nhóm / đổi từ khóa
+  const key = fix ? `${fix.pos[0].toFixed(3)},${fix.pos[1].toFixed(3)}` : '';
+  useEffect(() => {
+    if (!fix) return;
+    let cancelled = false;
+    setError(null); setSelected(null);
+    placesApi.nearby({ lat: fix.pos[1], lng: fix.pos[0], category: cat, radiusM: q ? 20_000 : 6000, limit: 25, q: q || undefined })
+      .then(r => { if (!cancelled) setItems(r.items); })
+      .catch(e => { if (!cancelled) setError((e as Error).message); });
+    return () => { cancelled = true; };
+  }, [key, cat, q]);
+
+  const pois = useMemo<MapPoi[] | null>(() => items?.map((p, i) => ({ id: p.id, pos: p.pos, cat: p.category, label: p.name, rank: i + 1 })) ?? null, [items]);
+  const ordered = useMemo(() => {
+    if (!items || !selected) return items;
+    const s = items.find(i => i.id === selected);
+    return s ? [s, ...items.filter(i => i.id !== selected)] : items;
+  }, [items, selected]);
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <ScreenHeader title="ReMaps · Khám phá quanh đây" />
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Thanh tìm kiếm */}
-        <View
-          style={[
-            styles.searchBar,
-            { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
-          ]}
-        >
-          <Ionicons name="search" size={20} color={colors.blue} />
+      <ScreenHeader title="ReMaps · Quanh đây" />
+      <View style={styles.top}>
+        <View style={[styles.search, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Tìm điểm đến, gara, trạm sạc..."
+            placeholder={`Tìm ${CATEGORY_LABEL[cat].toLowerCase()} theo tên, đường…`}
             placeholderTextColor={colors.textSecondary}
-            style={[styles.searchInput, { color: colors.textPrimary }]}
+            style={[styles.input, { color: colors.textPrimary }]}
+            returnKeyType="search"
           />
+          {query ? <Pressable onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textSecondary} /></Pressable> : null}
         </View>
-
-        {/* Chip lọc */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          {CHIPS.map((c) => {
-            const active = filter === c;
-            return (
-              <Pressable
-                key={c}
-                onPress={() => setFilter(c)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: active ? colors.blue : colors.bgCard,
-                    borderColor: active ? colors.blue : colors.borderSubtle,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    { color: active ? '#FFFFFF' : colors.textPrimary },
-                  ]}
-                >
-                  {c}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {/* Bản đồ nền định vị */}
-        <View style={[styles.mapCard, { borderColor: colors.borderSubtle }]}>
-          <Svg width="100%" height={145} viewBox="0 0 360 145">
-            <Rect width="360" height="145" fill={isDark ? '#132036' : '#E8EFF7'} />
-            <Path
-              d="M-10 45 L370 100 M95 -10 L130 155 M260 -10 L230 155"
-              stroke={isDark ? '#243452' : '#FFFFFF'}
-              strokeWidth="12"
-            />
-            <Circle cx="180" cy="75" r="24" fill="#2563EB" opacity={0.18} />
-            <Circle cx="180" cy="75" r="8" fill="#2563EB" stroke="#FFFFFF" strokeWidth="3" />
-            <Circle cx="110" cy="52" r="6" fill="#10B981" stroke="#FFFFFF" strokeWidth="2" />
-            <Circle cx="255" cy="96" r="6" fill="#F59E0B" stroke="#FFFFFF" strokeWidth="2" />
-          </Svg>
-          <View style={styles.locPill}>
-            <Text style={styles.locPillText}>
-              Vị trí của bạn: {USER_PROFILE.locationShort}
-            </Text>
-          </View>
-        </View>
-
-        {/* Kết quả lân cận */}
-        <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-          {filter} gần bạn ({filtered.length})
-        </Text>
-
-        <View style={{ gap: 12 }}>
-          {filtered.map((p) => (
-            <View
-              key={p.id}
-              style={[
-                styles.placeCard,
-                { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
-              ]}
-            >
-              <View style={{ flex: 1, gap: 2 }}>
-                <Text style={[styles.placeName, { color: colors.textPrimary }]}>
-                  {p.name}
-                </Text>
-                <Text style={[styles.placeAddr, { color: colors.textSecondary }]}>
-                  {p.addr}
-                </Text>
-                <Text style={[styles.placeMeta, { color: colors.greenText }]}>
-                  {p.dist} · {p.eta} · {p.status}
-                </Text>
-              </View>
-              <Pressable
-                onPress={() =>
-                  navigation.navigate('ReMapsNavigation', {
-                    destinationName: p.name,
-                    destCoords: p.coords,
-                  })
-                }
-                style={[styles.goBtn, { backgroundColor: colors.blue }]}
-              >
-                <Ionicons name="navigate" size={16} color="#FFFFFF" />
-                <Text style={styles.goBtnText}>Đi</Text>
-              </Pressable>
-            </View>
+          {CATS.map(c => (
+            <Pressable key={c.k} onPress={() => setCat(c.k)} style={[styles.cat, { backgroundColor: cat === c.k ? colors.blue : colors.bgCard, borderColor: cat === c.k ? colors.blue : colors.borderSubtle }]}>
+              <Ionicons name={c.icon} size={15} color={cat === c.k ? '#FFFFFF' : colors.textSecondary} />
+              <Text style={[styles.catText, { color: cat === c.k ? '#FFFFFF' : colors.textPrimary }]}>{CATEGORY_LABEL[c.k]}</Text>
+            </Pressable>
           ))}
-        </View>
+        </ScrollView>
+      </View>
+
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} />
+        {loc.status === 'ready' ? (
+          <View style={[styles.mapBox, { borderColor: colors.borderSubtle }]}>
+            <GoongMapView
+              mapKey={mapKey}
+              mode="overview"
+              me={fix ? { pos: fix.pos, accuracyM: fix.accuracyM } : null}
+              pois={pois}
+              selectedPoiId={selected}
+              onPoiPress={id => { setSelected(id); scrollRef.current?.scrollTo({ y: 320, animated: true }); }}
+            />
+          </View>
+        ) : null}
+
+        {error ? <Text style={[styles.msg, { color: colors.sos }]}>{error}</Text> : null}
+        {fix && !items && !error ? <ActivityIndicator color={colors.blue} style={{ marginTop: 16 }} /> : null}
+        {items ? (
+          <Text style={[styles.msg, { color: colors.textSecondary }]}>
+            {items.length ? `${items.length} ${CATEGORY_LABEL[cat].toLowerCase()} ${q ? `khớp "${q}"` : 'gần bạn'} · xếp theo mức phù hợp` : `Không tìm thấy ${CATEGORY_LABEL[cat].toLowerCase()} ${q ? `khớp "${q}"` : 'trong 6 km'}`}
+          </Text>
+        ) : null}
+
+        {ordered?.map(p => (
+          <PlaceCard
+            key={p.id}
+            item={p}
+            rank={(items?.findIndex(i => i.id === p.id) ?? 0) + 1}
+            highlighted={p.id === selected}
+            onPress={() => navigation.navigate('PlaceDetail', { placeId: p.id, name: p.name, distanceM: p.distanceM, etaMin: p.etaMin })}
+            onDirections={() => navigation.navigate('ReMapsNavigation', { destinationName: p.name, destCoords: p.pos })}
+          />
+        ))}
       </ScrollView>
     </View>
   );
@@ -157,62 +127,12 @@ export const ReMapsSearchScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scrollContent: { padding: 18, paddingBottom: 32, gap: 14 },
-  searchBar: {
-    minHeight: 52,
-    borderRadius: METRICS.radiusBtn,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    ...SHADOWS.card,
-  },
-  searchInput: { flex: 1, fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.sm },
-  chip: {
-    minHeight: 44,
-    paddingHorizontal: 16,
-    borderRadius: METRICS.radiusPill,
-    borderWidth: 1,
-    justifyContent: 'center',
-  },
-  chipText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs },
-  mapCard: {
-    borderRadius: METRICS.radiusCard,
-    borderWidth: 1,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  locPill: {
-    position: 'absolute',
-    bottom: 10,
-    left: 12,
-    backgroundColor: 'rgba(11, 18, 32, 0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: METRICS.radiusPill,
-  },
-  locPillText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs, color: '#E6EBF2' },
-  sectionTitle: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.sm },
-  placeCard: {
-    borderRadius: METRICS.radiusCard,
-    borderWidth: 1,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    ...SHADOWS.card,
-  },
-  placeName: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.base },
-  placeAddr: { fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.xs },
-  placeMeta: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs, marginTop: 2 },
-  goBtn: {
-    minHeight: METRICS.touchMin,
-    paddingHorizontal: 16,
-    borderRadius: METRICS.radiusBtn,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  goBtnText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs, color: '#FFFFFF' },
+  top: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: METRICS.radiusBtn, paddingHorizontal: 12, minHeight: 46 },
+  input: { flex: 1, fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.sm },
+  cat: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
+  catText: { fontFamily: FONTS.bold, fontSize: 12 },
+  scroll: { padding: 16, paddingBottom: 36, gap: 12 },
+  mapBox: { height: 300, borderRadius: METRICS.radiusCard, borderWidth: 1, overflow: 'hidden' },
+  msg: { fontFamily: FONTS.semiBold, fontSize: 12 },
 });

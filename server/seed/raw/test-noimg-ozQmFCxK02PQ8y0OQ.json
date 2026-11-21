@@ -1,0 +1,248 @@
+{
+ "job": {
+  "name": "test-noimg",
+  "searchStringsArray": [
+   "cây xăng Petrolimex"
+  ],
+  "locationQuery": "Đống Đa, Hà Nội, Việt Nam",
+  "maxCrawledPlacesPerSearch": 2,
+  "maxImages": 0
+ },
+ "runId": "ozQmFCxK02PQ8y0OQ",
+ "status": "SUCCEEDED",
+ "usd": 0.0082,
+ "charged": {
+  "place-scraped": 2,
+  "filter-applied": 0,
+  "place-details-scraped": 0,
+  "contact-details-scraped": 0,
+  "lead-scraped": 0,
+  "lead-email-verified": 0,
+  "social-profile-scraped": 0,
+  "review-scraped": 0,
+  "image-scraped": 0,
+  "competitor-analyzed": 0,
+  "apify-actor-start": 4
+ },
+ "crawledAt": 1795246241549,
+ "items": [
+  {
+   "title": "Trạm Xăng Dầu Petrolimex",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Trạm xăng",
+   "address": "185 Nguyễn Lương Bằng, Đống Đa, Hà Nội, Việt Nam",
+   "neighborhood": "Đống Đa",
+   "street": "185 Nguyễn Lương Bằng",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Đống Đa, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://www.facebook.com/thuyhacosmetics1?locale=vi_VN",
+   "phone": "+84 848 924 222",
+   "phoneUnformatted": "+84848924222",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0138346,
+    "lng": 105.8273332
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.1,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJIXtLFH-rNTERJ-PNKUK9_w8",
+   "categories": [
+    "Trạm xăng"
+   ],
+   "fid": "0x3135ab7f144b7b21:0xfffbd4229cde327",
+   "cid": "1152848121496986407",
+   "reviewsCount": 1210,
+   "reviewsDistribution": {
+    "oneStar": 109,
+    "twoStar": 33,
+    "threeStar": 170,
+    "fourStar": 259,
+    "fiveStar": 639
+   },
+   "imagesCount": 298,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:30:25.154Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Phù hợp cho người khuyết tật": [
+     {
+      "Nhà vệ sinh cho xe lăn": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Tr%E1%BA%A1m%20X%C4%83ng%20D%E1%BA%A7u%20Petrolimex&query_place_id=ChIJIXtLFH-rNTERJ-PNKUK9_w8",
+   "searchPageUrl": "https://www.google.com/maps/search/c%C3%A2y%20x%C4%83ng%20Petrolimex/@21.01921638165514,105.82245180000001,17z?hl=vi",
+   "searchString": "cây xăng Petrolimex",
+   "language": "vi",
+   "rank": 1,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLeVzE8D91W035cMwBElHtSOui570DDH0EQdAEOezkpCQaOfjPm_6m7HwfIdyKVf_uiApq0QS9H7ViWqS2lMtCU2EKwdqh0rbjd0G1-i3Txu15w4nBarCbwpGa4cblVFUg56Zb4U=w426-h240-k-no",
+   "kgmid": "/g/1tfrtzlg",
+   "businessProfileId": "10461860692172655019"
+  },
+  {
+   "title": "Cửa hàng Xăng dầu Petrolimex Số 31",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Trạm xăng",
+   "address": "111 Đ. Láng, Đống Đa, Hà Nội, Việt Nam",
+   "neighborhood": "Đống Đa",
+   "street": "111 Đ. Láng",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Đống Đa, Hà Nội",
+   "countryCode": "VN",
+   "website": "http://gaspetrolimex.vn/",
+   "phone": "+84 24 3562 3483",
+   "phoneUnformatted": "+842435623483",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0048264,
+    "lng": 105.8171315
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 3.7,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJz1dWVZusNTERg2X2JTRl1Ys",
+   "categories": [
+    "Trạm xăng"
+   ],
+   "fid": "0x3135ac9b555657cf:0x8bd5653425f66583",
+   "cid": "10076071015960962435",
+   "reviewsCount": 723,
+   "reviewsDistribution": {
+    "oneStar": 147,
+    "twoStar": 19,
+    "threeStar": 82,
+    "fourStar": 141,
+    "fiveStar": 334
+   },
+   "imagesCount": 510,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:30:25.156Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Phù hợp cho người khuyết tật": [
+     {
+      "Nhà vệ sinh cho xe lăn": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%ADa%20h%C3%A0ng%20X%C4%83ng%20d%E1%BA%A7u%20Petrolimex%20S%E1%BB%91%2031&query_place_id=ChIJz1dWVZusNTERg2X2JTRl1Ys",
+   "searchPageUrl": "https://www.google.com/maps/search/c%C3%A2y%20x%C4%83ng%20Petrolimex/@21.01921638165514,105.82245180000001,17z?hl=vi",
+   "searchString": "cây xăng Petrolimex",
+   "language": "vi",
+   "rank": 3,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLe2MYkruPSvHZ_ydJnvQ_dnsNRz6aviaZztrI2aBFsVS5VJYB-Nr_rtZHUAEEo-dWcY2gzIeZEaxxnQB2ab1gmfEpXdmcF-lyKjlj7f4u7FP_8E2ZUPzEO4NEuRQteUKJKRraan7w=w408-h306-k-no",
+   "kgmid": "/g/11dzt7x342",
+   "businessProfileId": null
+  }
+ ]
+}

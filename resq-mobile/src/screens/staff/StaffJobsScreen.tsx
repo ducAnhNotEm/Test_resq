@@ -4,7 +4,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useIsFocused } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -13,7 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
 import { LocationGate } from '../../components/LocationGate';
-import { useDeviceLocation } from '../../features/location/useDeviceLocation';
+import { useLocation } from '../../features/location/LocationProvider';
 import { realtime, useConnState, useOrder } from '../../features/realtime/realtime';
 import { playHaptic } from '../../features/route/haptics';
 import { useNow } from '../../features/route/useRescueTelemetry';
@@ -37,13 +36,9 @@ export const StaffJobsScreen: React.FC<Props> = ({ navigation }) => {
   const job = order && mine(order) ? order : null;
 
   // ---- vị trí + trạng thái sẵn sàng (phục vụ điều phối) ----
-  const loc = useDeviceLocation({
-    enabled: available || !!job,
-    watch: true,
-    accuracy: Location.Accuracy.Balanced,
-    timeInterval: 15_000,
-    distanceInterval: 30,
-  });
+  // vị trí chung của app (Balanced, 30 s / 50 m) — đủ cho điều phối, không mở watcher thứ hai
+  const loc = useLocation();
+  useEffect(() => { if ((available || job) && loc.status === 'idle') loc.request(); }, [available, job, loc.status, loc.request]);
   const lastSent = useRef<string>('');
   useEffect(() => {
     const f = loc.fix;
@@ -122,7 +117,7 @@ export const StaffJobsScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <Switch value={available} onValueChange={setAvailable} trackColor={{ false: '#334155', true: colors.green }} />
           </View>
-          {available || job ? <LocationGate status={loc.status} onRecheck={loc.recheck} onOpenSettings={loc.openSettings} compact /> : null}
+          {available || job ? <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} compact /> : null}
         </View>
 
         {loading ? <ActivityIndicator color={colors.blue} /> : null}

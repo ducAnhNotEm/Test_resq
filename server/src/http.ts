@@ -10,6 +10,8 @@ import { AttemptLimiter, verifyPassword, type TokenSigner } from './auth.ts';
 import type { GoongClient } from './goong.ts';
 import type { RealtimeHub } from './realtime.ts';
 import { computeAlerts, computeStats, refineCandidates } from './stats.ts';
+import type { PlaceStore } from './placeStore.ts';
+import { openState, rankOrdersForPlace, rankPlaces, SERVICE_LABEL, type Issue, type Place, type PlaceCategory, type RankedPlace, type Trust } from './places.ts';
 
 export interface AppDeps {
   store: Store;
@@ -19,6 +21,8 @@ export interface AppDeps {
   realtime: RealtimeHub | null;
   mapKey: string;
   adminDir: string;
+  places?: PlaceStore;
+  placeImagesDir?: string;
 }
 
 interface Ctx {
@@ -120,6 +124,12 @@ export function createApp(deps: AppDeps) {
       injured: typeof body.injured === 'boolean' ? body.injured : null,
       priority: body.priority === 'sos' || body.injured === true ? 'sos' : 'normal',
       vehiclePlate: str(body.vehiclePlate, 'biển số', { max: 20 }) ?? me.vehicle_plate,
+      // đơn vị khách chọn: tên lấy từ dữ liệu server nếu có (không tin tên client gửi)
+      placeId: str(body.placeId, 'placeId', { max: 128 }) ?? null,
+      placeName: (() => {
+        const id = str(body.placeId, 'placeId', { max: 128 });
+        return id ? deps.places?.byId.get(id)?.name ?? str(body.placeName, 'tên đơn vị', { max: 200 }) ?? null : null;
+      })(),
     });
   });
 
@@ -271,6 +281,89 @@ export function createApp(deps: AppDeps) {
   add('POST', '/api/admin/orders/:id/unassign', ['admin'], ({ params, body, user }) =>
     orders.unassign(params.id, user, str(body.reason, 'lý do', { max: 300 }) ?? ''));
 
+  // ================= ĐỊA ĐIỂM: gara / trạm xăng / trạm sạc / bãi đỗ =================
+  const CATS = new Set<PlaceCategory>(['garage', 'fuel', 'charging', 'parking']);
+  const ISSUE_SET = new Set<Issue>(['tire', 'battery', 'tow', 'unknown', 'fuel', 'lockout', 'accident', 'engine']);
+  const TRUSTS = new Set<Trust>(['high', 'medium', 'low']);
+  const placeStore = () => {
+    if (!deps.places || deps.places.size === 0) throw new ApiError(503, 'places_unavailable', 'Chưa có dữ liệu địa điểm (chạy npm run build-places)');
+    return deps.places;
+  };
+  const placeDto = (p: Place, now = store.now()) => ({
+    id: p.id, name: p.name, category: p.category, services: p.services, serviceLabels: p.services.map(s => SERVICE_LABEL[s]),
+    address: p.address, district: p.district, pos: p.pos, phone: p.phone, website: p.website,
+    rating: p.rating, reviewsCount: p.reviewsCount, open: openState(p.hours, now), hoursText: p.hoursText,
+    images: p.images.map(f => `/media/places/${f}`), trust: p.trust, confidence: p.confidence, flags: p.flags,
+    googleCategory: p.googleCategory, sourceUrl: p.sourceUrl, updatedAt: p.updatedAt,
+  });
+  const rankedDto = (r: RankedPlace) => ({
+    ...placeDto(r.place), distanceM: r.distanceM, etaMin: r.etaMin, etaSource: r.etaSource, score: r.score, breakdown: r.breakdown, reasons: r.reasons,
+  });
+
+  add('GET', '/api/places/meta', ANY, () => {
+    const s = deps.places;
+    return { count: s?.counts() ?? null, generatedAt: s?.generatedAt ?? null, source: s?.source ?? null };
+  });
+
+  /** Khách → địa điểm: xếp hạng theo ETA, đúng dịch vụ, đang mở, đánh giá, độ tin cậy. */
+  add('GET', '/api/places/nearby', ANY, async ({ query }) => {
+    const ps = placeStore();
+    const lat = num(query.get('lat'), 'lat', { min: -90, max: 90, required: true })!;
+    const lng = num(query.get('lng'), 'lng', { min: -180, max: 180, required: true })!;
+    const cat = query.get('category') as PlaceCategory | null;
+    const issue = query.get('issue') as Issue | null;
+    const minTrust = query.get('minTrust') as Trust | null;
+    const q = {
+      origin: [lng, lat] as [number, number],
+      category: cat && CATS.has(cat) ? cat : undefined,
+      issue: issue && ISSUE_SET.has(issue) ? issue : undefined,
+      radiusM: num(query.get('radiusM'), 'radiusM', { min: 200, max: 30_000 }) ?? 8000,
+      limit: num(query.get('limit'), 'limit', { min: 1, max: 50 }) ?? 20,
+      openNow: query.get('openNow') === '1',
+      minTrust: minTrust && TRUSTS.has(minTrust) ? minTrust : undefined,
+      q: str(query.get('q'), 'q', { max: 80 }),
+      now: store.now(),
+    };
+    let ranked = rankPlaces(ps.index, q);
+    // ETA thật (Goong DistanceMatrix) cho top 10 — chỉ khi được yêu cầu; cache 10 phút
+    if (query.get('refine') === '1' && goong.enabled && ranked.length) {
+      try {
+        const top = rankPlaces(ps.index, { ...q, limit: 10 });
+        const secs = await goong.durationsFrom(q.origin, top.map(r => r.place.pos));
+        const etaOverride = new Map<string, number>();
+        top.forEach((r, i) => { const v = secs[i]; if (v != null) etaOverride.set(r.place.id, Math.max(1, Math.round(v / 60))); });
+        ranked = rankPlaces(ps.index, { ...q, etaOverride });
+      } catch { /* Goong lỗi / hết quota: giữ ETA ước tính */ }
+    }
+    return { origin: q.origin, count: ranked.length, items: ranked.map(rankedDto) };
+  });
+
+  add('GET', '/api/places/:id', ANY, ({ params }) => {
+    const p = placeStore().byId.get(params.id);
+    if (!p) throw new ApiError(404, 'place_not_found', 'Không tìm thấy địa điểm');
+    return placeDto(p);
+  });
+
+  /** Địa điểm → khách: đơn đang chờ quanh gara này, ưu tiên SOS / chờ lâu / gần. */
+  add('GET', '/api/places/:id/orders', ['admin', 'staff'], ({ params, query }) => {
+    const p = placeStore().byId.get(params.id);
+    if (!p) throw new ApiError(404, 'place_not_found', 'Không tìm thấy địa điểm');
+    const active = store.listOrders({ status: ['requested', 'assigned'], limit: 500 }).items;
+    const ranked = rankOrdersForPlace(p, active, { radiusM: num(query.get('radiusM'), 'radiusM', { min: 500, max: 50_000 }) ?? 15_000, now: store.now() });
+    return { place: placeDto(p), items: ranked.map(r => ({ order: r.order, distanceM: r.distanceM, etaMin: r.etaMin, score: r.score, reasons: r.reasons })) };
+  });
+
+  /** Điều phối: gara phù hợp nhất cho một đơn (vị trí + sự cố của khách). */
+  add('GET', '/api/admin/orders/:id/places', ['admin'], ({ params, query }) => {
+    const o = orders.get(params.id);
+    const ranked = rankPlaces(placeStore().index, {
+      origin: [o.location.lng, o.location.lat], category: 'garage',
+      issue: ISSUE_SET.has(o.issue as Issue) ? (o.issue as Issue) : undefined,
+      radiusM: num(query.get('radiusM'), 'radiusM', { min: 500, max: 30_000 }) ?? 10_000, limit: 10, now: store.now(),
+    });
+    return { items: ranked.map(rankedDto) };
+  });
+
   // ================= ADMIN: ĐIỀU HÀNH =================
   const onlineStaff = () => {
     const now = store.now();
@@ -304,6 +397,7 @@ export function createApp(deps: AppDeps) {
     }
     if (url.pathname === '/' ) { res.writeHead(302, { Location: '/admin/' }); res.end(); return; }
     if (url.pathname.startsWith('/admin')) return serveStatic(deps.adminDir, url.pathname.slice('/admin'.length) || '/', res);
+    if (url.pathname.startsWith('/media/places/') && deps.placeImagesDir) return serveImage(deps.placeImagesDir, url.pathname.slice('/media/places/'.length), res);
     if (!url.pathname.startsWith('/api/')) return json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy' } });
 
     // API dùng token Bearer (không cookie) → mở CORS an toàn cho Expo web / công cụ
@@ -383,6 +477,18 @@ const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json',
 };
+
+/** Ảnh địa điểm: tên file cố định theo nội dung → cache 30 ngày. */
+async function serveImage(dir: string, name: string, res: ServerResponse): Promise<void> {
+  if (!/^[a-f0-9]{12}-\d\.webp$/.test(name)) return json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy ảnh' } });
+  try {
+    const buf = await readFile(join(dir, name));
+    res.writeHead(200, { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=2592000, immutable', 'Access-Control-Allow-Origin': '*' });
+    res.end(buf);
+  } catch {
+    json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy ảnh' } });
+  }
+}
 
 async function serveStatic(root: string, path: string, res: ServerResponse): Promise<void> {
   const rel = normalize(path === '/' ? '/index.html' : path).replace(/^([/\\])+/, '');

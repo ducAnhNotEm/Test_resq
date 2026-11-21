@@ -111,7 +111,7 @@ export class OrderService {
 
   create(customerId: number, input: {
     lat: number; lng: number; accuracyM: number | null; address: string; issue: string; note: string;
-    injured: boolean | null; priority: 'normal' | 'sos'; vehiclePlate: string;
+    injured: boolean | null; priority: 'normal' | 'sos'; vehiclePlate: string; placeId?: string | null; placeName?: string | null;
   }): Order {
     const active = this.store.listOrders({ customerId, status: ACTIVE_STATUSES, limit: 1 }).items[0];
     if (active) throw new ApiError(409, 'order_active', `Bạn đang có đơn ${active.id} chưa hoàn thành`);
@@ -119,6 +119,7 @@ export class OrderService {
       const created = this.store.insertOrder({ customerId, ...input });
       this.store.addEvent(created.id, customerId, 'customer', 'created', {
         priority: input.priority, injured: input.injured, accuracyM: input.accuracyM, address: input.address,
+        ...(input.placeId ? { placeId: input.placeId, placeName: input.placeName } : {}),
       });
       return created;
     });

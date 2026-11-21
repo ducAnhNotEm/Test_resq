@@ -18,6 +18,7 @@ import {
 import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/context/AuthContext';
+import { LocationProvider } from './src/features/location/LocationProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -84,7 +85,9 @@ export default function App() {
     <SafeAreaProvider>
       <ThemeProvider>
         <AuthProvider>
-          <RootNavigationShell />
+          <LocationProvider>
+            <RootNavigationShell />
+          </LocationProvider>
         </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>

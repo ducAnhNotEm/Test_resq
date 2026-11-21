@@ -4,9 +4,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { FONTS, METRICS, TYPOGRAPHY } from '../theme/tokens';
 import { useAppTheme } from '../context/ThemeContext';
-import { LOCATION_MESSAGES, type LocStatus } from '../features/location/useDeviceLocation';
+import { LOCATION_MESSAGES } from '../features/location/useDeviceLocation';
+import type { LocationStatus } from '../features/location/LocationProvider';
 
-interface Props { status: LocStatus; onRecheck: () => void; onOpenSettings: () => void; compact?: boolean }
+interface Props { status: LocationStatus; onRecheck: () => void; onOpenSettings: () => void; compact?: boolean }
 
 export const LocationGate: React.FC<Props> = ({ status, onRecheck, onOpenSettings, compact }) => {
   const { colors } = useAppTheme();

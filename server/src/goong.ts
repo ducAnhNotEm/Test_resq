@@ -67,6 +67,29 @@ export class GoongClient {
     return out;
   }
 
+  private matrixCache = new TtlCache<Array<number | null>>(500, 10 * 60_000);
+
+  /**
+   * Thời gian chạy xe thật (giây) từ 1 điểm (khách) tới nhiều điểm (gara). Cache 10 phút theo lưới ~110 m
+   * để khách kéo qua lại / mở lại danh sách không tốn thêm quota.
+   */
+  async durationsFrom(origin: LngLat, dests: LngLat[], vehicle = 'car'): Promise<Array<number | null>> {
+    if (!dests.length) return [];
+    const r3 = (p: LngLat) => `${p[1].toFixed(3)},${p[0].toFixed(3)}`;
+    const key = `${vehicle}|${r3(origin)}|${dests.map(r3).join(';')}`;
+    const hit = this.matrixCache.get(key);
+    if (hit) return hit;
+    const body = await this.get('/DistanceMatrix', {
+      origins: `${origin[1]},${origin[0]}`,
+      destinations: dests.map(d => `${d[1]},${d[0]}`).join('|'),
+      vehicle,
+    }) as { rows?: Array<{ elements?: Array<{ status?: string; duration?: { value?: number } }> }> };
+    const els = body?.rows?.[0]?.elements ?? [];
+    const out = dests.map((_, i) => (els[i]?.status === 'OK' && typeof els[i]?.duration?.value === 'number' ? els[i]!.duration!.value! : null));
+    this.matrixCache.set(key, out);
+    return out;
+  }
+
   /** Thời gian chạy xe thật (giây) từ nhiều tài xế tới 1 điểm. Dùng để điều phối theo ETA, không theo chim bay. */
   async durations(origins: LngLat[], dest: LngLat, vehicle = 'car'): Promise<Array<number | null>> {
     if (!origins.length) return [];

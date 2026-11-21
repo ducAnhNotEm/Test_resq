@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Linking,
   Alert,
   Modal,
   Pressable,
@@ -12,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../context/ThemeContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../theme/tokens';
-import { USER_PROFILE } from '../data/mockData';
+import { useLocation } from '../features/location/LocationProvider';
 
 interface SosHoldModalProps {
   onCompleteSos: () => void;
@@ -28,6 +29,7 @@ export const SosHoldModal: React.FC<SosHoldModalProps> = ({
   onSimulateCrash,
 }) => {
   const { sosModalVisible, closeSosModal } = useAppTheme();
+  const { place } = useLocation();
   const insets = useSafeAreaInsets();
   const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
@@ -138,9 +140,9 @@ export const SosHoldModal: React.FC<SosHoldModalProps> = ({
 
           <Text style={styles.heading}>Nhấn giữ 3 giây để gọi cứu hộ</Text>
           <Text style={styles.desc}>
-            Thả sớm sẽ tự động hủy. Khi hoàn tất, hệ thống gửi vị trí{' '}
-            <Text style={styles.bold}>{USER_PROFILE.locationShort}</Text> & xe{' '}
-            <Text style={styles.mono}>{USER_PROFILE.plate}</Text> tới tổng đài ResQ, 115 và người thân.
+            Thả sớm sẽ tự động hủy. Khi hoàn tất, ResQ gửi yêu cầu cứu hộ khẩn cấp kèm vị trí GPS{' '}
+            <Text style={styles.bold}>{place?.shortLabel ?? 'hiện tại'}</Text> của bạn tới tổng đài.
+            Có người bị thương: gọi 115 ngay.
           </Text>
         </View>
 
@@ -159,12 +161,12 @@ export const SosHoldModal: React.FC<SosHoldModalProps> = ({
           <Pressable
             onPress={() => {
               closeSosModal();
-              Alert.alert('Hotline khẩn cấp', `Đang kết nối tổng đài ${USER_PROFILE.hotline}...`);
+              void Linking.openURL('tel:19006868');
             }}
             style={styles.hotlineBtn}
           >
             <Ionicons name="call" size={20} color="#FFFFFF" />
-            <Text style={styles.hotlineText}>Gọi trực tiếp Hotline {USER_PROFILE.hotline}</Text>
+            <Text style={styles.hotlineText}>Gọi tổng đài 1900 6868</Text>
           </Pressable>
         </View>
       </View>

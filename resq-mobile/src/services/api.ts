@@ -41,6 +41,10 @@ export async function api<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: 
   const data = await res.json().catch(() => null) as { error?: { code?: string; message?: string } } | null;
   if (!res.ok) {
     if (res.status === 401 && token) onUnauthorized?.();
+    // Route chưa có trên server (server đang chạy bản cũ): không đưa chuỗi kỹ thuật "API không tồn tại" lên màn hình
+    if (res.status === 404 && data?.error?.code === 'not_found' && path.startsWith('/api/')) {
+      throw new ApiError(404, 'route_missing', 'Máy chủ chưa có tính năng này — cần cập nhật server.');
+    }
     throw new ApiError(res.status, data?.error?.code ?? 'http_error', data?.error?.message ?? `Lỗi máy chủ (${res.status})`);
   }
   return data as T;
@@ -68,6 +72,8 @@ export interface Order {
   staff: { id: number; name: string; phone: string; vehiclePlate: string; unit: string } | null;
   cancelReason: string | null;
   rating: number | null;
+  /** Đơn vị khách chọn trong danh sách gara (nếu có). */
+  place: { id: string; name: string } | null;
   createdAt: number;
   updatedAt: number;
   times: Partial<Record<'assigned' | 'enroute' | 'arrived' | 'inService' | 'completed' | 'cancelled', number>>;
@@ -94,7 +100,7 @@ export const ISSUE_LABEL: Record<string, string> = {
 export const ordersApi = {
   active: () => api<Order | null>('GET', '/api/orders/active'),
   get: (id: string) => api<Order>('GET', `/api/orders/${encodeURIComponent(id)}`),
-  create: (b: { lat: number; lng: number; accuracyM: number | null; address: string; issue: string; note: string; injured: boolean | null; priority: 'normal' | 'sos'; vehiclePlate?: string }) =>
+  create: (b: { lat: number; lng: number; accuracyM: number | null; address: string; issue: string; note: string; injured: boolean | null; priority: 'normal' | 'sos'; vehiclePlate?: string; placeId?: string; placeName?: string }) =>
     api<Order>('POST', '/api/orders', b),
   cancel: (id: string, reason: string) => api<Order>('POST', `/api/orders/${encodeURIComponent(id)}/cancel`, { reason }),
   rate: (id: string, rating: number) => api<Order>('POST', `/api/orders/${encodeURIComponent(id)}/rate`, { rating }),
@@ -106,7 +112,7 @@ export const ordersApi = {
 };
 
 export const geoApi = {
-  reverse: (lat: number, lng: number) => api<{ address: string; name: string | null }>('GET', `/api/geo/reverse?lat=${lat}&lng=${lng}`),
+  reverse: (lat: number, lng: number) => api<{ address: string; name: string | null; compound: Record<string, string> | null }>('GET', `/api/geo/reverse?lat=${lat}&lng=${lng}`),
   directions: (from: [number, number], to: [number, number], vehicle: string, signal?: AbortSignal) => {
     // signal của RouteTracker: hủy khi đổi đích / tính lại
     const p = api<unknown>('GET', `/api/geo/directions?origin=${from[1]},${from[0]}&destination=${to[1]},${to[0]}&vehicle=${encodeURIComponent(vehicle)}`);
@@ -118,6 +124,66 @@ export const geoApi = {
     });
   },
 };
+
+// ---- địa điểm (gara / trạm xăng / trạm sạc / bãi đỗ) ----
+export type PlaceCategory = 'garage' | 'fuel' | 'charging' | 'parking';
+export type Trust = 'high' | 'medium' | 'low';
+export interface PlaceOpen { state: 'open' | 'closing-soon' | 'closed' | 'unknown'; minutesLeft?: number }
+
+export interface PlaceDto {
+  id: string;
+  name: string;
+  category: PlaceCategory;
+  services: string[];
+  serviceLabels: string[];
+  address: string;
+  district: string | null;
+  pos: [number, number];
+  phone: string | null;
+  website: string | null;
+  rating: number | null;
+  reviewsCount: number;
+  open: PlaceOpen;
+  hoursText: string[];
+  images: string[];            // đường dẫn tương đối /media/places/… — ghép với getApiUrl()
+  trust: Trust;
+  confidence: number;
+  flags: string[];
+  googleCategory: string;
+  sourceUrl: string | null;
+  updatedAt: number;
+}
+
+export interface RankedPlaceDto extends PlaceDto {
+  distanceM: number;
+  etaMin: number;
+  etaSource: 'estimate' | 'goong';
+  score: number;
+  reasons: string[];
+}
+
+export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
+  garage: 'Gara', fuel: 'Trạm xăng', charging: 'Trạm sạc', parking: 'Bãi đỗ',
+};
+
+export const placesApi = {
+  nearby: (p: { lat: number; lng: number; category?: PlaceCategory; issue?: string; radiusM?: number; limit?: number; openNow?: boolean; q?: string; refine?: boolean; minTrust?: Trust }) => {
+    const qs = new URLSearchParams({ lat: String(p.lat), lng: String(p.lng) });
+    if (p.category) qs.set('category', p.category);
+    if (p.issue) qs.set('issue', p.issue);
+    if (p.radiusM) qs.set('radiusM', String(p.radiusM));
+    if (p.limit) qs.set('limit', String(p.limit));
+    if (p.openNow) qs.set('openNow', '1');
+    if (p.q) qs.set('q', p.q);
+    if (p.refine) qs.set('refine', '1');
+    if (p.minTrust) qs.set('minTrust', p.minTrust);
+    return api<{ origin: [number, number]; count: number; items: RankedPlaceDto[] }>('GET', `/api/places/nearby?${qs}`, undefined, 30_000);
+  },
+  get: (id: string) => api<PlaceDto>('GET', `/api/places/${encodeURIComponent(id)}`),
+};
+
+/** URL tuyệt đối cho ảnh địa điểm (server phục vụ /media/places/*.webp). */
+export const mediaUrl = (path: string): string => `${getApiUrl()}${path}`;
 
 export const configApi = {
   get: () => api<{ goongMapKey: string; geocoding: boolean }>('GET', '/api/config'),

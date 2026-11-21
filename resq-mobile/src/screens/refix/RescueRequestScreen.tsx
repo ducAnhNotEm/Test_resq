@@ -6,7 +6,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import * as Location from 'expo-location';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { LocationGate } from '../../components/LocationGate';
@@ -14,7 +13,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
-import { useDeviceLocation } from '../../features/location/useDeviceLocation';
+import { useLocation } from '../../features/location/LocationProvider';
 import { GoongMapView } from '../../features/route/map/GoongMapView';
 import { haversine } from '../../features/route/navGeometry';
 import { ApiError, geoApi, ISSUE_LABEL, ordersApi } from '../../services/api';
@@ -38,6 +37,10 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
   const { colors } = useAppTheme();
   const { user, mapKey } = useAuth();
   const sos = !!route.params?.sos;
+  const placeName = route.params?.placeName ?? null;   // đơn vị khách chọn từ danh sách gara
+  const placeId = route.params?.placeId ?? null;
+  const support = route.params?.support ?? null;         // vị trí đã chốt ở ReFix
+  const [showIssues, setShowIssues] = useState(sos || !route.params?.issueId);
   const [issue, setIssue] = useState<string>(sos ? 'accident' : route.params?.issueId ?? 'unknown');
   const [injured, setInjured] = useState<Injured>(sos ? 'unknown' : 'no');
   const [note, setNote] = useState('');
@@ -46,14 +49,22 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
   const [geoBusy, setGeoBusy] = useState(false);
   const [sending, setSending] = useState(false);
 
-  // GPS độ chính xác cao, tiếp tục theo dõi tới khi gửi: sai số thường giảm dần trong 10-20 giây đầu
-  const loc = useDeviceLocation({ watch: true, accuracy: Location.Accuracy.High, timeInterval: 2000, distanceInterval: 3 });
-  const fix = loc.fix;
+  // GPS chính xác cao trong lúc ở màn này (watcher chung tự nâng nhịp, rời màn tự hạ)
+  const loc = useLocation('high');
+  const live = loc.fix;
+  // Vị trí GỬI ĐI: đã chốt ở ReFix thì giữ nguyên; chưa có thì bám GPS tới lúc gửi
+  const [pinned, setPinned] = useState<{ pos: [number, number]; accuracyM: number | null } | null>(
+    support ? { pos: support.pos, accuracyM: support.accuracyM } : null,
+  );
+  const fix = pinned ?? (live ? { pos: live.pos, accuracyM: live.accuracyM } : null);
+  const movedM = pinned && live ? haversine(pinned.pos, live.pos) : 0;
+  const usePinnedAddress = !!support && pinned?.pos === support.pos;
 
-  // địa chỉ tra ngược: chỉ gọi lại khi vị trí dịch > 25 m (GPS rung không tốn request)
+  // địa chỉ tra ngược: chỉ khi vị trí gửi đi dịch > 25 m (GPS rung không tốn request)
   const lastGeo = useRef<[number, number] | null>(null);
   useEffect(() => {
     if (!fix) return;
+    if (usePinnedAddress && support?.address) { setAddress(support.address); return; }
     if (lastGeo.current && haversine(lastGeo.current, fix.pos) < 25) return;
     lastGeo.current = fix.pos;
     let cancelled = false;
@@ -63,7 +74,7 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
       .catch(() => { if (!cancelled) setAddress(null); })
       .finally(() => { if (!cancelled) setGeoBusy(false); });
     return () => { cancelled = true; };
-  }, [fix]);
+  }, [fix?.pos[0], fix?.pos[1], usePinnedAddress]);
 
   const chooseInjured = (v: Injured) => {
     setInjured(v);
@@ -89,7 +100,10 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
     try {
       const o = await ordersApi.create({
         lat: fix.pos[1], lng: fix.pos[0], accuracyM: fix.accuracyM,
-        address: address ?? '', issue, note: note.trim(),
+        address: address ?? '', issue,
+        note: note.trim(),
+        placeId: placeId ?? undefined,
+        placeName: placeName ?? undefined,
         injured: injured === 'unknown' ? null : injured === 'yes',
         priority: sos || injured === 'yes' ? 'sos' : 'normal',
         vehiclePlate: plate.trim() || undefined,
@@ -118,8 +132,19 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Vị trí */}
-        <LocationGate status={loc.status} onRecheck={loc.recheck} onOpenSettings={loc.openSettings} />
-        {loc.status === 'ready' ? (
+        {!fix ? <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} /> : null}
+        {pinned && movedM > 200 ? (
+          <View style={[styles.card, { backgroundColor: colors.amberBg, borderColor: colors.amber, flexDirection: 'row', alignItems: 'center' }]}>
+            <Ionicons name="walk" size={20} color={colors.amberText} />
+            <Text style={[styles.label, { color: colors.amberText, flex: 1 }]}>
+              Bạn đã di chuyển khoảng {Math.round(movedM / 10) * 10} m so với vị trí đã chọn.
+            </Text>
+            <Pressable onPress={() => live && setPinned({ pos: live.pos, accuracyM: live.accuracyM })} style={[styles.seg, { backgroundColor: colors.amber, borderColor: 'transparent' }]}>
+              <Text style={[styles.segText, { color: '#FFFFFF' }]}>Dùng vị trí mới</Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {fix ? (
           <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
             <View style={styles.mapBox}>
               <GoongMapView
@@ -131,7 +156,7 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.locRow}>
               <Ionicons name="location" size={20} color={colors.sos} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Vị trí cứu hộ (GPS của bạn)</Text>
+                <Text style={[styles.label, { color: colors.textSecondary }]}>{pinned ? 'Vị trí cứu hộ (đã chốt)' : 'Vị trí cứu hộ (GPS của bạn)'}</Text>
                 <Text style={[styles.locText, { color: colors.textPrimary }]}>
                   {!fix ? 'Đang chờ tín hiệu GPS…' : geoBusy && !address ? 'Đang tìm địa chỉ…' : address ?? `${fix.pos[1].toFixed(5)}, ${fix.pos[0].toFixed(5)}`}
                 </Text>
@@ -141,6 +166,16 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
                   </Text>
                 ) : null}
               </View>
+            </View>
+          </View>
+        ) : null}
+
+        {placeName ? (
+          <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.blue, flexDirection: "row", alignItems: "center" }]}>
+            <Ionicons name="construct" size={20} color={colors.blue} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>Đơn vị bạn chọn (tổng đài sẽ ưu tiên liên hệ)</Text>
+              <Text style={[styles.title, { color: colors.textPrimary }]}>{placeName}</Text>
             </View>
           </View>
         ) : null}
@@ -171,8 +206,15 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* Sự cố */}
         <View style={{ gap: 8 }}>
-          <Text style={[styles.label, { color: colors.textSecondary }]}>Sự cố</Text>
-          <View style={styles.issueGrid}>
+          <View style={styles.issueHead}>
+            <Text style={[styles.label, { color: colors.textSecondary }]}>
+              Sự cố{showIssues ? '' : `: ${ISSUE_LABEL[issue] ?? issue}`}
+            </Text>
+            {!showIssues ? (
+              <Pressable onPress={() => setShowIssues(true)} hitSlop={8}><Text style={[styles.label, { color: colors.blue }]}>Đổi</Text></Pressable>
+            ) : null}
+          </View>
+          {showIssues ? <View style={styles.issueGrid}>
             {ISSUES.map(i => (
               <Pressable
                 key={i.id}
@@ -185,7 +227,7 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
                 <Text numberOfLines={1} style={[styles.issueText, { color: colors.textPrimary }]}>{ISSUE_LABEL[i.id]}</Text>
               </Pressable>
             ))}
-          </View>
+          </View> : null}
         </View>
 
         <View style={{ gap: 6 }}>
@@ -240,6 +282,7 @@ const styles = StyleSheet.create({
   segText: { fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.xs },
   callBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: METRICS.radiusBtn, minHeight: 44 },
   callText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.sm, color: '#FFFFFF' },
+  issueHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   issueGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   issue: { width: '48%', flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10 },
   issueText: { fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.xs, flex: 1 },

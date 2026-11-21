@@ -1,153 +1,111 @@
-import React, { useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+// ReFixIssueScreen: một câu hỏi — "Xe gặp chuyện gì?".
+// Vị trí THẬT (không còn R6): màn này yêu cầu GPS chính xác cao trong lúc mở. Bấm sự cố → CHỐT vị trí hỗ trợ
+// (SupportLocation) và chuyển nguyên vị trí đó sang GarageList → RescueRequest.
+import React from 'react';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { LocationGate } from '../../components/LocationGate';
 import { useAppTheme } from '../../context/ThemeContext';
-import { ISSUES_DATA, USER_PROFILE } from '../../data/mockData';
+import { ISSUES_DATA } from '../../data/mockData';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
-import { IssueId, RootStackParamList } from '../../types';
+import { RootStackParamList, SupportLocation } from '../../types';
+import { useLocation } from '../../features/location/LocationProvider';
 
 export const ReFixIssueScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [selectedIssue, setSelectedIssue] = useState<IssueId>('tire');
+  const loc = useLocation('high');
+  const { fix, place } = loc;
+  const ready = loc.status === 'ready' && !!fix;
 
-  const getAccent = (type: 'sos' | 'amber' | 'blue' | 'green') => {
-    switch (type) {
-      case 'sos':
-        return { bg: colors.sosBg, fg: colors.sos };
-      case 'amber':
-        return { bg: colors.amberBg, fg: colors.amber };
-      case 'blue':
-        return { bg: colors.blueBg, fg: colors.blue };
-      default:
-        return { bg: colors.greenBg, fg: colors.green };
-    }
+  const accent = (type: 'sos' | 'amber' | 'blue' | 'green') =>
+    type === 'sos' ? { bg: colors.sosBg, fg: colors.sos }
+      : type === 'amber' ? { bg: colors.amberBg, fg: colors.amber }
+      : type === 'blue' ? { bg: colors.blueBg, fg: colors.blue }
+      : { bg: colors.greenBg, fg: colors.green };
+
+  const choose = (issueId: (typeof ISSUES_DATA)[number]['id']) => {
+    if (!fix) return;
+    const support: SupportLocation = {
+      pos: fix.pos, accuracyM: fix.accuracyM, address: place?.address ?? null, source: 'gps', capturedAt: fix.ts,
+    };
+    navigation.navigate('GarageList', { issueId, initialTab: issueId === 'tow' ? 'tow' : 'repair', support });
   };
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <ScreenHeader title="ReFix · Chọn sự cố" />
+      <ScreenHeader title="Cứu hộ" />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.question, { color: colors.textPrimary }]}>Xe gặp chuyện gì?</Text>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Vị trí hiện tại */}
-        <View
-          style={[
-            styles.locationCard,
-            { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
-          ]}
-        >
-          <View style={[styles.locIcon, { backgroundColor: colors.blueBg }]}>
+        {/* Vị trí cần hỗ trợ — thật */}
+        {ready ? (
+          <View style={[styles.locCard, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
             <Ionicons name="location" size={22} color={colors.blue} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.locLabel, { color: colors.textSecondary }]}>Bạn đang ở</Text>
+              <Text numberOfLines={2} style={[styles.locMain, { color: colors.textPrimary }]}>
+                {place?.address ?? 'Đang tìm địa chỉ…'}
+              </Text>
+              {fix.accuracyM != null ? (
+                <Text style={[styles.locAcc, { color: fix.accuracyM > 100 ? colors.sos : colors.greenText }]}>
+                  Sai số ±{Math.round(fix.accuracyM)} m{fix.accuracyM > 100 ? ' — ra chỗ thoáng rồi bấm Định vị lại' : ''}
+                </Text>
+              ) : null}
+            </View>
+            <Pressable onPress={loc.refresh} accessibilityRole="button" style={[styles.gpsBtn, { backgroundColor: colors.bgSubtle }]}>
+              <Ionicons name="locate" size={18} color={colors.blue} />
+              <Text style={[styles.gpsText, { color: colors.blue }]}>Định vị lại</Text>
+            </Pressable>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.locLabel, { color: colors.textSecondary }]}>
-              Vị trí cần hỗ trợ
-            </Text>
-            <Text style={[styles.locMain, { color: colors.textPrimary }]}>
-              {USER_PROFILE.locationShort}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={[styles.locSub, { color: colors.textSecondary }]}
-            >
-              72A Nguyễn Trãi, Thanh Xuân, HN
-            </Text>
+        ) : loc.status === 'checking' ? (
+          <View style={[styles.locCard, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
+            <ActivityIndicator color={colors.blue} />
+            <Text style={[styles.locMain, { color: colors.textSecondary }]}>Đang xác định vị trí của bạn…</Text>
           </View>
-          <Pressable
-            onPress={() =>
-              Alert.alert('Định vị GPS', 'Đã cập nhật tọa độ chính xác (sai số < 3m).')
-            }
-            style={[styles.gpsBtn, { backgroundColor: colors.bgSubtle }]}
-          >
-            <Ionicons name="locate" size={18} color={colors.blue} />
-            <Text style={[styles.gpsBtnText, { color: colors.blue }]}>Định vị</Text>
-          </Pressable>
-        </View>
+        ) : (
+          <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} />
+        )}
 
-        <View>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>
-            Xe bạn đang gặp sự cố gì?
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Hệ thống sẽ gợi ý gara sửa tại chỗ hoặc xe kéo phù hợp gần nhất.
-          </Text>
-        </View>
-
-        {/* 4 thẻ sự cố */}
-        <View style={{ gap: 12 }}>
-          {ISSUES_DATA.map((item) => {
-            const accent = getAccent(item.accentType);
-            const active = selectedIssue === item.id;
+        {/* 4 sự cố */}
+        <View style={{ gap: 12, opacity: ready ? 1 : 0.45 }}>
+          {ISSUES_DATA.map(item => {
+            const a = accent(item.accentType);
             return (
               <Pressable
                 key={item.id}
-                onPress={() => {
-                  setSelectedIssue(item.id);
-                  navigation.navigate('GarageList', {
-                    issueId: item.id,
-                    initialTab: item.id === 'tow' ? 'tow' : 'repair',
-                  });
-                }}
-                style={[
-                  styles.issueCard,
-                  {
-                    backgroundColor: colors.bgCard,
-                    borderColor: active ? colors.blue : colors.borderSubtle,
-                    borderWidth: active ? 2 : 1,
-                  },
-                ]}
+                disabled={!ready}
+                onPress={() => choose(item.id)}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !ready }}
+                accessibilityLabel={`${item.title}. ${item.desc}`}
+                style={[styles.issue, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}
               >
-                <View style={[styles.issueIconBox, { backgroundColor: accent.bg }]}>
-                  <Ionicons name={item.icon as any} size={28} color={accent.fg} />
+                <View style={[styles.issueIcon, { backgroundColor: a.bg }]}>
+                  <Ionicons name={item.icon as React.ComponentProps<typeof Ionicons>['name']} size={28} color={a.fg} />
                 </View>
-                <View style={{ flex: 1, gap: 2 }}>
-                  <Text style={[styles.issueTitle, { color: colors.textPrimary }]}>
-                    {item.title}
-                  </Text>
-                  <Text style={[styles.issueDesc, { color: colors.textSecondary }]}>
-                    {item.desc}
-                  </Text>
-                  <Text style={[styles.issueEta, { color: colors.greenText }]}>
-                    {item.eta}
-                  </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.issueTitle, { color: colors.textPrimary }]}>{item.title}</Text>
+                  <Text style={[styles.issueDesc, { color: colors.textSecondary }]}>{item.desc}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                <Ionicons name="chevron-forward" size={22} color={colors.textSecondary} />
               </Pressable>
             );
           })}
+          {!ready ? <Text style={[styles.hint, { color: colors.textSecondary }]}>Cần vị trí của bạn để tìm nơi hỗ trợ gần nhất.</Text> : null}
         </View>
 
-        {/* Banner Hotline 1900-6868 */}
-        <View style={styles.hotlineCard}>
-          <View style={styles.hotlineIcon}>
-            <Ionicons name="headset" size={24} color="#60A5FA" />
-          </View>
+        {/* Không biết chọn gì → gọi người */}
+        <Pressable onPress={() => { void Linking.openURL('tel:19006868'); }} accessibilityRole="button" style={styles.hotline}>
+          <Ionicons name="call" size={22} color="#60A5FA" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.hotlineTitle}>Cần kỹ thuật viên tư vấn?</Text>
-            <Text style={styles.hotlineSub}>Tổng đài ResQ trực 24/7</Text>
+            <Text style={styles.hotlineTitle}>Không chắc xe bị gì?</Text>
+            <Text style={styles.hotlineSub}>Gọi tổng đài ResQ 1900 6868 — trực 24/7</Text>
           </View>
-          <Pressable
-            onPress={() =>
-              Alert.alert('Tổng đài ResQ', `Đang gọi Hotline ${USER_PROFILE.hotline}...`)
-            }
-            style={styles.hotlineBtn}
-          >
-            <Text style={styles.hotlineBtnText}>{USER_PROFILE.hotline}</Text>
-          </Pressable>
-        </View>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -155,69 +113,20 @@ export const ReFixIssueScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scrollContent: { padding: 18, paddingBottom: 32, gap: 16 },
-  locationCard: {
-    borderRadius: METRICS.radiusCard,
-    borderWidth: 1,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    ...SHADOWS.card,
-  },
-  locIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  scroll: { padding: 18, paddingBottom: 32, gap: 16 },
+  question: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.lg },
+  locCard: { borderRadius: METRICS.radiusCard, borderWidth: 1, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, ...SHADOWS.card },
   locLabel: { fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.xs },
-  locMain: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.sm },
-  locSub: { fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.xs },
-  gpsBtn: {
-    minHeight: METRICS.touchMin,
-    paddingHorizontal: 12,
-    borderRadius: METRICS.radiusBtn,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  gpsBtnText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs },
-  title: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.lg },
-  subtitle: { fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.sm, marginTop: 4 },
-  issueCard: {
-    borderRadius: METRICS.radiusCard,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    ...SHADOWS.card,
-  },
-  issueIconBox: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  locMain: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.sm, marginTop: 1 },
+  locAcc: { fontFamily: FONTS.semiBold, fontSize: 12, marginTop: 3 },
+  gpsBtn: { minHeight: METRICS.touchMin, paddingHorizontal: 10, borderRadius: METRICS.radiusBtn, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  gpsText: { fontFamily: FONTS.bold, fontSize: 11 },
+  issue: { borderRadius: METRICS.radiusCard, borderWidth: 1, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 84, ...SHADOWS.card },
+  issueIcon: { width: 54, height: 54, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   issueTitle: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.base },
-  issueDesc: { fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.xs },
-  issueEta: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs, marginTop: 2 },
-  hotlineCard: {
-    borderRadius: METRICS.radiusCard,
-    backgroundColor: '#111A2C',
-    borderWidth: 1,
-    borderColor: '#243049',
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  hotlineIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: 'rgba(37, 99, 235, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  issueDesc: { fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.sm, marginTop: 2 },
+  hint: { fontFamily: FONTS.semiBold, fontSize: 12, textAlign: 'center' },
+  hotline: { borderRadius: METRICS.radiusCard, backgroundColor: '#111A2C', padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 },
   hotlineTitle: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.sm, color: '#E6EBF2' },
   hotlineSub: { fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.xs, color: '#94A3B8' },
-  hotlineBtn: {
-    minHeight: METRICS.touchMin,
-    paddingHorizontal: 14,
-    borderRadius: METRICS.radiusBtn,
-    backgroundColor: '#FFFFFF',
-    justifyContent: 'center',
-  },
-  hotlineBtnText: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.xs, color: '#0F172A' },
 });

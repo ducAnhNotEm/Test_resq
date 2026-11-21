@@ -25,6 +25,7 @@ import { SosHoldModal } from '../components/SosHoldModal';
 import { StaffJobsScreen } from '../screens/staff/StaffJobsScreen';
 import { AdminNoticeScreen } from '../screens/staff/AdminNoticeScreen';
 import { useAuth } from '../context/AuthContext';
+import { PlaceDetailScreen } from '../screens/places/PlaceDetailScreen';
 import { useAppTheme } from '../context/ThemeContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../theme/tokens';
 import { MainTabParamList, RootStackParamList } from '../types';
@@ -201,6 +202,7 @@ const CustomerNavigator: React.FC = () => {
       >
         <Stack.Screen name="MainTabs" component={MainTabsNavigator} />
         <Stack.Screen name="GarageList" component={GarageListScreen} />
+        <Stack.Screen name="PlaceDetail" component={PlaceDetailScreen} />
         <Stack.Screen name="RescueRequest" component={RescueRequestScreen} />
         <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
         <Stack.Screen name="Rating" component={RatingScreen} />

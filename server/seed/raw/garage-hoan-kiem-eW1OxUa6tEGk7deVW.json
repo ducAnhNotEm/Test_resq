@@ -1,0 +1,1802 @@
+{
+ "job": {
+  "name": "garage-hoan-kiem",
+  "searchStringsArray": [
+   "gara ô tô",
+   "sửa chữa ô tô"
+  ],
+  "locationQuery": "Hoàn Kiếm, Hà Nội, Việt Nam",
+  "maxCrawledPlacesPerSearch": 15,
+  "maxImages": 0
+ },
+ "runId": "eW1OxUa6tEGk7deVW",
+ "status": "SUCCEEDED",
+ "usd": 0.06820000000000001,
+ "charged": {
+  "place-scraped": 17,
+  "filter-applied": 0,
+  "place-details-scraped": 0,
+  "contact-details-scraped": 0,
+  "lead-scraped": 0,
+  "lead-email-verified": 0,
+  "social-profile-scraped": 0,
+  "review-scraped": 0,
+  "image-scraped": 0,
+  "competitor-analyzed": 0,
+  "apify-actor-start": 4
+ },
+ "crawledAt": 1795247351609,
+ "items": [
+  {
+   "title": "Tiệm Sửa Xe Hải 43 Lý thái tổ hoàn kiếm",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "43 P. Lý Thái Tổ, French Quarter, Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "French Quarter, Hoàn Kiếm",
+   "street": "43 P. Lý Thái Tổ",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 912 612 872",
+   "phoneUnformatted": "+84912612872",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0286944,
+    "lng": 105.8557105
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.9,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJBwAIX-qrNTERsFQ2V20u1io",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135abea5f080007:0x2ad62e6d573654b0",
+   "cid": "3086705641758545072",
+   "reviewsCount": 13,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 1,
+    "fiveStar": 12
+   },
+   "imagesCount": 6,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.081Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "09:00 to 17:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "09:00 to 17:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "09:00 to 17:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "09:00 to 17:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "09:00 to 17:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "09:00 to 17:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "09:00 to 17:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Ti%E1%BB%87m%20S%E1%BB%ADa%20Xe%20H%E1%BA%A3i%2043%20L%C3%BD%20th%C3%A1i%20t%E1%BB%95%20ho%C3%A0n%20ki%E1%BA%BFm&query_place_id=ChIJBwAIX-qrNTERsFQ2V20u1io",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 1,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLd3Xb5Teipdkuby9M-cSJ74QBGZS6SW0CkqAkCt1VLeuwqoltW0HU1vprlBkn9JnyXYT2vS0UtzQH-lP_wY-QnadBZ4fFJKlJvKjSU5XUdU31eMWjCCoVXexCYniLvd-qK2qu5U=w408-h544-k-no",
+   "kgmid": "/g/11btrr92r1",
+   "businessProfileId": "17000181145146623808"
+  },
+  {
+   "title": "Thay Ắc Quy Ô Tô, Vá Vỏ Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "12 Hàng Điếu, Phố cổ Hà Nội, Hoàn Kiếm, Hà Nội 10000, Việt Nam",
+   "neighborhood": "Phố cổ Hà Nội, Hoàn Kiếm",
+   "street": "12 Hàng Điếu",
+   "city": "Hà Nội",
+   "postalCode": "10000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0335102,
+    "lng": 105.8468648
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJza7JaparNTERkic4YnFv6rY",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab966ac9aecd:0xb6ea6f7162382792",
+   "cid": "13180469792223012754",
+   "reviewsCount": null,
+   "imagesCount": 5,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.082Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Yêu cầu hẹn trước": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=Thay%20%E1%BA%AEc%20Quy%20%C3%94%20T%C3%B4%2C%20V%C3%A1%20V%E1%BB%8F%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJza7JaparNTERkic4YnFv6rY",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 2,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLf5mohj_xHsd83_AF1W4d2qGIukCJ97CYCxyK9qkvDdpXaOEgE-elLyZF4DVMVtM9qpx1J0yYzYjNeRHNcmSZvTnm9FJF4Pieqh7g5y5mssggM9XNsJ7QSlmY7cnVB0JrrIhpOXfryUu6kl=w408-h408-k-no",
+   "kgmid": "/g/11z_j349jr",
+   "businessProfileId": "2495985799390755587"
+  },
+  {
+   "title": "Kích Ắc Quy Ô Tô, Thay Vỏ Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "28 P. Hàng Giầy, Phố cổ Hà Nội, Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Phố cổ Hà Nội, Hoàn Kiếm",
+   "street": "28 P. Hàng Giầy",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0352602,
+    "lng": 105.8511787
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJoUqFzwirNTER7anoyoPawh0",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab08cf854aa1:0x1dc2da83cae8a9ed",
+   "cid": "2144516632161593837",
+   "reviewsCount": null,
+   "imagesCount": 6,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.082Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Yêu cầu hẹn trước": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=K%C3%ADch%20%E1%BA%AEc%20Quy%20%C3%94%20T%C3%B4%2C%20Thay%20V%E1%BB%8F%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJoUqFzwirNTER7anoyoPawh0",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 3,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLdFqFMX-aQ0EHPytIayoNCOeIUmpK_ZZvfHG1hKRj9D2jbu__pnxmL8cexOO_xGDMOkPZ59IIPpAJIa24kRqGYHFkUG27hoRYZo-ySIAv1kv6JSsBtRBwzfyItKdmTfetLH-GX81sjODRWP=w408-h408-k-no",
+   "kgmid": "/g/11p2w3sdr8",
+   "businessProfileId": "3262359261402277817"
+  },
+  {
+   "title": "Sửa Xe Lưu Động 24h - Cứu Hộ Xe Máy Minh Thành Motor",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "38 Hàng Điếu, Phố cổ Hà Nội, Hoàn Kiếm, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Phố cổ Hà Nội, Hoàn Kiếm",
+   "street": "38 Hàng Điếu",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://minhthanhmotor.com/",
+   "phone": "+84 944 883 288",
+   "phoneUnformatted": "+84944883288",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0329634,
+    "lng": 105.8468954
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.7,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJ4_67DDerNTERozWNWfPoFfM",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135ab370cbbfee3:0xf315e8f3598d35a3",
+   "cid": "17516162457604535715",
+   "reviewsCount": 11,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 1,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 10
+   },
+   "imagesCount": 52,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.083Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20L%C6%B0u%20%C4%90%E1%BB%99ng%2024h%20-%20C%E1%BB%A9u%20H%E1%BB%99%20Xe%20M%C3%A1y%20Minh%20Th%C3%A0nh%20Motor&query_place_id=ChIJ4_67DDerNTERozWNWfPoFfM",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 5,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLdYBjhmKIGsF8yQFBohRkdKbcIQM0T5yXMGOL9HeJfQ0xXP0KLxHTMSNO7KcNiyVihWtOkqDn1fC9l8mf7oRsN3z82le8LrR1SlHnPVpmgOg5yDzt_kWnd_4uUiNAUqRtBXDflACbWfLjuZ=w408-h276-k-no",
+   "kgmid": "/g/11ynt58qlz",
+   "businessProfileId": "1019345827410133429"
+  },
+  {
+   "title": "Sửa Xe Lưu Động - Cứu Hộ Xe Máy Quận Hoàn Kiếm 24h An Bình Motor",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "61 P. Phủ Doãn, Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Hoàn Kiếm",
+   "street": "61 P. Phủ Doãn",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://anbinhmotor.com/cuu-ho-xe-may-quan-hoan-kiem/",
+   "phone": "+84 987 550 919",
+   "phoneUnformatted": "+84987550919",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0286871,
+    "lng": 105.8478566
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJOaoo3OqrNTERZZ3lwA9qpb4",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135abeadc28aa39:0xbea56a0fc0e59d65",
+   "cid": "13737502854256893285",
+   "reviewsCount": null,
+   "imagesCount": 5,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.083Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20L%C6%B0u%20%C4%90%E1%BB%99ng%20-%20C%E1%BB%A9u%20H%E1%BB%99%20Xe%20M%C3%A1y%20Qu%E1%BA%ADn%20Ho%C3%A0n%20Ki%E1%BA%BFm%2024h%20An%20B%C3%ACnh%20Motor&query_place_id=ChIJOaoo3OqrNTERZZ3lwA9qpb4",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 6,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLf4DpTZPAcHcqziWdBbnFsM-O6F7SNk75CmxNd9UgVlFjY1Hdgixco1FGQ_oICRK3jVDiRlqLO2w7abU9iTNKPuHjdHrPKaG5LZDtWjcvvsKE47YBhFFNBdwX8SGaG15TLjyj-Cuo1nFwMD=w408-h544-k-no",
+   "kgmid": "/g/11_0fwwsj3",
+   "businessProfileId": "1117068161611861344"
+  },
+  {
+   "title": "Kích Bình Tại Chỗ, Vá Vỏ 24/7 Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "45 P. Nguyễn Văn Tố, Phố cổ Hà Nội, Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Phố cổ Hà Nội, Hoàn Kiếm",
+   "street": "45 P. Nguyễn Văn Tố",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0313198,
+    "lng": 105.8451941
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJi-FtgkGrNTERXHiw3Tx8a-E",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab41826de18b:0xe16b7c3cddb0785c",
+   "cid": "16243213081901037660",
+   "reviewsCount": null,
+   "imagesCount": 4,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.083Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Yêu cầu hẹn trước": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=K%C3%ADch%20B%C3%ACnh%20T%E1%BA%A1i%20Ch%E1%BB%97%2C%20V%C3%A1%20V%E1%BB%8F%2024%2F7%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJi-FtgkGrNTERXHiw3Tx8a-E",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 7,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLd62onHLJ6-YeRBPHE3Sh7nVSa3mmTgzXu4nNZPN48ZhUjioZwm_QsCnynsI8hXmSmaXLfcSLCjxkEpgFFgsL_MgwlRcgCYdhPROr1rzkoOH11HIAbY-yWmJGQL2_bx859Vwblcy1yVEklu=w408-h408-k-no",
+   "kgmid": "/g/11z_j2dsj4",
+   "businessProfileId": "10239045014927936266"
+  },
+  {
+   "title": "Sửa Xe Máy Tận Nơi Khu Vực Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "57B Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Hoàn Kiếm",
+   "street": "57B Hoàn Kiếm",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0319,
+    "lng": 105.8531018
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJpWkrTmyrNTERJlhMrOF1LLI",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135ab6c4e2b69a5:0xb22c75e1ac4c5826",
+   "cid": "12838766249845217318",
+   "reviewsCount": 3,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 3
+   },
+   "imagesCount": 47,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.083Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20M%C3%A1y%20T%E1%BA%ADn%20N%C6%A1i%20Khu%20V%E1%BB%B1c%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJpWkrTmyrNTERJlhMrOF1LLI",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 8,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfnHU2F7LECRfJASumOMODKGbJRqAcFNxtOPDVj6TSuS4WL51z3hKvWUCYpG4xyMMZK1_xz6vQVb4t5TR5RaZRiuyIvF73_jHe8t-k3mEhXp-U4GORd9SEMBU9_J6w_SsTXbYJsmLFUGv8=w408-h408-k-no",
+   "kgmid": "/g/11nqs5vt97",
+   "businessProfileId": "17365482233135391354"
+  },
+  {
+   "title": "Sửa chữa xe máy Tùy Huy",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "31 P. Phủ Doãn, Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Hoàn Kiếm",
+   "street": "31 P. Phủ Doãn",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 982 223 182",
+   "phoneUnformatted": "+84982223182",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0293366,
+    "lng": 105.8478505
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJo0arO4arNTERuRPsRq5j-80",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135ab863bab46a3:0xcdfb63ae46ec13b9",
+   "cid": "14842566597094937529",
+   "reviewsCount": 6,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 6
+   },
+   "imagesCount": 3,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.083Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 17:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 17:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 17:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 17:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 17:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 17:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 17:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20ch%E1%BB%AFa%20xe%20m%C3%A1y%20T%C3%B9y%20Huy&query_place_id=ChIJo0arO4arNTERuRPsRq5j-80",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 9,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLdCcV-ogFemkg_kVAHcDgC0LckjvsYVqs3PBBrXIdQALH6VZl_kNUGKVAhuxJZqiji8bNPkwhYmq8P6-0Kj4myxzhKQBiXNQyOxSX8x9S5eZRu3nggFdvz2kOeX757V7eEeFCXS-Q=w408-h783-k-no",
+   "kgmid": "/g/11fmldmg5v",
+   "businessProfileId": null
+  },
+  {
+   "title": "Kích Bình Tại Chỗ, Vá Lốp Tận Nơi Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "2A P. Hàng Cá, Phố cổ Hà Nội, Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Phố cổ Hà Nội, Hoàn Kiếm",
+   "street": "2A P. Hàng Cá",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0362188,
+    "lng": 105.8495139
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJe9mz4m-rNTERTlpiotlvEcQ",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab6fe2b3d97b:0xc4116fd9a2625a4e",
+   "cid": "14128196486560897614",
+   "reviewsCount": null,
+   "imagesCount": 6,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.083Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Yêu cầu hẹn trước": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=K%C3%ADch%20B%C3%ACnh%20T%E1%BA%A1i%20Ch%E1%BB%97%2C%20V%C3%A1%20L%E1%BB%91p%20T%E1%BA%ADn%20N%C6%A1i%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJe9mz4m-rNTERTlpiotlvEcQ",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 10,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfZmNEsZBnjwK4rh8oguAwsD1Cm_i1fKvQq6tGjaO3woKGRQqDuZZaU60LtpUewrqEmk75xwCf22HR8u-8h03LZkArjESoogl58V30AJ0yFBFewQb4IugueP1iRZOffA8iVyHJZULI6f_8=w408-h408-k-no",
+   "kgmid": "/g/11p2w1yzn3",
+   "businessProfileId": "14256627779950967680"
+  },
+  {
+   "title": "Sửa Xe Máy Tận Nơi Lý Thái Tổ - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "5 A P. Lý Thái Tổ, 24+Tổ, Hoàn Kiếm, Hà Nội 100000, Việt Nam",
+   "neighborhood": "24+Tổ, Hoàn Kiếm",
+   "street": "5 A P. Lý Thái Tổ",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0301117,
+    "lng": 105.8549124
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJ1zPj6sirNTERbz7Y8ep0FV0",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135abc8eae333d7:0x5d1574eaf1d83e6f",
+   "cid": "6707395772466871919",
+   "reviewsCount": 5,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 5
+   },
+   "imagesCount": 30,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.083Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20M%C3%A1y%20T%E1%BA%ADn%20N%C6%A1i%20L%C3%BD%20Th%C3%A1i%20T%E1%BB%95%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJ1zPj6sirNTERbz7Y8ep0FV0",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 11,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLcwihRXmB04Zp99I3eHLqIsqmCsnIs32cWXonK6gNQXXcTMu4djyntH-P-CbgPERZcXQEDWvJNil7irSEBF-oXmxPoPMR6ogVPklYe5tu6XzsOMyKO37OJ6VsUSu4uLB5I0nMVJxWHHlGYL=w408-h408-k-no",
+   "kgmid": "/g/11nqsftv1_",
+   "businessProfileId": "3260614971007663205"
+  },
+  {
+   "title": "Cứu Hộ Ô Tô Tại Hoàn Kiếm - Gara Sửa Xe Ô Tô An Tâm",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "1 P. Nguyễn Văn Tố, Phố cổ Hà Nội, Hoàn Kiếm, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Phố cổ Hà Nội, Hoàn Kiếm",
+   "street": "1 P. Nguyễn Văn Tố",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://suaxeantam.com/",
+   "phone": "+84 358 863 338",
+   "phoneUnformatted": "+84358863338",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.031555,
+    "lng": 105.845934
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJf845IJKrNTERmAGreAY-o8o",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab922039ce7f:0xcaa33e0678ab0198",
+   "cid": "14601582614380478872",
+   "reviewsCount": null,
+   "imagesCount": 10,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.084Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Các tùy chọn dịch vụ": [
+     {
+      "Dịch vụ tại chỗ": true
+     }
+    ],
+    "Phù hợp cho người khuyết tật": [
+     {
+      "Chỗ đỗ xe cho xe lăn": true
+     },
+     {
+      "Chỗ ngồi cho xe lăn": true
+     }
+    ],
+    "Dịch vụ": [
+     {
+      "Thay dầu": true
+     }
+    ],
+    "Tiện nghi": [
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Khách hàng": [
+     {
+      "Chào đón những người thuộc giới LGBTQ+": true
+     },
+     {
+      "Nơi an toàn cho người chuyển giới": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Yêu cầu hẹn trước": true
+     }
+    ],
+    "Tái chế": [
+     {
+      "Vật liệu gia dụng nguy hiểm": true
+     }
+    ],
+    "Thanh toán": [
+     {
+      "Thẻ tín dụng": true
+     }
+    ],
+    "Bãi đỗ xe": [
+     {
+      "Chỗ đỗ xe trong khuôn viên": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20H%E1%BB%99%20%C3%94%20T%C3%B4%20T%E1%BA%A1i%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Gara%20S%E1%BB%ADa%20Xe%20%C3%94%20T%C3%B4%20An%20T%C3%A2m&query_place_id=ChIJf845IJKrNTERmAGreAY-o8o",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 14,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLehRxDp-xg803odfSr_IM1ODtI-4PEd1spGvUEfOz1-OCSGxCePlyVsk6hWLUmh6gw5hwLyv-qUmViQy5n_Es3kp0cEWVBp_1uAob_-89G_FH2qhQGN3eZyIdTNrF2AxpnkW3ujg67G6A6d=w408-h250-k-no",
+   "kgmid": "/g/11zx0br0t0",
+   "businessProfileId": "13060472450652636732"
+  },
+  {
+   "title": "Kích Bình Khẩn Cấp, Vá Lốp Lưu Động Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "45b P. Hàng Bông, Hoàn Kiếm, Hà Nội 10000, Việt Nam",
+   "neighborhood": "Hoàn Kiếm",
+   "street": "45b P. Hàng Bông",
+   "city": "Hà Nội",
+   "postalCode": "10000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0306638,
+    "lng": 105.8480863
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJN6tSzE2rNTERUdu3eoct-ew",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab4dcc52ab37:0xecf92d877ab7db51",
+   "cid": "17075729522054650705",
+   "reviewsCount": null,
+   "imagesCount": 6,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.084Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Thợ cơ khí": true
+     }
+    ],
+    "Lên kế hoạch": [
+     {
+      "Yêu cầu hẹn trước": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=K%C3%ADch%20B%C3%ACnh%20Kh%E1%BA%A9n%20C%E1%BA%A5p%2C%20V%C3%A1%20L%E1%BB%91p%20L%C6%B0u%20%C4%90%E1%BB%99ng%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJN6tSzE2rNTERUdu3eoct-ew",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 16,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLfjYQSTdOYDgmM3CrSsAcUHce9BqKw5dbJORdEAb1kd1t34rVciALJuUlB21eOQ2j_qz5ot9bMFXUpvRUtBOVwYc1yAt6wPnoEY6oVwkBHdDkbhSrbF_Gec402jNcLSPA8rjoDneupXVCRB=w408-h408-k-no",
+   "kgmid": "/g/11z_j3274v",
+   "businessProfileId": "16368957612391729500"
+  },
+  {
+   "title": "Sửa Xe Máy Tận Nơi Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "29 P. Nhà Chung, Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Hoàn Kiếm",
+   "street": "29 P. Nhà Chung",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0278462,
+    "lng": 105.8503623
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJS2zcpp6rNTERmhE8FiUEqZQ",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135ab9ea6dc6c4b:0x94a90425163c119a",
+   "cid": "10712097746010771866",
+   "reviewsCount": 4,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 4
+   },
+   "imagesCount": 46,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.084Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20M%C3%A1y%20T%E1%BA%ADn%20N%C6%A1i%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJS2zcpp6rNTERmhE8FiUEqZQ",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 17,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLd99y9ou3ZbBOEjraJ4_IVpodVmuUb2Dye7hD9tXUCx39fCoFNdHfghgYH-AFcUdUwbBXeKb_PC_skNkgAGzjrSfYou-0K1K8CtvBAUN8Egfu7va6gIHHVrzFXtbZFvygS_WWtiSfuwbblu=w408-h408-k-no",
+   "kgmid": "/g/11zggsq4pl",
+   "businessProfileId": "10432326576299294422"
+  },
+  {
+   "title": "Sửa Xe Máy Lưu Động Khu Vực Hoàn Kiếm - Hello Thợ",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "57B Hoàn Kiếm, Hà Nội, Việt Nam",
+   "neighborhood": "Hoàn Kiếm",
+   "street": "57B Hoàn Kiếm",
+   "city": "Hà Nội",
+   "postalCode": null,
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://hellotho.com/",
+   "phone": "+84 906 929 478",
+   "phoneUnformatted": "+84906929478",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0319,
+    "lng": 105.8531018
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 4.2,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJFf7Ve21VNDERNrjm_aKB9lg",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3134556d7bd5fe15:0x58f681a2fde6b836",
+   "cid": "6410453656652920886",
+   "reviewsCount": 5,
+   "reviewsDistribution": {
+    "oneStar": 1,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 4
+   },
+   "imagesCount": 33,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.084Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:00 to 00:00"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:00 to 00:00"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=S%E1%BB%ADa%20Xe%20M%C3%A1y%20L%C6%B0u%20%C4%90%E1%BB%99ng%20Khu%20V%E1%BB%B1c%20Ho%C3%A0n%20Ki%E1%BA%BFm%20-%20Hello%20Th%E1%BB%A3&query_place_id=ChIJFf7Ve21VNDERNrjm_aKB9lg",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 19,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLc9liLEObqYWR6X0v7LOFGsIjt6lPaTu9OjJSpZdv7Z4EZsKYl5Wwleq9fHq0nKZ_Dn9g4w_coTEcK8CTKwSjsu5E5bMMNsibyt-mb6q4et814iHpj7TlymcX45yT1a1WL5Kv1GqR_UrjU6=w408-h408-k-no",
+   "kgmid": "/g/11nqp38gdq",
+   "businessProfileId": "17401461029507738845"
+  },
+  {
+   "title": "Cứu Hộ Xe Máy Hà Nội - Sửa Xe Máy 24h Minh Thành Motor",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Cửa hàng sửa chữa xe máy",
+   "address": "27 P. Cửa Đông, Phố cổ Hà Nội, Hoàn Kiếm, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Phố cổ Hà Nội, Hoàn Kiếm",
+   "street": "27 P. Cửa Đông",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "website": "https://minhthanhmotor.com/",
+   "phone": "+84 944 883 288",
+   "phoneUnformatted": "+84944883288",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.0344764,
+    "lng": 105.8462142
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": 5,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJIRI8XTirNTER85fQ14pB0iQ",
+   "categories": [
+    "Cửa hàng sửa chữa xe máy"
+   ],
+   "fid": "0x3135ab385d3c1221:0x24d2418ad7d097f3",
+   "cid": "2653255195056707571",
+   "reviewsCount": 3,
+   "reviewsDistribution": {
+    "oneStar": 0,
+    "twoStar": 0,
+    "threeStar": 0,
+    "fourStar": 0,
+    "fiveStar": 3
+   },
+   "imagesCount": 40,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.084Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "07:30 to 23:30"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "07:30 to 23:30"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20H%E1%BB%99%20Xe%20M%C3%A1y%20H%C3%A0%20N%E1%BB%99i%20-%20S%E1%BB%ADa%20Xe%20M%C3%A1y%2024h%20Minh%20Th%C3%A0nh%20Motor&query_place_id=ChIJIRI8XTirNTER85fQ14pB0iQ",
+   "searchPageUrl": "https://www.google.com/maps/search/s%E1%BB%ADa%20ch%E1%BB%AFa%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "sửa chữa ô tô",
+   "language": "vi",
+   "rank": 20,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLd-XFx2tVanjJJ2H9kYCU18H5H-CacQEWdFbUZrxi92x-wczYBR2NAhbIEHrkox38_j2ml1dgcYRmzhRTj0BvqZtC-K7EZIDleR9-UUDm2Wh1cMK0-S5N6ajHwQ78aLoItJbeaNfJn2eSLh=w408-h544-k-no",
+   "kgmid": "/g/11ytcybtsz",
+   "businessProfileId": "15045829050037792117"
+  },
+  {
+   "title": "Cứu hộ lốp ô tô Gara Ô Tô Đức Dũng",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "40 P. Hàng Bông, Hoàn Kiếm, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Hoàn Kiếm",
+   "street": "40 P. Hàng Bông",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 973 126 009",
+   "phoneUnformatted": "+84973126009",
+   "claimThisBusiness": false,
+   "location": {
+    "lat": 21.028718,
+    "lng": 105.8464133
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJ-d97MejJNTERRaGndKIsF6A",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135c9e8317bdff9:0xa0172ca274a7a145",
+   "cid": "11535738046786281797",
+   "reviewsCount": null,
+   "imagesCount": 15,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.094Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [
+    {
+     "day": "Thứ Bảy",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Chủ Nhật",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Hai",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Ba",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Tư",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Năm",
+     "hours": "Mở cửa cả ngày"
+    },
+    {
+     "day": "Thứ Sáu",
+     "hours": "Mở cửa cả ngày"
+    }
+   ],
+   "wasOpenAtScrapeTime": true,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=C%E1%BB%A9u%20h%E1%BB%99%20l%E1%BB%91p%20%C3%B4%20t%C3%B4%20Gara%20%C3%94%20T%C3%B4%20%C4%90%E1%BB%A9c%20D%C5%A9ng&query_place_id=ChIJ-d97MejJNTERRaGndKIsF6A",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 7,
+   "isAdvertisement": false,
+   "imageUrl": "https://lh3.googleusercontent.com/grass-cs/AABkmLdhCQmYyNKBG6sdMg3d92FfAPnTCnqB1njOGYq1RazNiPFXs9AhvNhu6whhzl3Fi-_poCSi3L8eEf0UU_fHDCr4Z8Z5jUt0cExV-eyrDCztxl52t82iOQsTsDLt1dsTVVg4_ySqkOww7no=w408-h723-k-no",
+   "kgmid": "/g/11z6nb9x4c",
+   "businessProfileId": "12491241561493803569"
+  },
+  {
+   "title": "gara Ô Tô Tuân Nhung",
+   "subTitle": null,
+   "description": null,
+   "ownerDescription": null,
+   "price": null,
+   "categoryName": "Xưởng sửa chữa ô tô",
+   "address": "101 DV 2, P. Hàng Bè, Mậu Lương, Hoàn Kiếm, Hà Nội 100000, Việt Nam",
+   "neighborhood": "Mậu Lương, Hoàn Kiếm",
+   "street": "101 DV 2, P. Hàng Bè",
+   "city": "Hà Nội",
+   "postalCode": "100000",
+   "state": "Hoàn Kiếm, Hà Nội",
+   "countryCode": "VN",
+   "phone": "+84 523 999 589",
+   "phoneUnformatted": "+84523999589",
+   "claimThisBusiness": true,
+   "location": {
+    "lat": 21.0337044,
+    "lng": 105.8536852
+   },
+   "locatedIn": null,
+   "floor": null,
+   "plusCode": null,
+   "menu": null,
+   "servicesLink": null,
+   "totalScore": null,
+   "permanentlyClosed": false,
+   "temporarilyClosed": false,
+   "placeId": "ChIJrzJNEY2rNTERc7KbqvpN-K4",
+   "categories": [
+    "Xưởng sửa chữa ô tô"
+   ],
+   "fid": "0x3135ab8d114d32af:0xaef84dfaaa9bb273",
+   "cid": "12607912895823196787",
+   "reviewsCount": null,
+   "imagesCount": 1,
+   "imageCategories": [],
+   "scrapedAt": "2026-11-21T07:42:48.094Z",
+   "reserveTableUrl": null,
+   "googleFoodUrl": null,
+   "hotelStars": null,
+   "hotelDescription": null,
+   "checkInDate": null,
+   "checkOutDate": null,
+   "hotelAds": [],
+   "popularTimesLiveText": null,
+   "popularTimesLivePercent": null,
+   "popularTimesHistogram": {},
+   "openingHours": [],
+   "wasOpenAtScrapeTime": null,
+   "peopleAlsoSearch": [],
+   "placesTags": [],
+   "reviewsTags": [],
+   "additionalInfo": {
+    "Tiện nghi": [
+     {
+      "Nhà vệ sinh": true
+     },
+     {
+      "Thợ cơ khí": true
+     }
+    ]
+   },
+   "gasPrices": [],
+   "url": "https://www.google.com/maps/search/?api=1&query=gara%20%C3%94%20T%C3%B4%20Tu%C3%A2n%20Nhung&query_place_id=ChIJrzJNEY2rNTERc7KbqvpN-K4",
+   "searchPageUrl": "https://www.google.com/maps/search/gara%20%C3%B4%20t%C3%B4/@21.032618399999997,105.8513739,17z?hl=vi",
+   "searchString": "gara ô tô",
+   "language": "vi",
+   "rank": 9,
+   "isAdvertisement": false,
+   "imageUrl": "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=fjzvtMuze04Fmk0aQyfAuA&cb_client=search.gws-prod.grass&w=408&h=240&yaw=296.88483&pitch=0&thumbfov=100",
+   "kgmid": "/g/11t7mm6_xw",
+   "businessProfileId": null
+  }
+ ]
+}

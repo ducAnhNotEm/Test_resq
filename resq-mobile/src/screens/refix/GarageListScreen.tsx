@@ -1,346 +1,199 @@
-import React, { useMemo, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+// GarageListScreen: "Chọn nơi hỗ trợ". Dùng vị trí đã CHỐT ở ReFix (support); thiếu thì dùng GPS hiện tại.
+// Server xếp hạng (ETA, đúng dịch vụ, đang mở, đánh giá, độ tin cậy); hiện ngay ETA ước tính rồi cập nhật ETA thật.
+// Nút chính duy nhất: "Gửi yêu cầu cứu hộ" — không bắt buộc chọn gara.
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { LocationGate } from '../../components/LocationGate';
+import { PlaceCard } from '../../components/PlaceCard';
 import { useAppTheme } from '../../context/ThemeContext';
-import {
-  formatVND,
-  GARAGES_DATA,
-  ISSUES_DATA,
-  USER_PROFILE,
-} from '../../data/mockData';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
-import { GarageSort, GarageType, RootStackParamList } from '../../types';
+import { RootStackParamList, SupportLocation } from '../../types';
+import { useLocation } from '../../features/location/LocationProvider';
+import { ApiError, ISSUE_LABEL, placesApi, type RankedPlaceDto } from '../../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GarageList'>;
+type SortKey = 'best' | 'near' | 'rating';
+
+const SORTS: Array<{ k: SortKey; label: string }> = [
+  { k: 'best', label: 'Phù hợp nhất' },
+  { k: 'near', label: 'Gần nhất' },
+  { k: 'rating', label: 'Đánh giá cao' },
+];
+
+/** Thông báo lỗi bằng lời thường — không bao giờ hiện chuỗi kỹ thuật như "API không tồn tại". */
+function friendlyError(e: unknown): string {
+  const err = e as ApiError;
+  if (err?.status === 0) return err.code === 'timeout' ? 'Máy chủ phản hồi chậm. Thử lại sau ít phút.' : 'Không có kết nối mạng.';
+  if (err?.status === 404 || err?.status === 503) return 'Máy chủ chưa có dữ liệu gara. Thử lại sau.';
+  return 'Chưa tải được danh sách gara. Thử lại sau.';
+}
 
 export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
   const { colors } = useAppTheme();
-  const issueId = route.params?.issueId ?? 'tire';
-  const [garageTab, setGarageTab] = useState<GarageType>(
-    route.params?.initialTab ?? 'repair'
-  );
-  const [sortBy, setSortBy] = useState<GarageSort>('nearest');
+  const insets = useSafeAreaInsets();
+  const issue = route.params?.issueId ?? 'unknown';
+  const loc = useLocation(route.params?.support ? 'low' : 'high');
+  // vị trí đã chốt ở ReFix; nếu mở thẳng màn này thì chốt theo GPS hiện tại lần đầu có
+  const [support, setSupport] = useState<SupportLocation | null>(route.params?.support ?? null);
+  useEffect(() => {
+    if (!support && loc.fix) {
+      setSupport({ pos: loc.fix.pos, accuracyM: loc.fix.accuracyM, address: loc.place?.address ?? null, source: 'gps', capturedAt: loc.fix.ts });
+    }
+  }, [support, loc.fix, loc.place]);
 
-  const issueObj = ISSUES_DATA.find((i) => i.id === issueId) ?? ISSUES_DATA[0];
+  const [towMode, setTowMode] = useState(issue === 'tow');
+  const [sort, setSort] = useState<SortKey>('best');
+  const [openNow, setOpenNow] = useState(false);
+  const [radiusM, setRadiusM] = useState(8000);
+  const [items, setItems] = useState<RankedPlaceDto[] | null>(null);
+  const [refined, setRefined] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const reqId = useRef(0);
+  const searchIssue = towMode ? 'tow' : issue;
+
+  useEffect(() => {
+    if (!support) return;
+    const id = ++reqId.current;
+    const params = { lat: support.pos[1], lng: support.pos[0], category: 'garage' as const, issue: searchIssue, radiusM, openNow, limit: 30 };
+    setItems(null); setRefined(false); setError(null);
+    placesApi.nearby(params)
+      .then(r => {
+        if (id !== reqId.current) return;
+        setItems(r.items);
+        // nhịp 2: ETA theo đường thật (Goong) cho top 10 — lỗi thì giữ ETA ước tính
+        return placesApi.nearby({ ...params, refine: true }).then(r2 => {
+          if (id === reqId.current) { setItems(r2.items); setRefined(r2.items.some(i => i.etaSource === 'goong')); }
+        }).catch(() => {});
+      })
+      .catch(e => { if (id === reqId.current) setError(friendlyError(e)); });
+  }, [support, searchIssue, radiusM, openNow, attempt]);
 
   const list = useMemo(() => {
-    const filtered = GARAGES_DATA.filter((g) => g.type === garageTab);
-    if (sortBy === 'price') return [...filtered].sort((a, b) => a.price - b.price);
-    if (sortBy === 'rating') return [...filtered].sort((a, b) => b.rating - a.rating);
-    return [...filtered].sort((a, b) => a.distValue - b.distValue);
-  }, [garageTab, sortBy]);
+    if (!items) return null;
+    if (sort === 'near') return [...items].sort((a, b) => a.distanceM - b.distanceM);
+    if (sort === 'rating') {
+      const bayes = (p: RankedPlaceDto) => (p.rating == null ? 0 : (4 * 15 + p.rating * p.reviewsCount) / (15 + p.reviewsCount));
+      return [...items].sort((a, b) => bayes(b) - bayes(a));
+    }
+    return items;
+  }, [items, sort]);
+
+  const send = (place?: RankedPlaceDto) => navigation.navigate('RescueRequest', {
+    issueId: issue,
+    support: support ?? undefined,
+    ...(place ? { placeId: place.id, placeName: place.name } : {}),
+  });
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <ScreenHeader
-        title="Chọn đơn vị hỗ trợ"
-        onBack={() => navigation.goBack()}
-      />
+      <ScreenHeader title="Chọn nơi hỗ trợ" onBack={() => navigation.goBack()} />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 110 + insets.bottom }]} showsVerticalScrollIndicator={false}>
+        {!support ? <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} /> : null}
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Context pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-          <View style={[styles.chip, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
-            <Ionicons name="location" size={14} color={colors.blue} />
-            <Text style={[styles.chipText, { color: colors.textPrimary }]}>
-              {USER_PROFILE.locationShort}
-            </Text>
-          </View>
-          <View style={[styles.chip, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
-            <Ionicons name="construct" size={14} color={colors.amber} />
-            <Text style={[styles.chipText, { color: colors.textPrimary }]}>
-              {issueObj.title}
-            </Text>
-          </View>
-        </ScrollView>
-
-        {/* Segmented Control */}
-        <View
-          style={[
-            styles.segmentWrap,
-            { backgroundColor: colors.bgSubtle, borderColor: colors.borderSubtle },
-          ]}
-        >
-          <Pressable
-            onPress={() => setGarageTab('repair')}
-            style={[
-              styles.segmentBtn,
-              garageTab === 'repair' && { backgroundColor: colors.blue },
-            ]}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                { color: garageTab === 'repair' ? '#FFFFFF' : colors.textPrimary },
-              ]}
-            >
-              Gara sửa tại chỗ
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setGarageTab('tow')}
-            style={[
-              styles.segmentBtn,
-              garageTab === 'tow' && { backgroundColor: colors.blue },
-            ]}
-          >
-            <Text
-              style={[
-                styles.segmentText,
-                { color: garageTab === 'tow' ? '#FFFFFF' : colors.textPrimary },
-              ]}
-            >
-              Đơn vị xe kéo
-            </Text>
-          </Pressable>
+        <View style={styles.ctxRow}>
+          <Text style={[styles.ctx, { color: colors.textPrimary }]}>{ISSUE_LABEL[searchIssue] ?? searchIssue}</Text>
+          {issue !== 'tow' ? (
+            <Pressable onPress={() => setTowMode(v => !v)} hitSlop={8}>
+              <Text style={[styles.link, { color: colors.blue }]}>{towMode ? 'Chỉ cần sửa tại chỗ?' : 'Cần kéo xe về gara?'}</Text>
+            </Pressable>
+          ) : null}
         </View>
+        {support?.address ? (
+          <Text numberOfLines={1} style={[styles.from, { color: colors.textSecondary }]}>
+            <Ionicons name="location" size={12} color={colors.blue} /> Tính từ: {support.address}
+          </Text>
+        ) : null}
 
-        {/* Radar Map SVG */}
-        <View style={[styles.radarBox, { borderColor: colors.borderSubtle }]}>
-          <Svg width="100%" height={130} viewBox="0 0 360 130">
-            <Path d="M0 35 L360 100 M100 0 L135 130 M260 0 L225 130 M0 105 L360 25" stroke="#243049" strokeWidth="6" />
-            <Circle cx="180" cy="65" r="34" stroke="#60A5FA" strokeWidth="1.5" strokeDasharray="4 4" opacity={0.65} fill="none" />
-            <Circle cx="180" cy="65" r="58" stroke="#60A5FA" strokeWidth="1" opacity={0.35} fill="none" />
-            <Circle cx="180" cy="65" r="7" fill="#2563EB" stroke="#FFFFFF" strokeWidth="2.5" />
-          </Svg>
-          <View style={[styles.radarTag, { top: 14, left: 22 }]}>
-            <Text style={styles.radarTagText}>0,6 km</Text>
-          </View>
-          <View style={[styles.radarTag, { bottom: 14, right: 22 }]}>
-            <Text style={styles.radarTagText}>1,5 km</Text>
-          </View>
-        </View>
-
-        {/* Sort chips */}
-        <View style={styles.sortRow}>
-          {(
-            [
-              { id: 'nearest', label: 'Gần nhất' },
-              { id: 'price', label: 'Giá tốt nhất' },
-              { id: 'rating', label: 'Đánh giá cao' },
-            ] as { id: GarageSort; label: string }[]
-          ).map((s) => {
-            const active = sortBy === s.id;
-            return (
-              <Pressable
-                key={s.id}
-                onPress={() => setSortBy(s.id)}
-                style={[
-                  styles.sortChip,
-                  {
-                    backgroundColor: active ? colors.blue : colors.bgCard,
-                    borderColor: active ? colors.blue : colors.borderSubtle,
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.sortChipText,
-                    { color: active ? '#FFFFFF' : colors.textPrimary },
-                  ]}
-                >
-                  {s.label}
-                </Text>
+        <View style={styles.filterRow}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+            {SORTS.map(s => (
+              <Pressable key={s.k} onPress={() => setSort(s.k)} style={[styles.sortChip, { borderColor: sort === s.k ? colors.blue : colors.borderSubtle, backgroundColor: sort === s.k ? colors.blueBg : 'transparent' }]}>
+                <Text style={[styles.sortText, { color: sort === s.k ? colors.blue : colors.textSecondary }]}>{s.label}</Text>
               </Pressable>
-            );
-          })}
+            ))}
+          </ScrollView>
+          <View style={styles.openRow}>
+            <Text style={[styles.sortText, { color: colors.textSecondary }]}>Đang mở</Text>
+            <Switch value={openNow} onValueChange={setOpenNow} />
+          </View>
         </View>
 
-        {/* Garage Cards */}
-        <View style={{ gap: 14 }}>
-          {list.map((g) => {
-            const visibleTags = g.tags.slice(0, 2);
-            const extra = g.tags.length - 2;
-            return (
-              <View
-                key={g.id}
-                style={[
-                  styles.garageCard,
-                  { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
-                ]}
-              >
-                <View style={styles.garageTop}>
-                  <Text style={[styles.garageName, { color: colors.textPrimary }]}>
-                    {g.name}
-                  </Text>
-                  <Text style={[styles.garageDist, { color: colors.blue }]}>
-                    {g.dist}
-                  </Text>
-                </View>
+        {error ? (
+          <View style={[styles.errBox, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
+            <Ionicons name="cloud-offline" size={28} color={colors.textSecondary} />
+            <Text style={[styles.errText, { color: colors.textPrimary }]}>{error}</Text>
+            <Pressable onPress={() => setAttempt(a => a + 1)} style={[styles.retry, { backgroundColor: colors.blue }]}>
+              <Text style={styles.retryText}>Thử lại</Text>
+            </Pressable>
+            <Text style={[styles.count, { color: colors.textSecondary, textAlign: 'center' }]}>Vẫn có thể bấm "Gửi yêu cầu cứu hộ" — tổng đài sẽ điều phối.</Text>
+          </View>
+        ) : null}
+        {support && !list && !error ? <ActivityIndicator color={colors.blue} style={{ marginTop: 20 }} /> : null}
+        {list ? (
+          <Text style={[styles.count, { color: colors.textSecondary }]}>
+            {list.length} nơi trong {radiusM / 1000} km · {refined ? 'thời gian theo đường thật' : 'thời gian ước tính'}
+          </Text>
+        ) : null}
 
-                <View style={styles.garageMeta}>
-                  <View style={styles.ratingRow}>
-                    <Ionicons name="star" size={14} color={colors.amber} />
-                    <Text style={[styles.ratingText, { color: colors.amberText }]}>
-                      {g.rating} ({g.reviews})
-                    </Text>
-                  </View>
-                  <View style={styles.ratingRow}>
-                    <Ionicons name="time" size={14} color={colors.green} />
-                    <Text style={[styles.etaText, { color: colors.greenText }]}>
-                      {g.eta}
-                    </Text>
-                  </View>
-                </View>
+        {list?.map((p, i) => (
+          <PlaceCard
+            key={p.id}
+            item={p}
+            rank={sort === 'best' ? i + 1 : undefined}
+            onPress={() => navigation.navigate('PlaceDetail', { placeId: p.id, name: p.name, distanceM: p.distanceM, etaMin: p.etaMin, issueId: issue })}
+            onSelect={() => send(p)}
+            selectLabel="Chọn nơi này"
+          />
+        ))}
 
-                <View style={styles.tagRow}>
-                  {visibleTags.map((t) => (
-                    <View key={t} style={[styles.tagPill, { backgroundColor: colors.bgSubtle }]}>
-                      <Text style={[styles.tagText, { color: colors.textPrimary }]}>{t}</Text>
-                    </View>
-                  ))}
-                  {extra > 0 && (
-                    <View style={[styles.tagPill, { backgroundColor: colors.bgSubtle }]}>
-                      <Text style={[styles.tagText, { color: colors.textPrimary }]}>+{extra}</Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={[styles.garageFooter, { borderTopColor: colors.borderSubtle }]}>
-                  <View>
-                    <Text style={[styles.priceLabel, { color: colors.textSecondary }]}>
-                      Giá tham khảo
-                    </Text>
-                    <Text style={[styles.priceVal, { color: colors.textPrimary }]}>
-                      {formatVND(g.price)}
-                    </Text>
-                  </View>
-                  <View style={styles.footerActions}>
-                    <Pressable
-                      onPress={() => Alert.alert('Gọi đối tác', `Đang gọi ${g.name}...`)}
-                      style={[styles.callBtn, { backgroundColor: colors.bgSubtle }]}
-                    >
-                      <Ionicons name="call" size={20} color={colors.textPrimary} />
-                    </Pressable>
-                    <Pressable
-                      onPress={() =>
-                        navigation.navigate('RescueRequest', {
-                          issueId,
-                          garageId: g.id,
-                        })
-                      }
-                      style={[styles.selectBtn, { backgroundColor: colors.sos }]}
-                    >
-                      <Text style={styles.selectBtnText}>Chọn đơn vị</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+        {list && list.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={[styles.count, { color: colors.textSecondary, textAlign: 'center' }]}>
+              Chưa có {towMode ? 'đơn vị cứu hộ' : 'gara'} {openNow ? 'đang mở ' : ''}trong {radiusM / 1000} km.
+            </Text>
+            {radiusM < 20000 ? (
+              <Pressable onPress={() => setRadiusM(20000)} style={[styles.retry, { backgroundColor: colors.blue }]}><Text style={styles.retryText}>Tìm xa hơn (20 km)</Text></Pressable>
+            ) : null}
+          </View>
+        ) : null}
       </ScrollView>
+
+      {/* Hành động chính — luôn ở đáy, không bắt chọn gara */}
+      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.bgSurface, borderTopColor: colors.borderSubtle }]}>
+        <Pressable disabled={!support} onPress={() => send()} accessibilityRole="button" style={[styles.cta, { backgroundColor: colors.sos, opacity: support ? 1 : 0.5 }]}>
+          <Ionicons name="paper-plane" size={20} color="#FFFFFF" />
+          <Text style={styles.ctaText}>Gửi yêu cầu cứu hộ</Text>
+        </Pressable>
+        <Text style={[styles.ctaHint, { color: colors.textSecondary }]}>Không cần chọn gara — tổng đài tìm xe gần bạn nhất</Text>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scrollContent: { padding: 18, paddingBottom: 32, gap: 14 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: METRICS.radiusPill,
-    borderWidth: 1,
-  },
-  chipText: { fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.xs },
-  segmentWrap: {
-    flexDirection: 'row',
-    padding: 4,
-    borderRadius: METRICS.radiusBtn,
-    borderWidth: 1,
-    gap: 4,
-  },
-  segmentBtn: {
-    flex: 1,
-    minHeight: METRICS.touchMin,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs },
-  radarBox: {
-    height: 130,
-    borderRadius: METRICS.radiusCard,
-    backgroundColor: '#0F172A',
-    borderWidth: 1,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  radarTag: {
-    position: 'absolute',
-    backgroundColor: '#111A2C',
-    borderWidth: 1,
-    borderColor: '#243049',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: METRICS.radiusPill,
-  },
-  radarTagText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs, color: '#E6EBF2' },
-  sortRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
-  sortChip: {
-    minHeight: 40,
-    paddingHorizontal: 14,
-    borderRadius: METRICS.radiusPill,
-    borderWidth: 1,
-    justifyContent: 'center',
-  },
-  sortChipText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs },
-  garageCard: {
-    borderRadius: METRICS.radiusCard,
-    borderWidth: 1,
-    padding: 16,
-    gap: 10,
-    ...SHADOWS.card,
-  },
-  garageTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  garageName: { flex: 1, fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.base },
-  garageDist: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs },
-  garageMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  ratingText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs },
-  etaText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.xs },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  tagPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: METRICS.radiusPill },
-  tagText: { fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.xs },
-  garageFooter: {
-    borderTopWidth: 1,
-    paddingTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  priceLabel: { fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.xs },
-  priceVal: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.base },
-  footerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  callBtn: {
-    width: METRICS.touchMin,
-    height: METRICS.touchMin,
-    borderRadius: METRICS.radiusBtn,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  selectBtn: {
-    minHeight: METRICS.touchMin,
-    paddingHorizontal: 16,
-    borderRadius: METRICS.radiusBtn,
-    justifyContent: 'center',
-  },
-  selectBtnText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.sm, color: '#FFFFFF' },
+  scroll: { padding: 16, gap: 12 },
+  ctxRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  ctx: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.base },
+  link: { fontFamily: FONTS.bold, fontSize: 13 },
+  from: { fontFamily: FONTS.regular, fontSize: 12 },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  sortChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
+  sortText: { fontFamily: FONTS.semiBold, fontSize: 12 },
+  openRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  errBox: { borderWidth: 1, borderRadius: METRICS.radiusCard, padding: 18, alignItems: 'center', gap: 10 },
+  errText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.sm, textAlign: 'center' },
+  retry: { borderRadius: METRICS.radiusBtn, paddingHorizontal: 18, paddingVertical: 10 },
+  retryText: { fontFamily: FONTS.bold, fontSize: 13, color: '#FFFFFF' },
+  count: { fontFamily: FONTS.semiBold, fontSize: 12 },
+  empty: { alignItems: 'center', gap: 10, paddingVertical: 24 },
+  bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, borderTopWidth: 1, gap: 4 },
+  cta: { minHeight: 54, borderRadius: METRICS.radiusBtn, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...SHADOWS.card },
+  ctaText: { fontFamily: FONTS.extraBold, fontSize: TYPOGRAPHY.base, color: '#FFFFFF' },
+  ctaHint: { fontFamily: FONTS.regular, fontSize: 11, textAlign: 'center' },
 });

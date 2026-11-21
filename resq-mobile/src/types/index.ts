@@ -1,6 +1,5 @@
 export type DeviceType = 'phone' | 'car';
 export type ThemeMode = 'light' | 'dark';
-export type HomeMode = 'member' | 'explore';
 export type IssueId = 'tire' | 'battery' | 'tow' | 'unknown';
 export type GarageType = 'repair' | 'tow';
 export type GarageSort = 'nearest' | 'price' | 'rating';
@@ -93,14 +92,28 @@ export interface ChatMessage {
   time: string;
 }
 
+/**
+ * Vị trí cần hỗ trợ — CHỐT một lần ở ReFix rồi truyền xuyên suốt GarageList → RescueRequest,
+ * để GPS trôi giữa chừng không làm đổi nơi xe cứu hộ tới.
+ */
+export interface SupportLocation {
+  pos: [number, number];       // [lng, lat]
+  accuracyM: number | null;
+  address: string | null;
+  source: 'gps' | 'manual';
+  capturedAt: number;
+}
+
 export type RootStackParamList = {
   DeviceSelection: undefined;
   Login: { deviceType: DeviceType };
   MainTabs: undefined;
-  GarageList: { issueId: IssueId; initialTab?: GarageType };
-  RescueRequest: { issueId: IssueId; garageId?: number; sos?: boolean };
+  GarageList: { issueId: IssueId; initialTab?: GarageType; support?: SupportLocation };
+  RescueRequest: { issueId: IssueId; sos?: boolean; placeId?: string; placeName?: string; support?: SupportLocation };
+  /** Chi tiết gara / trạm (dữ liệu thật + ảnh). distanceM/etaMin: từ danh sách xếp hạng. */
+  PlaceDetail: { placeId: string; name?: string; distanceM?: number; etaMin?: number; issueId?: IssueId };
   /** Không truyền orderId = đơn đang mở của chính khách. */
-  OrderTracking: { orderId?: string; garageId?: number } | undefined;
+  OrderTracking: { orderId?: string } | undefined;
   Rating: { orderId?: string };
   CrashDetection: { autoDispatched?: boolean } | undefined;
   ReMapsNavigation: {
