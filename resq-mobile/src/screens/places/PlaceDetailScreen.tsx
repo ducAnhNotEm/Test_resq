@@ -1,5 +1,6 @@
 // PlaceDetailScreen: ảnh thật (lưu trên server ResQ, không phụ thuộc link Google hết hạn), giờ mở cửa, dịch vụ,
 // gọi / chỉ đường / chọn làm đơn vị hỗ trợ, cảnh báo listing chưa xác minh.
+// Bản đồ vẽ đường đi thật từ vị trí khách tới nơi này (kể cả khi ở rất xa — luồng "far").
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +11,8 @@ import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
 import { CATEGORY_LABEL, mediaUrl, placesApi, type PlaceDto } from '../../services/api';
 import { fmtDistance, openLabel } from '../../components/PlaceCard';
+import { RoutePreview } from '../../components/RoutePreview';
+import { useLocation } from '../../features/location/LocationProvider';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PlaceDetail'>;
 
@@ -21,6 +24,7 @@ export const PlaceDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [p, setP] = useState<PlaceDto | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [photo, setPhoto] = useState(0);
+  const loc = useLocation();
 
   useEffect(() => {
     placesApi.get(placeId).then(setP).catch(e => setErr((e as Error).message));
@@ -74,6 +78,15 @@ export const PlaceDetailScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
           {distanceM != null ? <Text style={[styles.meta, { color: colors.blue, fontFamily: FONTS.bold }]}>Cách bạn {fmtDistance(distanceM)}{etaMin != null ? ` · ~${etaMin} phút lái xe` : ''}</Text> : null}
 
+          <RoutePreview
+            from={loc.fix?.pos ?? null}
+            fromAccuracyM={loc.fix?.accuracyM}
+            to={p.pos}
+            toName={p.name}
+            height={200}
+            onNavigate={() => navigation.navigate('ReMapsNavigation', { destinationName: p.name, destCoords: p.pos })}
+          />
+
           {p.trust === 'low' || p.flags.length ? (
             <View style={[styles.flagBox, { backgroundColor: p.trust === 'low' ? colors.amberBg : colors.bgSubtle }]}>
               <Text style={[styles.flagTitle, { color: p.trust === 'low' ? colors.amberText : colors.textSecondary }]}>
@@ -89,12 +102,6 @@ export const PlaceDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 <Ionicons name="call" size={18} color="#FFFFFF" /><Text style={styles.btnText}>Gọi</Text>
               </Pressable>
             ) : null}
-            <Pressable
-              onPress={() => navigation.navigate('ReMapsNavigation', { destinationName: p.name, destCoords: p.pos })}
-              style={[styles.btn, { backgroundColor: colors.blue }]}
-            >
-              <Ionicons name="navigate" size={18} color="#FFFFFF" /><Text style={styles.btnText}>Chỉ đường</Text>
-            </Pressable>
             {p.category === 'garage' ? (
               <Pressable
                 onPress={() => navigation.navigate('RescueRequest', { issueId: issueId ?? 'unknown', placeId: p.id, placeName: p.name })}

@@ -11,7 +11,7 @@ import type { GoongClient } from './goong.ts';
 import type { RealtimeHub } from './realtime.ts';
 import { computeAlerts, computeStats, refineCandidates } from './stats.ts';
 import type { PlaceStore } from './placeStore.ts';
-import { openState, rankOrdersForPlace, rankPlaces, SERVICE_LABEL, type Issue, type Place, type PlaceCategory, type RankedPlace, type Trust } from './places.ts';
+import { openState, rankOrdersForPlace, rankPlaces, searchPlaces, SERVICE_LABEL, type Issue, type Place, type PlaceCategory, type RankedPlace, type Trust } from './places.ts';
 
 export interface AppDeps {
   store: Store;
@@ -324,18 +324,23 @@ export function createApp(deps: AppDeps) {
       q: str(query.get('q'), 'q', { max: 80 }),
       now: store.now(),
     };
-    let ranked = rankPlaces(ps.index, q);
+    // 2 luồng: gần (trong bán kính) · xa (bán kính trống → các nơi gần nhất dù xa)
+    let res = searchPlaces(ps.index, q);
     // ETA thật (Goong DistanceMatrix) cho top 10 — chỉ khi được yêu cầu; cache 10 phút
-    if (query.get('refine') === '1' && goong.enabled && ranked.length) {
+    if (query.get('refine') === '1' && goong.enabled && res.items.length) {
       try {
-        const top = rankPlaces(ps.index, { ...q, limit: 10 });
+        const top = res.items.slice(0, 10);
         const secs = await goong.durationsFrom(q.origin, top.map(r => r.place.pos));
         const etaOverride = new Map<string, number>();
         top.forEach((r, i) => { const v = secs[i]; if (v != null) etaOverride.set(r.place.id, Math.max(1, Math.round(v / 60))); });
-        ranked = rankPlaces(ps.index, { ...q, etaOverride });
+        const candidates = res.mode === 'far' ? res.items.map(r => ({ item: r.place, distM: r.distanceM })) : undefined;
+        res = { ...res, items: rankPlaces(ps.index, { ...q, etaOverride, candidates, openNow: res.mode === 'far' ? false : q.openNow }) };
       } catch { /* Goong lỗi / hết quota: giữ ETA ước tính */ }
     }
-    return { origin: q.origin, count: ranked.length, items: ranked.map(rankedDto) };
+    return {
+      origin: q.origin, mode: res.mode, searchedRadiusM: res.searchedRadiusM, nearestM: res.nearestM,
+      count: res.items.length, items: res.items.map(rankedDto),
+    };
   });
 
   add('GET', '/api/places/:id', ANY, ({ params }) => {

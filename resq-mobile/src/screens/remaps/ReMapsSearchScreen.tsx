@@ -1,5 +1,7 @@
 // ReMapsSearchScreen: bản đồ Goong thật + gara / trạm xăng / trạm sạc / bãi đỗ quanh vị trí GPS thật,
 // xếp hạng bởi server. Marker đánh số theo thứ hạng; chạm marker ↔ nổi bật thẻ.
+// Chạm marker → vẽ đường đi thật tới nơi đó. Luồng xa (ngoại thành / tỉnh: 6 km quanh khách trống) →
+// server gợi ý các nơi gần nhất dù xa, màn này tự chọn nơi #1 và vẽ đường luôn.
 // Bản đồ chỉ mount ở màn này (không ở Trang chủ) để tiết kiệm quota tải bản đồ Goong.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -15,7 +17,9 @@ import { FONTS, METRICS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
 import { useLocation } from '../../features/location/LocationProvider';
 import { GoongMapView, type MapPoi } from '../../features/route/map/GoongMapView';
-import { CATEGORY_LABEL, placesApi, type PlaceCategory, type RankedPlaceDto } from '../../services/api';
+import { CATEGORY_LABEL, placesApi, type NearbyResult, type PlaceCategory, type RankedPlaceDto } from '../../services/api';
+import { useRoutePreview } from '../../features/route/useRoutePreview';
+import { farNotice, previewSummary } from '../../features/route/routePreview';
 
 const CATS: Array<{ k: PlaceCategory; icon: React.ComponentProps<typeof Ionicons>['name'] }> = [
   { k: 'garage', icon: 'construct' },
@@ -32,6 +36,7 @@ export const ReMapsSearchScreen: React.FC = () => {
   const [query, setQuery] = useState('');
   const [q, setQ] = useState('');
   const [items, setItems] = useState<RankedPlaceDto[] | null>(null);
+  const [search, setSearch] = useState<Pick<NearbyResult, 'mode' | 'searchedRadiusM' | 'nearestM'> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -49,12 +54,20 @@ export const ReMapsSearchScreen: React.FC = () => {
     let cancelled = false;
     setError(null); setSelected(null);
     placesApi.nearby({ lat: fix.pos[1], lng: fix.pos[0], category: cat, radiusM: q ? 20_000 : 6000, limit: 25, q: q || undefined })
-      .then(r => { if (!cancelled) setItems(r.items); })
+      .then(r => {
+        if (cancelled) return;
+        setItems(r.items); setSearch(r);
+        if (r.mode === 'far' && r.items[0]) setSelected(r.items[0].id);   // xa: vẽ đường tới nơi phù hợp nhất ngay
+      })
       .catch(e => { if (!cancelled) setError((e as Error).message); });
     return () => { cancelled = true; };
   }, [key, cat, q]);
 
   const pois = useMemo<MapPoi[] | null>(() => items?.map((p, i) => ({ id: p.id, pos: p.pos, cat: p.category, label: p.name, rank: i + 1 })) ?? null, [items]);
+  const sel = useMemo(() => items?.find(i => i.id === selected) ?? null, [items, selected]);
+  const pv = useRoutePreview(fix?.pos ?? null, sel?.pos ?? null);
+  const label = CATEGORY_LABEL[cat].toLowerCase();
+
   const ordered = useMemo(() => {
     if (!items || !selected) return items;
     const s = items.find(i => i.id === selected);
@@ -97,16 +110,42 @@ export const ReMapsSearchScreen: React.FC = () => {
               me={fix ? { pos: fix.pos, accuracyM: fix.accuracyM } : null}
               pois={pois}
               selectedPoiId={selected}
-              onPoiPress={id => { setSelected(id); scrollRef.current?.scrollTo({ y: 320, animated: true }); }}
+              route={pv.route?.coords ?? null}
+              fallback={pv.fallback}
+              onPoiPress={id => { setSelected(id); scrollRef.current?.scrollTo({ y: 0, animated: true }); }}
             />
           </View>
         ) : null}
 
+        {sel ? (
+          <View style={[styles.routeBar, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text numberOfLines={1} style={[styles.routeName, { color: colors.textPrimary }]}>{sel.name}</Text>
+              <Text style={[styles.msg, { color: pv.status === 'error' ? colors.amberText : colors.blue }]}>{previewSummary(pv, fix?.pos ?? null, sel.pos)}</Text>
+            </View>
+            {pv.status === 'error' ? <Pressable onPress={pv.retry} hitSlop={8}><Text style={[styles.link, { color: colors.blue }]}>Thử lại</Text></Pressable> : null}
+            <Pressable onPress={() => navigation.navigate('ReMapsNavigation', { destinationName: sel.name, destCoords: sel.pos })} style={[styles.go, { backgroundColor: colors.blue }]}>
+              <Ionicons name="navigate" size={16} color="#FFFFFF" />
+              <Text style={styles.goText}>Dẫn đường</Text>
+            </Pressable>
+            <Pressable onPress={() => setSelected(null)} hitSlop={10} accessibilityLabel="Bỏ chọn">
+              <Ionicons name="close" size={20} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+        ) : null}
+        {search?.mode === 'far' && items?.length ? (
+          <View style={[styles.farBox, { backgroundColor: colors.amberBg }]}>
+            <Ionicons name="navigate-circle" size={20} color={colors.amberText} />
+            <Text style={[styles.farText, { color: colors.amberText }]}>{farNotice(label, search.searchedRadiusM, search.nearestM)}</Text>
+          </View>
+        ) : null}
         {error ? <Text style={[styles.msg, { color: colors.sos }]}>{error}</Text> : null}
         {fix && !items && !error ? <ActivityIndicator color={colors.blue} style={{ marginTop: 16 }} /> : null}
         {items ? (
           <Text style={[styles.msg, { color: colors.textSecondary }]}>
-            {items.length ? `${items.length} ${CATEGORY_LABEL[cat].toLowerCase()} ${q ? `khớp "${q}"` : 'gần bạn'} · xếp theo mức phù hợp` : `Không tìm thấy ${CATEGORY_LABEL[cat].toLowerCase()} ${q ? `khớp "${q}"` : 'trong 6 km'}`}
+            {items.length
+              ? `${items.length} ${label} ${q ? `khớp "${q}"` : search?.mode === 'far' ? 'gần bạn nhất' : 'gần bạn'} · chạm số trên bản đồ để xem đường đi`
+              : `Không tìm thấy ${label} ${q ? `khớp "${q}"` : 'ở khu vực này'}`}
           </Text>
         ) : null}
 
@@ -134,5 +173,12 @@ const styles = StyleSheet.create({
   catText: { fontFamily: FONTS.bold, fontSize: 12 },
   scroll: { padding: 16, paddingBottom: 36, gap: 12 },
   mapBox: { height: 300, borderRadius: METRICS.radiusCard, borderWidth: 1, overflow: 'hidden' },
+  routeBar: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: METRICS.radiusCard, padding: 12 },
+  routeName: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.sm },
+  link: { fontFamily: FONTS.bold, fontSize: 13 },
+  go: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: METRICS.radiusBtn, paddingHorizontal: 12, minHeight: 40 },
+  goText: { fontFamily: FONTS.bold, fontSize: 13, color: '#FFFFFF' },
+  farBox: { flexDirection: 'row', gap: 8, borderRadius: 12, padding: 12, alignItems: 'flex-start' },
+  farText: { flex: 1, fontFamily: FONTS.semiBold, fontSize: 13, lineHeight: 19 },
   msg: { fontFamily: FONTS.semiBold, fontSize: 12 },
 });

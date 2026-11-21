@@ -136,3 +136,16 @@ test('migration: DB cũ (chưa có cột place_id) vẫn mở được và thêm
   assert.ok(cols.includes('place_id') && cols.includes('place_name'));
   s.db.close();
 });
+
+test('luồng xa qua API: khách ở xa (~38 km) không có gara trong bán kính → vẫn gợi ý nơi gần nhất + mode far', async () => {
+  const tk = await token('khachhang@resq.vn');
+  const far = off(-38_000);   // phía nam, cách 'xa-qua' ~78 km và các nơi khác ~38 km
+  const r = await get(`/api/places/nearby?lat=${far[1]}&lng=${far[0]}&category=garage&issue=unknown`, tk);
+  assert.equal(r.status, 200);
+  assert.equal(r.body.mode, 'far');
+  assert.ok(r.body.count >= 1);
+  assert.ok(r.body.nearestM > 30_000 && r.body.nearestM < 40_000);
+  assert.ok(!r.body.items.some((i: { id: string }) => i.id === 'cho-moi'), 'vẫn ẩn listing tin cậy thấp');
+  const near = await get(`/api/places/nearby?lat=${HN[1]}&lng=${HN[0]}&category=garage`, tk);
+  assert.equal(near.body.mode, 'nearby');
+});

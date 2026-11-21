@@ -232,7 +232,7 @@ window.__resq = function(m){
   try {
     if (m.type === 'route'){ routeCoords = m.coords && m.coords.length >= 2 ? m.coords : null;
       map.getSource('route').setData(routeCoords ? fc([line(routeCoords)]) : fc());
-      if (mode === 'overview') fitAll(); }
+      if (mode === 'overview' && routeCoords) fitAll(); }
     else if (m.type === 'progress'){ map.setPaintProperty('route', 'line-gradient', grad(m.frac)); }
     else if (m.type === 'vehicle'){ setVehicle(m.vehicle); }
     else if (m.type === 'dest'){ setDest(m.dest); }

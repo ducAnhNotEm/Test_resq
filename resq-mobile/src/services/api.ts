@@ -166,6 +166,12 @@ export const CATEGORY_LABEL: Record<PlaceCategory, string> = {
   garage: 'Gara', fuel: 'Trạm xăng', charging: 'Trạm sạc', parking: 'Bãi đỗ',
 };
 
+/**
+ * 2 luồng tìm kiếm: 'nearby' = có nơi trong bán kính; 'far' = bán kính trống (ngoại thành / tỉnh xa) →
+ * server trả các nơi GẦN NHẤT dù xa (tới 300 km), nearestM = khoảng cách nơi gần nhất; 'none' = không có gì.
+ */
+export interface NearbyResult { origin: [number, number]; mode: 'nearby' | 'far' | 'none'; searchedRadiusM: number; nearestM: number | null; count: number; items: RankedPlaceDto[] }
+
 export const placesApi = {
   nearby: (p: { lat: number; lng: number; category?: PlaceCategory; issue?: string; radiusM?: number; limit?: number; openNow?: boolean; q?: string; refine?: boolean; minTrust?: Trust }) => {
     const qs = new URLSearchParams({ lat: String(p.lat), lng: String(p.lng) });
@@ -177,7 +183,9 @@ export const placesApi = {
     if (p.q) qs.set('q', p.q);
     if (p.refine) qs.set('refine', '1');
     if (p.minTrust) qs.set('minTrust', p.minTrust);
-    return api<{ origin: [number, number]; count: number; items: RankedPlaceDto[] }>('GET', `/api/places/nearby?${qs}`, undefined, 30_000);
+    // server cũ (chưa có 2 luồng) không trả mode → coi là 'nearby'
+    return api<Partial<NearbyResult> & { origin: [number, number]; count: number; items: RankedPlaceDto[] }>('GET', `/api/places/nearby?${qs}`, undefined, 30_000)
+      .then((r): NearbyResult => ({ mode: 'nearby', searchedRadiusM: p.radiusM ?? 8000, nearestM: null, ...r }));
   },
   get: (id: string) => api<PlaceDto>('GET', `/api/places/${encodeURIComponent(id)}`),
 };

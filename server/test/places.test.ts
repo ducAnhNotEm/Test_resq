@@ -212,3 +212,36 @@ test('quận / huyện tìm ở mọi đoạn địa chỉ', () => {
   assert.equal(districtOf('Phố Quang Trung, Sơn Tây, Hà Nội'), 'Sơn Tây');
   assert.equal(districtOf('Hà Nội'), null);
 });
+
+test('luồng xa: bán kính trống → k nơi gần nhất dù xa, xếp theo ETA tương đối; luồng gần giữ nguyên', async () => {
+  const { searchPlaces } = await import('../src/places.ts');
+  const idx = new GridIndex<Place>();
+  const a = mk('cách-45km', off(45_000)), b = mk('cách-60km', off(60_000), { services: ['repair', 'tire'] }), c = mk('cách-200km', off(200_000));
+  for (const p of [a, b, c]) idx.add(p.pos, p);
+  const far = searchPlaces(idx, { origin: HN, category: 'garage', issue: 'unknown', now: WED_10AM });
+  assert.equal(far.mode, 'far');
+  assert.equal(far.nearestM, Math.round(45_000));
+  assert.deepEqual(far.items.map(i => i.place.id), ['cách-45km', 'cách-60km', 'cách-200km']);
+  assert.ok(far.items[0].breakdown.eta > 0.9, 'nơi gần nhất có điểm ETA ~1 (thang co giãn), không phải ≈ 0');
+  const near = mk('gần', off(500)); idx.add(near.pos, near);
+  const n = searchPlaces(idx, { origin: HN, category: 'garage', now: WED_10AM });
+  assert.equal(n.mode, 'nearby');
+  assert.deepEqual(n.items.map(i => i.place.id), ['gần']);
+  const none = searchPlaces(new GridIndex<Place>(), { origin: HN, now: WED_10AM });
+  assert.equal(none.mode, 'none');
+});
+
+test('ETA theo chặng: 60 km không bị tính tốc độ nội đô (~2 giờ, không phải 4 giờ)', () => {
+  const e60 = estimateEtaMin(60_000, WED_10AM);
+  assert.ok(e60 > 80 && e60 < 150, `60 km → ${e60} phút`);
+  assert.ok(estimateEtaMin(5000, WED_8AM) > estimateEtaMin(5000, WED_10AM), 'nội đô vẫn chậm giờ cao điểm');
+});
+
+test('chỉ mục: vòng rất lớn quét thẳng danh sách, kết quả trùng cách quét ô', () => {
+  const idx = new GridIndex<Place>();
+  const pts = [off(100), off(5000), off(80_000), off(250_000)].map((p, i) => mk(`p${i}`, p));
+  pts.forEach(p => idx.add(p.pos, p));
+  assert.deepEqual(idx.within(HN, 300_000).map(h => h.item.id), ['p0', 'p1', 'p2', 'p3']);
+  assert.deepEqual(idx.within(HN, 6000).map(h => h.item.id), ['p0', 'p1']);
+  assert.deepEqual(idx.nearest(HN, 3, 300_000).map(h => h.item.id), ['p0', 'p1', 'p2']);
+});

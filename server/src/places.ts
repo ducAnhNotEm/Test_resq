@@ -362,6 +362,7 @@ function merge<T extends { services: PlaceService[]; imageUrls?: string[] }>(kee
 // ======================= chỉ mục không gian (lưới) =======================
 export class GridIndex<T> {
   private cells = new Map<string, Array<{ pos: LngLat; item: T }>>();
+  private all: Array<{ pos: LngLat; item: T }> = [];
   private cellM: number;
   constructor(cellM = 1000) { this.cellM = cellM; }
   private key(p: LngLat): [number, number] {
@@ -374,20 +375,23 @@ export class GridIndex<T> {
     const k = `${i}:${j}`;
     let c = this.cells.get(k);
     if (!c) { c = []; this.cells.set(k, c); }
-    c.push({ pos, item });
+    const e = { pos, item };
+    c.push(e);
+    this.all.push(e);
   }
-  get size(): number { let n = 0; for (const c of this.cells.values()) n += c.length; return n; }
+  get size(): number { return this.all.length; }
   /** Mọi phần tử trong bán kính radiusM, kèm khoảng cách, sắp xếp gần → xa. */
   within(center: LngLat, radiusM: number): Array<{ item: T; distM: number }> {
     const [ci, cj] = this.key(center);
     const r = Math.ceil(radiusM / this.cellM) + 1;
     const out: Array<{ item: T; distM: number }> = [];
-    for (let i = ci - r; i <= ci + r; i++) for (let j = cj - r; j <= cj + r; j++) {
-      for (const e of this.cells.get(`${i}:${j}`) ?? []) {
-        const d = haversine(center, e.pos);
-        if (d <= radiusM) out.push({ item: e.item, distM: d });
-      }
-    }
+    const visit = (e: { pos: LngLat; item: T }) => {
+      const d = haversine(center, e.pos);
+      if (d <= radiusM) out.push({ item: e.item, distM: d });
+    };
+    // vòng tìm rất lớn (khách ở xa): số ô cần quét > số điểm → quét thẳng danh sách, nhanh hơn duyệt ô rỗng
+    if ((2 * r + 1) ** 2 > this.all.length) this.all.forEach(visit);
+    else for (let i = ci - r; i <= ci + r; i++) for (let j = cj - r; j <= cj + r; j++) this.cells.get(`${i}:${j}`)?.forEach(visit);
     return out.sort((a, b) => a.distM - b.distM);
   }
   /** k phần tử gần nhất: mở rộng bán kính dần (1 → 2 → 4 … km) tới khi đủ k hoặc chạm maxM. */
@@ -416,8 +420,18 @@ export function speedKmh(t: number): number {
   return ETA_MODEL.freeKmh;
 }
 
-export const estimateEtaMin = (distM: number, t: number): number =>
-  Math.max(2, Math.round(ETA_MODEL.overheadMin + (distM * ETA_MODEL.roadFactor) / 1000 / speedKmh(t) * 60));
+/**
+ * ETA theo chặng: 10 km đầu là nội đô (tốc độ theo giờ, hệ số đường 1,35); 10–40 km ven đô 40 km/h (1,25);
+ * > 40 km quốc lộ / cao tốc 60 km/h (1,2). Một tốc độ nội đô cho cả quãng 60 km sẽ ra ETA phi lý (~3 giờ).
+ */
+export function estimateEtaMin(distM: number, t: number): number {
+  const km = distM / 1000;
+  const urban = Math.min(km, 10);
+  const suburban = Math.min(Math.max(km - 10, 0), 30);
+  const highway = Math.max(km - 40, 0);
+  const hours = (urban * ETA_MODEL.roadFactor) / speedKmh(t) + (suburban * 1.25) / 40 + (highway * 1.2) / 60;
+  return Math.max(2, Math.round(ETA_MODEL.overheadMin + hours * 60));
+}
 
 // ======================= XẾP HẠNG: khách → địa điểm =======================
 export type Issue = 'tire' | 'battery' | 'tow' | 'unknown' | 'fuel' | 'lockout' | 'accident' | 'engine';
@@ -440,6 +454,8 @@ export interface RankQuery {
   now?: number;
   /** ETA thật (phút) theo id — từ Goong DistanceMatrix cho top ứng viên. */
   etaOverride?: Map<string, number>;
+  /** Ứng viên có sẵn (luồng xa: k điểm gần nhất bất kể bán kính) — bỏ qua bước tìm theo bán kính. */
+  candidates?: Array<{ item: Place; distM: number }>;
 }
 
 export interface RankedPlace {
@@ -464,20 +480,20 @@ export function rankPlaces(index: GridIndex<Place>, query: RankQuery): RankedPla
   const now = query.now ?? Date.now();
   const radiusM = Math.min(query.radiusM ?? 8000, 30_000);
   const want = query.issue ? ISSUE_SERVICE[query.issue] : null;
-  const minTrust = TRUST_RANK[query.minTrust ?? 'medium'];
-  const q = query.q ? fold(query.q) : '';
+  const matches = placeMatcher(query);
+  const candidates = (query.candidates ?? index.within(query.origin, radiusM)).filter(({ item: p }) => matches(p));
 
-  const candidates = index.within(query.origin, radiusM).filter(({ item: p }) =>
-    (!query.category || p.category === query.category) &&
-    TRUST_RANK[p.trust] >= minTrust &&
-    (!q || fold(`${p.name} ${p.address}`).includes(q)));
+  const etaOf = (id: string, distM: number) => query.etaOverride?.get(id) ?? estimateEtaMin(distM, now);
+  // Thang ETA co giãn: luồng xa (mọi nơi ≥ 40') vẫn phân biệt được gần/xa thay vì điểm ETA đều ≈ 0
+  const minEta = candidates.reduce((m, c) => Math.min(m, etaOf(c.item.id, c.distM)), Infinity);
+  const tau = Math.max(15, Number.isFinite(minEta) ? minEta : 15);
 
   const ranked = candidates.map(({ item: p, distM }) => {
     const override = query.etaOverride?.get(p.id);
-    const etaMin = override ?? estimateEtaMin(distM, now);
+    const etaMin = etaOf(p.id, distM);
     const open = openState(p.hours, now);
     const br = { eta: 0, capability: 0, open: 0, rating: 0, trust: 0 };
-    br.eta = Math.exp(-etaMin / 15);                                   // 5' → 0,72 · 15' → 0,37 · 30' → 0,14
+    br.eta = Math.exp(-(etaMin - (tau > 15 ? minEta : 0)) / tau);       // gần: 5' → 0,72 · 15' → 0,37; xa: so với nơi gần nhất
     br.capability = !want ? 1 : p.services.includes(want) ? 1 : p.category === 'garage' ? 0.45 : 0;
     // cứu hộ / kéo xe thường hoạt động ngoài giờ niêm yết → phạt "đóng cửa" nhẹ hơn
     const closedPenalty = want === 'tow' && p.services.includes('tow') ? 0.35 : 0;
@@ -501,6 +517,41 @@ export function rankPlaces(index: GridIndex<Place>, query: RankQuery): RankedPla
     .filter(r => !query.openNow || r.open.state === 'open' || r.open.state === 'closing-soon')
     .sort((a, b) => b.score - a.score || a.distanceM - b.distanceM)
     .slice(0, Math.min(query.limit ?? 20, 50));
+}
+
+function placeMatcher(query: RankQuery): (p: Place) => boolean {
+  const minTrust = TRUST_RANK[query.minTrust ?? 'medium'];
+  const q = query.q ? fold(query.q) : '';
+  return p => (!query.category || p.category === query.category) && TRUST_RANK[p.trust] >= minTrust && (!q || fold(`${p.name} ${p.address}`).includes(q));
+}
+
+export const FAR_SEARCH_MAX_M = 300_000;   // ngoài 300 km: coi như không có dữ liệu (hiện tại chỉ phủ Hà Nội)
+
+export interface SearchResult {
+  /** 'nearby': có kết quả trong bán kính · 'far': bán kính trống → k nơi gần nhất dù xa · 'none': không có gì */
+  mode: 'nearby' | 'far' | 'none';
+  items: RankedPlace[];
+  searchedRadiusM: number;
+  nearestM: number | null;
+}
+
+/**
+ * HAI LUỒNG:
+ *  1. Gần — xếp hạng trong bán kính (mặc định 8 km).
+ *  2. Xa — khách ở ngoại thành / tỉnh khác, bán kính TRỐNG: lấy k nơi GẦN NHẤT bất kể bán kính
+ *     (tối đa 300 km), xếp hạng với thang ETA co giãn. Không bao giờ trả "không có gì" khi dữ liệu vẫn có nơi phù hợp.
+ */
+export function searchPlaces(index: GridIndex<Place>, query: RankQuery, minResults = 1): SearchResult {
+  const radiusM = Math.min(query.radiusM ?? 8000, 30_000);
+  const near = rankPlaces(index, query);
+  const want = Math.min(minResults, query.limit ?? 20);
+  if (near.length >= want) return { mode: 'nearby', items: near, searchedRadiusM: radiusM, nearestM: near.length ? Math.min(...near.map(r => r.distanceM)) : null };
+  const matches = placeMatcher(query);
+  const nn = index.nearest(query.origin, Math.min(query.limit ?? 20, 50), FAR_SEARCH_MAX_M, matches);
+  if (!nn.length) return { mode: 'none', items: [], searchedRadiusM: radiusM, nearestM: null };
+  // luồng xa: "đang mở" không lọc cứng (khách cần biết nơi có thể tới, kể cả mở cửa sáng mai)
+  const items = rankPlaces(index, { ...query, openNow: false, candidates: nn });
+  return { mode: 'far', items, searchedRadiusM: radiusM, nearestM: Math.round(nn[0].distM) };
 }
 
 export const SERVICE_LABEL: Record<PlaceService, string> = {

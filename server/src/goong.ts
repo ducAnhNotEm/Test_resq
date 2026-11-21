@@ -45,7 +45,23 @@ export class GoongClient {
   }
 
   /** Trả nguyên JSON Goong Directions (app đã có bộ phân tích goongFetcher). */
-  directions(from: LngLat, to: LngLat, vehicle: string): Promise<unknown> {
+  private directionsCache = new TtlCache<unknown>(500, 10 * 60_000);
+
+  /**
+   * Chỉ đường. Cache 10 phút theo lưới ~110 m: khách bấm qua lại giữa các gara / xem lại tuyến không tốn quota.
+   * (Dẫn đường 1 Hz không bị ảnh hưởng — RouteTracker chỉ gọi lại khi lệch tuyến, vị trí đã khác ô lưới.)
+   */
+  async directions(from: LngLat, to: LngLat, vehicle: string): Promise<unknown> {
+    // điểm đi làm tròn ~11 m (tính lại tuyến khi lệch không nhận nhầm tuyến cũ), điểm đến ~110 m
+    const key = `${vehicle}|${from[1].toFixed(4)},${from[0].toFixed(4)}|${to[1].toFixed(3)},${to[0].toFixed(3)}`;
+    const hit = this.directionsCache.get(key);
+    if (hit) return hit;
+    const body = await this.directionsRaw(from, to, vehicle);
+    this.directionsCache.set(key, body);
+    return body;
+  }
+
+  private directionsRaw(from: LngLat, to: LngLat, vehicle: string): Promise<unknown> {
     return this.get('/v2/direction', {
       origin: `${from[1]},${from[0]}`,
       destination: `${to[1]},${to[0]}`,

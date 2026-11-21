@@ -1,6 +1,8 @@
 // GarageListScreen: "Chọn nơi hỗ trợ". Dùng vị trí đã CHỐT ở ReFix (support); thiếu thì dùng GPS hiện tại.
 // Server xếp hạng (ETA, đúng dịch vụ, đang mở, đánh giá, độ tin cậy); hiện ngay ETA ước tính rồi cập nhật ETA thật.
 // Nút chính duy nhất: "Gửi yêu cầu cứu hộ" — không bắt buộc chọn gara.
+// 2 luồng: có gara trong bán kính → danh sách như thường; khách ở ngoại thành / tỉnh xa (bán kính trống) →
+// server gợi ý các nơi GẦN NHẤT dù xa + màn này vẽ luôn đường đi thật tới nơi phù hợp nhất.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,11 +11,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { LocationGate } from '../../components/LocationGate';
 import { PlaceCard } from '../../components/PlaceCard';
+import { RoutePreview } from '../../components/RoutePreview';
+import { farNotice } from '../../features/route/routePreview';
 import { useAppTheme } from '../../context/ThemeContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList, SupportLocation } from '../../types';
 import { useLocation } from '../../features/location/LocationProvider';
-import { ApiError, ISSUE_LABEL, placesApi, type RankedPlaceDto } from '../../services/api';
+import { ApiError, ISSUE_LABEL, placesApi, type NearbyResult, type RankedPlaceDto } from '../../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GarageList'>;
 type SortKey = 'best' | 'near' | 'rating';
@@ -48,8 +52,9 @@ export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
   const [towMode, setTowMode] = useState(issue === 'tow');
   const [sort, setSort] = useState<SortKey>('best');
   const [openNow, setOpenNow] = useState(false);
-  const [radiusM, setRadiusM] = useState(8000);
+  const radiusM = 8000;
   const [items, setItems] = useState<RankedPlaceDto[] | null>(null);
+  const [search, setSearch] = useState<Pick<NearbyResult, 'mode' | 'searchedRadiusM' | 'nearestM'> | null>(null);
   const [refined, setRefined] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -60,18 +65,18 @@ export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
     if (!support) return;
     const id = ++reqId.current;
     const params = { lat: support.pos[1], lng: support.pos[0], category: 'garage' as const, issue: searchIssue, radiusM, openNow, limit: 30 };
-    setItems(null); setRefined(false); setError(null);
+    setItems(null); setSearch(null); setRefined(false); setError(null);
     placesApi.nearby(params)
       .then(r => {
         if (id !== reqId.current) return;
-        setItems(r.items);
+        setItems(r.items); setSearch(r);
         // nhịp 2: ETA theo đường thật (Goong) cho top 10 — lỗi thì giữ ETA ước tính
         return placesApi.nearby({ ...params, refine: true }).then(r2 => {
-          if (id === reqId.current) { setItems(r2.items); setRefined(r2.items.some(i => i.etaSource === 'goong')); }
+          if (id === reqId.current) { setItems(r2.items); setSearch(r2); setRefined(r2.items.some(i => i.etaSource === 'goong')); }
         }).catch(() => {});
       })
       .catch(e => { if (id === reqId.current) setError(friendlyError(e)); });
-  }, [support, searchIssue, radiusM, openNow, attempt]);
+  }, [support, searchIssue, openNow, attempt]);
 
   const list = useMemo(() => {
     if (!items) return null;
@@ -134,9 +139,27 @@ export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         ) : null}
         {support && !list && !error ? <ActivityIndicator color={colors.blue} style={{ marginTop: 20 }} /> : null}
-        {list ? (
+        {list && search?.mode === 'far' && items?.[0] ? (
+          <>
+            <View style={[styles.farBox, { backgroundColor: colors.amberBg }]}>
+              <Ionicons name="navigate-circle" size={20} color={colors.amberText} />
+              <Text style={[styles.farText, { color: colors.amberText }]}>
+                {farNotice(towMode ? 'đơn vị cứu hộ' : 'gara', search.searchedRadiusM, search.nearestM, openNow)}
+              </Text>
+            </View>
+            {/* nơi phù hợp nhất (thứ hạng server) — vẽ đường thật để khách biết phải đi bao xa */}
+            <RoutePreview
+              from={support?.pos ?? null}
+              fromAccuracyM={support?.accuracyM}
+              to={items[0].pos}
+              toName={items[0].name}
+              onNavigate={() => navigation.navigate('ReMapsNavigation', { destinationName: items[0].name, destCoords: items[0].pos })}
+            />
+          </>
+        ) : null}
+        {list && list.length ? (
           <Text style={[styles.count, { color: colors.textSecondary }]}>
-            {list.length} nơi trong {radiusM / 1000} km · {refined ? 'thời gian theo đường thật' : 'thời gian ước tính'}
+            {search?.mode === 'far' ? `${list.length} nơi gần bạn nhất` : `${list.length} nơi trong ${radiusM / 1000} km`} · {refined ? 'thời gian theo đường thật' : 'thời gian ước tính'}
           </Text>
         ) : null}
 
@@ -154,11 +177,8 @@ export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
         {list && list.length === 0 ? (
           <View style={styles.empty}>
             <Text style={[styles.count, { color: colors.textSecondary, textAlign: 'center' }]}>
-              Chưa có {towMode ? 'đơn vị cứu hộ' : 'gara'} {openNow ? 'đang mở ' : ''}trong {radiusM / 1000} km.
+              Chưa có dữ liệu {towMode ? 'đơn vị cứu hộ' : 'gara'} ở khu vực này. Bấm "Gửi yêu cầu cứu hộ" — tổng đài sẽ tìm xe cho bạn.
             </Text>
-            {radiusM < 20000 ? (
-              <Pressable onPress={() => setRadiusM(20000)} style={[styles.retry, { backgroundColor: colors.blue }]}><Text style={styles.retryText}>Tìm xa hơn (20 km)</Text></Pressable>
-            ) : null}
           </View>
         ) : null}
       </ScrollView>
@@ -191,6 +211,8 @@ const styles = StyleSheet.create({
   retry: { borderRadius: METRICS.radiusBtn, paddingHorizontal: 18, paddingVertical: 10 },
   retryText: { fontFamily: FONTS.bold, fontSize: 13, color: '#FFFFFF' },
   count: { fontFamily: FONTS.semiBold, fontSize: 12 },
+  farBox: { flexDirection: 'row', gap: 8, borderRadius: 12, padding: 12, alignItems: 'flex-start' },
+  farText: { flex: 1, fontFamily: FONTS.semiBold, fontSize: 13, lineHeight: 19 },
   empty: { alignItems: 'center', gap: 10, paddingVertical: 24 },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 10, borderTopWidth: 1, gap: 4 },
   cta: { minHeight: 54, borderRadius: METRICS.radiusBtn, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, ...SHADOWS.card },

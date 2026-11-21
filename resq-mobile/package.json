@@ -9,7 +9,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
-    "test": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --import ./tests/tsResolve.mjs --test tests/routeTracker.test.ts tests/geo.test.ts tests/navigation.test.ts tests/telemetry.test.ts tests/wsTransport.test.ts"
+    "test": "node --no-warnings=MODULE_TYPELESS_PACKAGE_JSON --import ./tests/tsResolve.mjs --test tests/routeTracker.test.ts tests/geo.test.ts tests/navigation.test.ts tests/telemetry.test.ts tests/wsTransport.test.ts tests/routePreview.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/be-vietnam-pro": "^0.2.3",
