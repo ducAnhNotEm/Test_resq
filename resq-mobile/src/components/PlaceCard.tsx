@@ -53,6 +53,11 @@ export const PlaceCard = memo(function PlaceCard({ item, rank, onPress, onDirect
 
         <View style={{ flex: 1, gap: 3 }}>
           <Text numberOfLines={2} style={[styles.name, { color: colors.textPrimary }]}>{item.name}</Text>
+          {item.partner ? (
+            <Text style={[styles.meta, { color: item.partner.onDuty ? colors.greenText : colors.textSecondary, fontFamily: FONTS.bold }]}>
+              ✓ Đối tác ReFix · {item.partner.onDuty ? 'đang có người trực' : 'chưa có người trực'}
+            </Text>
+          ) : null}
           <View style={styles.metaRow}>
             <Text style={[styles.dist, { color: colors.blue }]}>{fmtDistance(item.distanceM)} · ~{item.etaMin} phút</Text>
             {item.rating != null && item.reviewsCount > 0 ? (

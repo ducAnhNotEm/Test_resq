@@ -13,6 +13,9 @@ import { GoongClient } from './goong.ts';
 import { RealtimeHub } from './realtime.ts';
 import { createApp } from './http.ts';
 import { PlaceStore } from './placeStore.ts';
+import { Demo } from './demo.ts';
+import { ensureSeedStores, syncPartners } from './refix.ts';
+import { SEED_EMAILS } from './db.ts';
 
 const root = ROOT;
 const env = loadEnv();
@@ -38,7 +41,8 @@ const store = new Store(dbPathOf(env));
 store.seedIfEmpty(env.RESQ_SEED_PASSWORD || DEFAULT_SEED_PASSWORD);
 
 let realtime: RealtimeHub | null = null;
-const orders = new OrderService(store, (o, notify) => realtime?.publishOrder(o, notify));
+let demo: Demo | null = null;
+const orders = new OrderService(store, (o, notify) => { realtime?.publishOrder(o, notify); demo?.onOrderChange(o); });
 const signer = new TokenSigner(secret, 30 * 24 * 3600_000);          // nội bộ: phiên 30 ngày
 const goong = new GoongClient(goongApiKey);
 if (!goong.enabled) console.warn('Chưa có key Goong REST (biến GOONG_API_KEY, hoặc EXPO_PUBLIC_GOONG_API_KEY trong resq-mobile/.env): chỉ đường / địa chỉ sẽ báo lỗi.');
@@ -49,7 +53,18 @@ realtime = new RealtimeHub({ store, orders, signer });
 realtime.attach(server, '/ws');
 const places = PlaceStore.load(root);
 console.log(places.size ? `Địa điểm: ${places.size} ${JSON.stringify(places.counts())}` : 'Chưa có dữ liệu địa điểm — chạy npm run build-places');
-const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin'), places, placeImagesDir: join(root, 'seed', 'place-images') });
+// Gara ReFix cho tài khoản nhân viên mẫu (gara thật trong dữ liệu) + đưa gara đối tác vào danh sách tìm kiếm.
+const seedStore = ensureSeedStores(store, places, SEED_EMAILS);
+if (seedStore) console.log(`Gara ReFix của nhân viên mẫu: ${seedStore.name}`);
+syncPartners(store, places);
+// CHẾ ĐỘ DEMO (xe ảo + tự duyệt gara mới): cờ TƯỜNG MINH, tổng đài bật/tắt trên trang admin.
+// RESQ_DEMO_MODE=0 để tắt khi khởi động (mặc định bật: đây là bản demo sản phẩm). Không bao giờ suy luận từ GPS.
+if (env.RESQ_DEMO_MODE !== undefined || store.setting('demo_mode') === undefined) store.setSetting('demo_mode', env.RESQ_DEMO_MODE === '0' ? '0' : '1');
+console.log(store.demoMode() ? 'CHẾ ĐỘ DEMO: BẬT — xe ảo chạy từ gara được giao, gara mới tự duyệt' : 'Chế độ demo: tắt (GPS thật)');
+demo = new Demo({ store, orders, realtime: () => realtime, goong, places });
+const resumed = demo.resume();
+if (resumed) console.log(`Chạy lại ${resumed} xe ảo đang dở hành trình`);
+const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin'), places, placeImagesDir: join(root, 'seed', 'place-images'), demo, storeImagesDir: join(dataDir, 'store-images') });
 server.on('request', (req, res) => { void handle(req, res); });
 
 // điều phối lại đơn hết hạn nhận / đơn đang chờ; dọn hành trình cũ (quyền riêng tư)
@@ -77,6 +92,7 @@ server.listen(port, '0.0.0.0', () => {
 
 const shutdown = () => {
   clearInterval(sweep); clearInterval(purge);
+  demo?.close();
   realtime?.close();
   server.close(() => { store.db.close(); process.exit(0); });
   setTimeout(() => process.exit(0), 3000).unref();

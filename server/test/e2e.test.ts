@@ -20,6 +20,9 @@ const CUSTOMER_AT = { lat: 21.0020, lng: 105.8157 };
 before(async () => {
   const store = new Store(':memory:');
   store.seedIfEmpty(PW, () => {});
+  // cửa hàng là đơn vị điều phối: nhân viên mẫu thuộc 1 gara cách khách ~1,4 km
+  store.upsertStore({ id: 'g-e2e', name: 'Gara E2E', pos: [105.8100, 21.0150], services: ['repair', 'tire'], status: 'active' });
+  store.setUserStore(store.userByEmail('cuuho@resq.vn')!.id, 'g-e2e');
   let rt: RealtimeHub | null = null;
   const orders = new OrderService(store, (o, n) => rt?.publishOrder(o, n));
   const signer = new TokenSigner('t'.repeat(40));

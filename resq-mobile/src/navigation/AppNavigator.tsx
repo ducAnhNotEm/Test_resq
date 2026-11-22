@@ -8,6 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DeviceSelectionScreen } from '../screens/auth/DeviceSelectionScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
+import { GarageRegisterScreen } from '../screens/auth/GarageRegisterScreen';
+import { StoreProfileScreen } from '../screens/staff/StoreProfileScreen';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { ReFixIssueScreen } from '../screens/refix/ReFixIssueScreen';
 import { GarageListScreen } from '../screens/refix/GarageListScreen';
@@ -28,10 +30,41 @@ import { useAuth } from '../context/AuthContext';
 import { PlaceDetailScreen } from '../screens/places/PlaceDetailScreen';
 import { useAppTheme } from '../context/ThemeContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../theme/tokens';
-import { MainTabParamList, RootStackParamList } from '../types';
+import { MainTabParamList, RootStackParamList, StaffTabParamList } from '../types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+const StaffTab = createBottomTabNavigator<StaffTabParamList>();
+
+/**
+ * NHÂN VIÊN GARA REFIX: cùng chức năng ReFix như khách (chọn sự cố → gara / phụ tùng / kéo xe gần đây, ảnh thật,
+ * đường đi) để tra cứu khi đang hỗ trợ — cộng tab nhận đơn. Không có nút gửi yêu cầu cứu hộ / SOS của khách.
+ */
+const StaffTabsNavigator: React.FC = () => {
+  const { colors } = useAppTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <StaffTab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.blue,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          height: 64 + insets.bottom, paddingBottom: Math.max(insets.bottom, 8), paddingTop: 6,
+          backgroundColor: colors.bgCard, borderTopColor: colors.borderSubtle, borderTopWidth: 1,
+        },
+        tabBarLabelStyle: { fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.xs },
+      }}
+    >
+      <StaffTab.Screen name="StaffJobsTab" component={StaffJobsScreen}
+        options={{ title: 'Đơn ReFix', tabBarIcon: ({ color, size }) => <Ionicons name="radio" size={size} color={color} /> }} />
+      <StaffTab.Screen name="StaffReFixTab" component={ReFixIssueScreen}
+        options={{ title: 'ReFix', tabBarIcon: ({ color, size }) => <Ionicons name="build" size={size} color={color} /> }} />
+      <StaffTab.Screen name="StaffMapsTab" component={ReMapsSearchScreen}
+        options={{ title: 'Bản đồ', tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} /> }} />
+    </StaffTab.Navigator>
+  );
+};
 
 const MainTabsNavigator: React.FC = () => {
   const { colors, openSosModal } = useAppTheme();
@@ -168,6 +201,7 @@ export const AppNavigator: React.FC = () => {
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="DeviceSelection" component={DeviceSelectionScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="GarageRegister" component={GarageRegisterScreen} />
       </Stack.Navigator>
     );
   }
@@ -175,7 +209,10 @@ export const AppNavigator: React.FC = () => {
   if (user.role === 'staff') {
     return (
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-        <Stack.Screen name="StaffJobs" component={StaffJobsScreen} />
+        <Stack.Screen name="StaffJobs" component={StaffTabsNavigator} />
+        <Stack.Screen name="StoreProfile" component={StoreProfileScreen} />
+        <Stack.Screen name="GarageList" component={GarageListScreen} />
+        <Stack.Screen name="PlaceDetail" component={PlaceDetailScreen} />
         <Stack.Screen name="ReMapsNavigation" component={ReMapsNavigationScreen} />
       </Stack.Navigator>
     );

@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE COLLATE NOCASE,
   password_hash TEXT NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('customer','staff','admin')),
+  role TEXT NOT NULL CHECK (role IN ('customer','staff','admin','garage')),
   name TEXT NOT NULL,
   phone TEXT NOT NULL DEFAULT '',
   vehicle_plate TEXT NOT NULL DEFAULT '',
@@ -69,28 +69,125 @@ CREATE TABLE IF NOT EXISTS track_points (
   speed_mps REAL, simulated INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_track_order ON track_points(order_id, at);
+CREATE TABLE IF NOT EXISTS stores (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  address TEXT NOT NULL DEFAULT '',
+  phone TEXT NOT NULL DEFAULT '',
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  place_id TEXT,
+  email TEXT NOT NULL DEFAULT '',
+  image TEXT NOT NULL DEFAULT '',
+  hours TEXT NOT NULL DEFAULT '',
+  rating REAL NOT NULL DEFAULT 5.0,
+  reviews_count INTEGER NOT NULL DEFAULT 0,
+  services TEXT NOT NULL DEFAULT '[]',
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 `;
+// Cột thêm sau (store_id, virtual_drive...) KHÔNG nằm trong CREATE TABLE: mọi DB — mới hay cũ — đi chung
+// một đường migrate() → không bao giờ có chuyện DB mới chạy được còn DB cũ thì lỗi "no such column".
+
+/** Tài khoản mẫu (demo): nút "Đặt lại demo" chỉ đụng tới đơn của những tài khoản này. */
+export const SEED_EMAILS = ['admin@resq.vn', 'khachhang@resq.vn', 'cuuho@resq.vn', 'cuuho2@resq.vn', 'gara@resq.vn'];
 
 export interface UserRow {
   id: number; email: string; password_hash: string; role: Role; name: string; phone: string;
-  vehicle_plate: string; unit: string; active: number; created_at: number; updated_at: number;
+  vehicle_plate: string; unit: string; store_id: string | null; active: number; created_at: number; updated_at: number;
 }
 
 export interface PublicUser {
   id: number; email: string; role: Role; name: string; phone: string;
-  vehiclePlate: string; unit: string; active: boolean; createdAt: number; updatedAt: number;
+  vehiclePlate: string; unit: string; storeId: string | null; active: boolean; createdAt: number; updatedAt: number;
+}
+
+/**
+ * Vai trò một tài khoản ĐƯỢC PHÉP dùng. Tài khoản gara (chủ / nhân viên) cũng là một người lái xe → dùng được
+ * cả vai khách hàng. Token mang vai đang dùng (acting role): 2 điện thoại đăng nhập CÙNG tài khoản, máy A
+ * chọn "Khách hàng", máy B chọn "Nhân viên gara" → máy A gửi yêu cầu, máy B nhận đơn.
+ */
+export function rolesOf(u: Pick<UserRow, 'role'>): Role[] {
+  if (u.role === 'admin') return ['admin'];
+  if (u.role === 'staff' || u.role === 'garage') return ['staff', 'customer'];
+  return ['customer'];
 }
 
 export const toPublicUser = (u: UserRow): PublicUser => ({
   id: u.id, email: u.email, role: u.role, name: u.name, phone: u.phone,
-  vehiclePlate: u.vehicle_plate, unit: u.unit, active: !!u.active, createdAt: u.created_at, updatedAt: u.updated_at,
+  vehiclePlate: u.vehicle_plate, unit: u.unit, storeId: u.store_id ?? null, active: !!u.active, createdAt: u.created_at, updatedAt: u.updated_at,
 });
+
+/**
+ * Cửa hàng / gara ReFix (đối tác) — ĐƠN VỊ ĐƯỢC ĐIỀU PHỐI. Tọa độ (lat/lng) là tọa độ ĐÃ XÁC MINH, dùng để tính
+ * khoảng cách / ETA. Cửa hàng tự sửa địa chỉ → vào pending_* cho tới khi tổng đài duyệt (chống "dời địa chỉ về
+ * gần khách để thắng đơn"). place_id: liên kết địa điểm thật trong dữ liệu Google Maps.
+ */
+export type StoreStatus = 'pending' | 'active' | 'suspended';
+export type ImageSource = 'store' | 'google';
+export interface StoreImage { url: string; source: ImageSource }
+export type WeekHours = Record<number, Array<[number, number]>>;    // 0 = Chủ nhật … 6 = Thứ bảy; phút trong ngày
+export interface StoreRow {
+  id: string; name: string; address: string; phone: string; lat: number; lng: number;
+  place_id: string | null; email: string; image: string; hours: string; rating: number;
+  reviews_count: number; services: string; active: number; created_at: number; updated_at: number;
+  owner_user_id: number | null; status: StoreStatus; hours_json: string; images: string;
+  pending_address: string | null; pending_lat: number | null; pending_lng: number | null; pending_at: number | null;
+  verified_at: number | null; verified_by: string | null;
+}
+export interface StoreInfo {
+  id: string; name: string; address: string; phone: string; pos: LngLat; placeId: string | null;
+  email?: string; hours?: string; rating?: number | null; reviewsCount?: number; services?: string[];
+  status?: StoreStatus;
+  /** Giờ mở cửa CÓ CẤU TRÚC (tham gia điều kiện điều phối). null = chưa khai báo. */
+  week?: WeekHours | null;
+  images?: StoreImage[];
+  /** Địa chỉ cửa hàng vừa sửa, CHỜ tổng đài xác minh (điều phối vẫn dùng pos cũ). */
+  pending?: { address: string; pos: LngLat; at: number } | null;
+  verifiedBy?: string | null;
+  ownerUserId?: number | null;
+}
+export const parseWeek = (s: string | null | undefined): WeekHours | null => {
+  if (!s) return null;
+  const v = safeJson(s) as WeekHours;
+  return v && typeof v === 'object' && Object.keys(v).length ? v : null;
+};
+export const toStoreInfo = (s: StoreRow): StoreInfo => {
+  const images = (safeJson(s.images || '[]') as StoreImage[]);
+  return {
+    id: s.id, name: s.name, address: s.address, phone: s.phone, pos: [s.lng, s.lat], placeId: s.place_id,
+    email: s.email || undefined, hours: s.hours || undefined,
+    rating: s.reviews_count > 0 ? s.rating : null, reviewsCount: s.reviews_count || 0,
+    services: s.services ? (safeJson(s.services) as string[]) : [],
+    status: s.status ?? 'active', week: parseWeek(s.hours_json), images: Array.isArray(images) ? images : [],
+    pending: s.pending_address != null && s.pending_lat != null && s.pending_lng != null
+      ? { address: s.pending_address, pos: [s.pending_lng, s.pending_lat], at: s.pending_at ?? 0 } : null,
+    verifiedBy: s.verified_by, ownerUserId: s.owner_user_id,
+  };
+};
+
+/** Vì sao chưa tự giao đơn (hiện cho khách + tổng đài, KHÔNG âm thầm giao gara xa / gara khác). */
+export interface DispatchHold {
+  code: 'no_store' | 'out_of_coverage' | 'requested_unavailable';
+  message: string;
+  best: { storeId: string; name: string; distanceM: number; etaMin: number } | null;
+  requested: { storeId: string; name: string; reason: string } | null;
+  at: number;
+}
 
 export interface OrderRow {
   id: string; customer_id: number; staff_id: number | null; status: OrderStatus; priority: 'normal' | 'sos';
   issue: string; note: string; injured: number | null; lat: number; lng: number; accuracy_m: number | null;
   address: string; vehicle_plate: string; declined_by: string; cancel_reason: string | null; rating: number | null;
   place_id: string | null; place_name: string | null;
+  store_id: string | null; store_distance_m: number | null; store_eta_s: number | null; virtual_drive: number;
+  requested_store_id: string | null; dispatch_hold: string | null;
   created_at: number; updated_at: number; assigned_at: number | null; enroute_at: number | null; arrived_at: number | null;
   in_service_at: number | null; completed_at: number | null; cancelled_at: number | null;
 }
@@ -98,6 +195,8 @@ export interface OrderRow {
 type JoinedOrder = OrderRow & {
   c_name: string; c_phone: string;
   s_name: string | null; s_phone: string | null; s_plate: string | null; s_unit: string | null;
+  st_name: string | null; st_address: string | null; st_phone: string | null; st_lat: number | null; st_lng: number | null; st_place: string | null;
+  rq_name: string | null;
 };
 
 export interface Order {
@@ -116,6 +215,17 @@ export interface Order {
   rating: number | null;
   /** Đơn vị khách chọn trong danh sách gara (nếu có). */
   place: { id: string; name: string } | null;
+  /** Gara ReFix ĐƯỢC GIAO (đơn vị điều phối): tên, vị trí đã xác minh, cách khách bao xa (từ GARA, không từ điện thoại). */
+  store: (StoreInfo & { distanceM: number | null; etaS: number | null }) | null;
+  /** Gara KHÁCH CHỌN (nếu là đối tác). Khác gara được giao → luôn có lý do + khách xác nhận / tổng đài ghi log. */
+  requestedStore: { id: string; name: string } | null;
+  /** Chưa tự giao được: vì sao (ngoài vùng phủ / gara khách chọn không nhận được / không có gara). */
+  hold: DispatchHold | null;
+  /**
+   * Xe ảo — CHỈ khi tổng đài bật "Chế độ demo" (cờ tường minh, không suy luận từ GPS). Server lái xe từ ĐÚNG gara
+   * được giao tới khách theo tuyến Goong thật; GPS thật của máy nhân viên bị bỏ qua cho đơn này. Mọi màn hình gắn nhãn.
+   */
+  virtualDrive: boolean;
   createdAt: number;
   updatedAt: number;
   times: Partial<Record<'assigned' | 'enroute' | 'arrived' | 'inService' | 'completed' | 'cancelled', number>>;
@@ -143,14 +253,28 @@ function toOrder(r: JoinedOrder): Order {
       : null,
     cancelReason: r.cancel_reason, rating: r.rating,
     place: r.place_id ? { id: r.place_id, name: r.place_name ?? '' } : null,
+    store: r.store_id && r.st_name != null && r.st_lat != null && r.st_lng != null
+      ? {
+        id: r.store_id, name: r.st_name, address: r.st_address ?? '', phone: r.st_phone ?? '', pos: [r.st_lng, r.st_lat],
+        placeId: r.st_place, distanceM: r.store_distance_m, etaS: r.store_eta_s,
+      }
+      : null,
+    requestedStore: r.requested_store_id ? { id: r.requested_store_id, name: r.rq_name ?? '' } : null,
+    hold: r.dispatch_hold ? (safeJson(r.dispatch_hold) as DispatchHold) : null,
+    virtualDrive: !!r.virtual_drive,
     createdAt: r.created_at, updatedAt: r.updated_at, times, declinedBy,
   };
 }
 
 const ORDER_SELECT = `
   SELECT o.*, c.name AS c_name, c.phone AS c_phone,
-         s.name AS s_name, s.phone AS s_phone, s.vehicle_plate AS s_plate, s.unit AS s_unit
-  FROM orders o JOIN users c ON c.id = o.customer_id LEFT JOIN users s ON s.id = o.staff_id`;
+         s.name AS s_name, s.phone AS s_phone, s.vehicle_plate AS s_plate, s.unit AS s_unit,
+         st.name AS st_name, st.address AS st_address, st.phone AS st_phone, st.lat AS st_lat, st.lng AS st_lng, st.place_id AS st_place,
+         rq.name AS rq_name
+  FROM orders o JOIN users c ON c.id = o.customer_id
+  LEFT JOIN users s ON s.id = o.staff_id
+  LEFT JOIN stores st ON st.id = o.store_id
+  LEFT JOIN stores rq ON rq.id = o.requested_store_id`;
 
 const STATUS_TIME_COL: Partial<Record<OrderStatus, keyof OrderRow>> = {
   assigned: 'assigned_at', enroute: 'enroute_at', arrived: 'arrived_at',
@@ -182,9 +306,72 @@ export class Store {
 
   /** Thêm cột mới cho DB đã tồn tại (CREATE TABLE IF NOT EXISTS không thêm cột). */
   private migrate(): void {
-    const cols = new Set((this.db.prepare('PRAGMA table_info(orders)').all() as Array<{ name: string }>).map(c => c.name));
-    if (!cols.has('place_id')) this.db.exec('ALTER TABLE orders ADD COLUMN place_id TEXT');
-    if (!cols.has('place_name')) this.db.exec('ALTER TABLE orders ADD COLUMN place_name TEXT');
+    const colsOf = (t: string) => new Set((this.db.prepare(`PRAGMA table_info(${t})`).all() as Array<{ name: string }>).map(c => c.name));
+    const add = (t: string, cols: Set<string>, col: string, def: string) => { if (!cols.has(col)) this.db.exec(`ALTER TABLE ${t} ADD COLUMN ${col} ${def}`); };
+    const o = colsOf('orders');
+    add('orders', o, 'place_id', 'TEXT');
+    add('orders', o, 'place_name', 'TEXT');
+    add('orders', o, 'store_id', 'TEXT');
+    add('orders', o, 'store_distance_m', 'INTEGER');
+    add('orders', o, 'store_eta_s', 'INTEGER');
+    add('orders', o, 'virtual_drive', 'INTEGER NOT NULL DEFAULT 0');
+    add('users', colsOf('users'), 'store_id', 'TEXT');
+
+    const st = colsOf('stores');
+    add('stores', st, 'email', "TEXT NOT NULL DEFAULT ''");
+    add('stores', st, 'image', "TEXT NOT NULL DEFAULT ''");
+    add('stores', st, 'hours', "TEXT NOT NULL DEFAULT ''");
+    add('stores', st, 'rating', 'REAL NOT NULL DEFAULT 5.0');
+    add('stores', st, 'reviews_count', 'INTEGER NOT NULL DEFAULT 0');
+    add('stores', st, 'services', "TEXT NOT NULL DEFAULT '[]'");
+    add('stores', st, 'owner_user_id', 'INTEGER');
+    add('stores', st, 'status', "TEXT NOT NULL DEFAULT 'active'");
+    add('stores', st, 'hours_json', "TEXT NOT NULL DEFAULT ''");
+    add('stores', st, 'images', "TEXT NOT NULL DEFAULT '[]'");
+    add('stores', st, 'pending_address', 'TEXT');
+    add('stores', st, 'pending_lat', 'REAL');
+    add('stores', st, 'pending_lng', 'REAL');
+    add('stores', st, 'pending_at', 'INTEGER');
+    add('stores', st, 'verified_at', 'INTEGER');
+    add('stores', st, 'verified_by', 'TEXT');
+    const o2 = colsOf('orders');
+    add('orders', o2, 'requested_store_id', 'TEXT');
+    add('orders', o2, 'dispatch_hold', 'TEXT');
+
+    // Cập nhật ràng buộc CHECK của bảng users để nhận role 'garage' nếu là DB cũ
+    try {
+      const userSql = (this.db.prepare("SELECT sql FROM sqlite_master WHERE name='users'").get() as { sql?: string })?.sql ?? '';
+      if (userSql && !userSql.includes("'garage'")) {
+        this.db.exec('PRAGMA foreign_keys = OFF;');
+        this.db.exec(`
+          CREATE TABLE users_temp (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL CHECK (role IN ('customer','staff','admin','garage')),
+            name TEXT NOT NULL,
+            phone TEXT NOT NULL DEFAULT '',
+            vehicle_plate TEXT NOT NULL DEFAULT '',
+            unit TEXT NOT NULL DEFAULT '',
+            store_id TEXT,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+          );
+          INSERT INTO users_temp (id, email, password_hash, role, name, phone, vehicle_plate, unit, store_id, active, created_at, updated_at)
+          SELECT id, email, password_hash, role, name, phone, vehicle_plate, unit, store_id, active, created_at, updated_at FROM users;
+          DROP TABLE users;
+          ALTER TABLE users_temp RENAME TO users;
+          PRAGMA foreign_keys = ON;
+        `);
+      }
+    } catch {
+      // bỏ qua lỗi nếu không thể recreate table
+    }
+
+    // index trên cột mới: chỉ tạo SAU khi chắc chắn cột đã có
+    this.db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_store ON orders(store_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_users_store ON users(store_id);`);
   }
 
   tx<T>(fn: () => T): T {
@@ -300,8 +487,122 @@ export class Store {
     cols.push('updated_at = ?'); args.push(this.now());
     this.db.prepare(`UPDATE orders SET ${cols.join(', ')} WHERE id = ?`).run(...args, id);
   }
+  /** Ghi kết quả điều phối: gara ĐƯỢC GIAO + cách khách bao xa (từ gara) + xe ảo. Xóa lý do giữ đơn. */
+  setOrderDispatch(id: string, d: { storeId: string | null; storeDistanceM: number | null; storeEtaS: number | null; virtualDrive: boolean }): void {
+    this.db.prepare('UPDATE orders SET store_id = ?, store_distance_m = ?, store_eta_s = ?, virtual_drive = ?, dispatch_hold = NULL WHERE id = ?')
+      .run(d.storeId, d.storeDistanceM, d.storeEtaS, d.virtualDrive ? 1 : 0, id);
+  }
+  /** Lý do chưa tự giao. KHÔNG đổi updated_at (mốc "mời lại sau 20 s" tính từ lần rút đơn, không từ lần quét). */
+  setOrderHold(id: string, hold: DispatchHold | null): void {
+    this.db.prepare('UPDATE orders SET dispatch_hold = ? WHERE id = ?').run(hold ? JSON.stringify(hold) : null, id);
+  }
+  setRequestedStore(id: string, storeId: string | null): void {
+    this.db.prepare('UPDATE orders SET requested_store_id = ? WHERE id = ?').run(storeId, id);
+  }
+
+  // ---------- cài đặt (chế độ demo) ----------
+  setting(key: string): string | undefined {
+    return (this.db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined)?.value;
+  }
+  setSetting(key: string, value: string): void {
+    this.db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value);
+  }
+  /** Chế độ demo (xe ảo + tự duyệt gara mới): cờ TƯỜNG MINH do tổng đài bật/tắt, không bao giờ suy luận từ GPS. */
+  demoMode(): boolean { return this.setting('demo_mode') === '1'; }
   deleteOrder(id: string): boolean {
     return this.db.prepare('DELETE FROM orders WHERE id = ?').run(id).changes > 0;
+  }
+
+  // ---------- cửa hàng ReFix ----------
+  storeById(id: string): StoreRow | undefined {
+    return this.db.prepare('SELECT * FROM stores WHERE id = ?').get(id) as StoreRow | undefined;
+  }
+  listStores(): StoreRow[] {
+    return this.db.prepare('SELECT * FROM stores WHERE active = 1 ORDER BY name').all() as unknown as StoreRow[];
+  }
+  /** Mọi gara (cả chờ duyệt / tạm khóa) — trang quản trị. */
+  listAllStores(): StoreRow[] {
+    return this.db.prepare(`SELECT * FROM stores ORDER BY (status = 'pending') DESC, (pending_address IS NOT NULL) DESC, name`).all() as unknown as StoreRow[];
+  }
+  /** Gara được phép nhận đơn: đã duyệt + đang hoạt động. */
+  dispatchableStores(): StoreRow[] {
+    return this.db.prepare(`SELECT * FROM stores WHERE active = 1 AND status = 'active'`).all() as unknown as StoreRow[];
+  }
+  /** Nhân viên (đang hoạt động) thuộc gara. */
+  storeStaff(storeId: string): UserRow[] {
+    return this.db.prepare(`SELECT * FROM users WHERE store_id = ? AND active = 1 AND role IN ('staff','garage')`).all(storeId) as unknown as UserRow[];
+  }
+  /** Hồ sơ gara (không gồm địa chỉ): áp dụng ngay. */
+  patchStore(id: string, p: Partial<{ name: string; phone: string; email: string; services: string[]; week: WeekHours | null; hoursText: string; images: StoreImage[] }>): void {
+    const cols: string[] = [];
+    const args: Array<string | number> = [];
+    const set = (c: string, v: string | number) => { cols.push(`${c} = ?`); args.push(v); };
+    if (p.name !== undefined) set('name', p.name);
+    if (p.phone !== undefined) set('phone', p.phone);
+    if (p.email !== undefined) set('email', p.email);
+    if (p.services !== undefined) set('services', JSON.stringify(p.services));
+    if (p.week !== undefined) set('hours_json', p.week ? JSON.stringify(p.week) : '');
+    if (p.hoursText !== undefined) set('hours', p.hoursText);
+    if (p.images !== undefined) set('images', JSON.stringify(p.images));
+    if (!cols.length) return;
+    set('updated_at', this.now());
+    this.db.prepare(`UPDATE stores SET ${cols.join(', ')} WHERE id = ?`).run(...args, id);
+  }
+  /** Cửa hàng tự sửa địa chỉ → CHỜ XÁC MINH. Điều phối vẫn dùng tọa độ cũ cho tới khi tổng đài duyệt. */
+  setStorePendingAddress(id: string, address: string, pos: LngLat): void {
+    this.db.prepare('UPDATE stores SET pending_address = ?, pending_lat = ?, pending_lng = ?, pending_at = ?, updated_at = ? WHERE id = ?')
+      .run(address, pos[1], pos[0], this.now(), this.now(), id);
+  }
+  /** Tổng đài duyệt: địa chỉ chờ (nếu có) thành địa chỉ chính thức; gara chờ duyệt → hoạt động. */
+  approveStore(id: string, by: string): void {
+    this.db.prepare(`UPDATE stores SET
+        address = COALESCE(pending_address, address), lat = COALESCE(pending_lat, lat), lng = COALESCE(pending_lng, lng),
+        pending_address = NULL, pending_lat = NULL, pending_lng = NULL, pending_at = NULL,
+        status = CASE WHEN status = 'pending' THEN 'active' ELSE status END,
+        verified_at = ?, verified_by = ?, updated_at = ? WHERE id = ?`).run(this.now(), by, this.now(), id);
+  }
+  rejectStorePendingAddress(id: string): void {
+    this.db.prepare('UPDATE stores SET pending_address = NULL, pending_lat = NULL, pending_lng = NULL, pending_at = NULL, updated_at = ? WHERE id = ?').run(this.now(), id);
+  }
+  setStoreStatus(id: string, status: StoreStatus): void {
+    this.db.prepare('UPDATE stores SET status = ?, updated_at = ? WHERE id = ?').run(status, this.now(), id);
+  }
+  upsertStore(s: {
+    id: string; name: string; address?: string; phone?: string; pos: LngLat; placeId?: string | null;
+    email?: string; image?: string; hours?: string; rating?: number; reviewsCount?: number; services?: string[];
+    week?: WeekHours | null; images?: StoreImage[]; status?: StoreStatus; ownerUserId?: number | null; verifiedBy?: string | null;
+  }): StoreRow {
+    const t = this.now();
+    const email = s.email ?? '';
+    const image = s.image ?? '';
+    const hours = s.hours ?? '';
+    const rating = typeof s.rating === 'number' ? s.rating : 5.0;
+    const reviewsCount = s.reviewsCount ?? 0;
+    const services = JSON.stringify(s.services ?? []);
+    this.db.prepare(`INSERT INTO stores (id, name, address, phone, lat, lng, place_id, email, image, hours, rating, reviews_count, services, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET name = excluded.name, address = excluded.address, phone = excluded.phone,
+        lat = excluded.lat, lng = excluded.lng, place_id = excluded.place_id,
+        email = CASE WHEN excluded.email != '' THEN excluded.email ELSE stores.email END,
+        image = CASE WHEN excluded.image != '' THEN excluded.image ELSE stores.image END,
+        hours = CASE WHEN excluded.hours != '' THEN excluded.hours ELSE stores.hours END,
+        rating = excluded.rating,
+        reviews_count = excluded.reviews_count,
+        services = CASE WHEN excluded.services != '[]' THEN excluded.services ELSE stores.services END,
+        updated_at = excluded.updated_at`)
+      .run(s.id, s.name, s.address ?? '', s.phone ?? '', s.pos[1], s.pos[0], s.placeId ?? null, email, image, hours, rating, reviewsCount, services, t, t);
+    const extra: string[] = [];
+    const args: Array<string | number | null> = [];
+    if (s.week !== undefined) { extra.push('hours_json = ?'); args.push(s.week ? JSON.stringify(s.week) : ''); }
+    if (s.images !== undefined) { extra.push('images = ?'); args.push(JSON.stringify(s.images)); }
+    if (s.status !== undefined) { extra.push('status = ?'); args.push(s.status); }
+    if (s.ownerUserId !== undefined) { extra.push('owner_user_id = ?'); args.push(s.ownerUserId); }
+    if (s.verifiedBy !== undefined) { extra.push('verified_by = ?, verified_at = ?'); args.push(s.verifiedBy, s.verifiedBy ? t : null); }
+    if (extra.length) this.db.prepare(`UPDATE stores SET ${extra.join(', ')} WHERE id = ?`).run(...args, s.id);
+    return this.storeById(s.id)!;
+  }
+  setUserStore(userId: number, storeId: string | null): void {
+    this.db.prepare('UPDATE users SET store_id = ?, updated_at = ? WHERE id = ?').run(storeId, this.now(), userId);
   }
 
   // ---------- events (nhật ký kiểm toán, append-only) ----------
@@ -331,8 +632,11 @@ export class Store {
   setAvailability(userId: number, available: boolean): void {
     this.db.prepare('UPDATE staff_presence SET available = ?, updated_at = ? WHERE user_id = ?').run(available ? 1 : 0, this.now(), userId);
   }
+  presenceOf(userId: number): Presence | undefined {
+    return this.presences().find(p => p.userId === userId);
+  }
   presences(): Presence[] {
-    const rows = this.db.prepare(`SELECT p.*, u.name FROM staff_presence p JOIN users u ON u.id = p.user_id WHERE u.active = 1 AND u.role = 'staff'`)
+    const rows = this.db.prepare(`SELECT p.*, u.name FROM staff_presence p JOIN users u ON u.id = p.user_id WHERE u.active = 1 AND (u.role = 'staff' OR u.role = 'garage')`)
       .all() as unknown as Array<{ user_id: number; name: string; lat: number; lng: number; accuracy_m: number | null; heading: number | null; available: number; updated_at: number }>;
     return rows.map(r => ({ userId: r.user_id, name: r.name, pos: [r.lng, r.lat] as LngLat, accuracyM: r.accuracy_m, heading: r.heading, available: !!r.available, updatedAt: r.updated_at }));
   }
@@ -360,8 +664,30 @@ export class Store {
       { email: 'khachhang@resq.vn', password, role: 'customer', name: 'Nguyễn Văn Anh', phone: '0987654321', vehiclePlate: '30H-123.45' },
       { email: 'cuuho@resq.vn', password, role: 'staff', name: 'Nguyễn Văn Hùng', phone: '0912345678', vehiclePlate: '29C-123.45', unit: 'Cứu hộ Minh Tâm' },
       { email: 'cuuho2@resq.vn', password, role: 'staff', name: 'Trần Quốc Bảo', phone: '0934567890', vehiclePlate: '29C-678.90', unit: 'Cứu hộ Minh Tâm' },
+      { email: 'gara@resq.vn', password, role: 'garage', name: 'Gara ReFix Auto Hà Nội', phone: '0901234567', unit: 'ReFix Auto Center' },
     ];
-    this.tx(() => { for (const u of seed) this.createUser(u); });
+    this.tx(() => {
+      for (const u of seed) this.createUser(u);
+      const garaUser = this.userByEmail('gara@resq.vn');
+      if (garaUser) {
+        // gara mẫu: giờ mở cửa CÓ CẤU TRÚC (24/7), chưa có đánh giá (không tự gán 5 sao), không gắn ảnh giả
+        const allDay = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map(d => [d, [[0, 1440]]])) as WeekHours;
+        const store = this.upsertStore({
+          id: 'store-refix-demo',
+          name: 'ReFix Auto Service Hà Nội',
+          address: 'Số 68 Lê Văn Lương, Trung Hòa, Cầu Giấy, Hà Nội',
+          phone: '0901234567',
+          pos: [105.8012, 21.0045],
+          email: 'gara@resq.vn',
+          hours: 'Mở cửa 24/7',
+          rating: 0,
+          reviewsCount: 0,
+          services: ['repair', 'tire', 'battery', 'tow', 'diagnostics'],
+          week: allDay, images: [], status: 'active', ownerUserId: garaUser.id, verifiedBy: 'seed',
+        });
+        this.setUserStore(garaUser.id, store.id);
+      }
+    });
     log(`[seed] Đã tạo ${seed.length} tài khoản mẫu: ${seed.map(s => `${s.email} (${s.role})`).join(', ')}`);
   }
 }

@@ -39,6 +39,9 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
   const sos = !!route.params?.sos;
   const placeName = route.params?.placeName ?? null;   // đơn vị khách chọn từ danh sách gara
   const placeId = route.params?.placeId ?? null;
+  // gara KHÔNG phải đối tác: không nhận đơn qua app → nói trước, không âm thầm giao gara khác
+  const partner = route.params?.placePartner !== false;
+  const placePhone = route.params?.placePhone ?? null;
   const support = route.params?.support ?? null;         // vị trí đã chốt ở ReFix
   const [showIssues, setShowIssues] = useState(sos || !route.params?.issueId);
   const [issue, setIssue] = useState<string>(sos ? 'accident' : route.params?.issueId ?? 'unknown');
@@ -174,9 +177,21 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
           <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.blue, flexDirection: "row", alignItems: "center" }]}>
             <Ionicons name="construct" size={20} color={colors.blue} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.label, { color: colors.textSecondary }]}>Đơn vị bạn chọn (tổng đài sẽ ưu tiên liên hệ)</Text>
+              <Text style={[styles.label, { color: colors.textSecondary }]}>{partner ? 'Gara bạn chọn — đơn chỉ gửi cho gara này' : 'Gara bạn chọn'}</Text>
               <Text style={[styles.title, { color: colors.textPrimary }]}>{placeName}</Text>
+              {partner ? (
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Nếu gara chưa nhận được, ResQ sẽ hỏi bạn trước khi chuyển sang gara khác.</Text>
+              ) : (
+                <Text style={[styles.label, { color: colors.amberText }]}>
+                  Gara này chưa là đối tác ReFix nên không nhận đơn qua app. ResQ sẽ gửi cho gara đối tác phù hợp nhất (bạn thấy tên gara trước khi xe chạy){placePhone ? ' — hoặc gọi thẳng gara.' : '.'}
+                </Text>
+              )}
             </View>
+            {!partner && placePhone ? (
+              <Pressable onPress={() => { void Linking.openURL(`tel:${placePhone}`); }} style={{ padding: 8 }} accessibilityLabel="Gọi gara">
+                <Ionicons name="call" size={20} color={colors.green} />
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
 

@@ -34,7 +34,8 @@ export interface TelemetryFrame {
   remainingM: number;
   etaS: number;
   phase: DriverPhase;
-  simulated?: boolean;        // GPS giả lập (testbench dev) — server production từ chối, UI gắn nhãn rõ
+  simulated?: boolean;        // GPS giả lập (testbench dev / xe ảo của server) — UI gắn nhãn rõ
+  timeScale?: number;         // xe ảo của server: hệ số tua (thời gian thật / thời gian demo)
 }
 
 export interface RouteBroadcast {

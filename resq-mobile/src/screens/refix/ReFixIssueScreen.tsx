@@ -1,6 +1,7 @@
 // ReFixIssueScreen: một câu hỏi — "Xe gặp chuyện gì?".
 // Vị trí THẬT (không còn R6): màn này yêu cầu GPS chính xác cao trong lúc mở. Bấm sự cố → CHỐT vị trí hỗ trợ
 // (SupportLocation) và chuyển nguyên vị trí đó sang GarageList → RescueRequest.
+// Nhân viên gara ReFix dùng CHUNG màn này để tra cứu (gara / phụ tùng / kéo xe gần đây) — không gửi yêu cầu.
 import React from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,10 +14,12 @@ import { ISSUES_DATA } from '../../data/mockData';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList, SupportLocation } from '../../types';
 import { useLocation } from '../../features/location/LocationProvider';
+import { useAuth } from '../../context/AuthContext';
 
 export const ReFixIssueScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const isStaff = useAuth().user?.role === 'staff';
   const loc = useLocation('high');
   const { fix, place } = loc;
   const ready = loc.status === 'ready' && !!fix;
@@ -37,16 +40,21 @@ export const ReFixIssueScreen: React.FC = () => {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <ScreenHeader title="Cứu hộ" />
+      <ScreenHeader title={isStaff ? 'ReFix · Tra cứu' : 'Cứu hộ'} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.question, { color: colors.textPrimary }]}>Xe gặp chuyện gì?</Text>
+        <Text style={[styles.question, { color: colors.textPrimary }]}>{isStaff ? 'Khách gặp sự cố gì?' : 'Xe gặp chuyện gì?'}</Text>
+        {isStaff ? (
+          <Text style={[styles.hint, { color: colors.textSecondary, textAlign: 'left' }]}>
+            Cùng chức năng ReFix của khách: tìm gara, cửa hàng phụ tùng, đơn vị kéo xe quanh bạn — ảnh thật, giờ mở cửa, đường đi.
+          </Text>
+        ) : null}
 
         {/* Vị trí cần hỗ trợ — thật */}
         {ready ? (
           <View style={[styles.locCard, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
             <Ionicons name="location" size={22} color={colors.blue} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.locLabel, { color: colors.textSecondary }]}>Bạn đang ở</Text>
+              <Text style={[styles.locLabel, { color: colors.textSecondary }]}>{isStaff ? 'Tra cứu quanh' : 'Bạn đang ở'}</Text>
               <Text numberOfLines={2} style={[styles.locMain, { color: colors.textPrimary }]}>
                 {place?.address ?? 'Đang tìm địa chỉ…'}
               </Text>
@@ -102,8 +110,8 @@ export const ReFixIssueScreen: React.FC = () => {
         <Pressable onPress={() => { void Linking.openURL('tel:19006868'); }} accessibilityRole="button" style={styles.hotline}>
           <Ionicons name="call" size={22} color="#60A5FA" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.hotlineTitle}>Không chắc xe bị gì?</Text>
-            <Text style={styles.hotlineSub}>Gọi tổng đài ResQ 1900 6868 — trực 24/7</Text>
+            <Text style={styles.hotlineTitle}>{isStaff ? 'Cần hỗ trợ kỹ thuật?' : 'Không chắc xe bị gì?'}</Text>
+            <Text style={styles.hotlineSub}>{isStaff ? 'Gọi tổng đài điều phối ResQ 1900 6868' : 'Gọi tổng đài ResQ 1900 6868 — trực 24/7'}</Text>
           </View>
         </Pressable>
       </ScrollView>

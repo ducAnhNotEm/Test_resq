@@ -2,7 +2,7 @@
 // Phải khớp với resq-mobile/src/features/route/rescueTelemetry.ts — đổi một bên thì đổi bên kia.
 
 export type LngLat = [number, number];
-export type Role = 'customer' | 'staff' | 'admin';
+export type Role = 'customer' | 'staff' | 'admin' | 'garage';
 export type Actor = Role | 'system';
 
 export type OrderStatus =
@@ -34,6 +34,7 @@ export interface TelemetryFrame {
   etaS: number;
   phase: DriverPhase;
   simulated?: boolean;     // GPS giả lập (testbench dev) — chuyển tiếp nguyên cờ, máy khách hiện nhãn "MÔ PHỎNG".
+  timeScale?: number;      // xe ảo của server: hệ số tua (thời gian thật / thời gian demo) → nhãn "tua nhanh ×N"
 }
 
 export interface TrafficSegment { fromM: number; toM: number; level: 'free' | 'moderate' | 'heavy'; label?: string }

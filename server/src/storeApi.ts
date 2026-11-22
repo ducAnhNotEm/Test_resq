@@ -1,0 +1,270 @@
+// storeApi.ts: tài khoản gara ReFix — đăng ký, hồ sơ cửa hàng, xác minh địa chỉ, ảnh có ghi nguồn, chế độ demo,
+// điều phối theo cửa hàng cho tổng đài. Tách khỏi http.ts để dễ đọc.
+//
+// Nguyên tắc an toàn (điều phối theo khoảng cách + cửa hàng tự sửa hồ sơ = lỗ hổng nếu làm ẩu):
+//  - SĐT / tên / dịch vụ / giờ mở cửa / ảnh: sửa được ngay (giờ mở cửa CÓ CẤU TRÚC vì tham gia điều kiện điều phối).
+//  - ĐỊA CHỈ / TỌA ĐỘ: sửa xong vào trạng thái CHỜ XÁC MINH; điều phối vẫn dùng tọa độ đã duyệt cho tới khi tổng đài
+//    bấm "Duyệt". Không ai dời được gara "về gần khách" để thắng đơn.
+//  - Ảnh: ghi rõ nguồn ("Ảnh do cửa hàng cung cấp" / "Ảnh từ Google Maps"), không trộn.
+//  - Gara mới đăng ký: CHỜ DUYỆT, chưa nhận đơn. Chế độ demo bật → tự duyệt (ghi rõ "tự duyệt — chế độ demo").
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import type { IncomingMessage } from 'node:http';
+import type { LngLat, Role } from './protocol.ts';
+import { validLngLat } from './protocol.ts';
+import { rolesOf, toPublicUser, toStoreInfo, type Store, type StoreImage, type StoreRow, type StoreStatus, type UserRow } from './db.ts';
+import { ApiError, type OrderService, type Principal } from './orders.ts';
+import { AttemptLimiter, type TokenSigner } from './auth.ts';
+import type { GoongClient } from './goong.ts';
+import type { PlaceStore } from './placeStore.ts';
+import { hoursText, syncPartners, validWeek } from './refix.ts';
+import { DISPATCH_POLICY, fmtKm, fmtMin, overrideNeeded } from './dispatch.ts';
+import { EMAIL_RE, PHONE_RE, bad, num, str } from './validate.ts';
+
+export const STORE_SERVICES = ['repair', 'tire', 'battery', 'tow', 'diagnostics'] as const;
+const MAX_IMAGES = 5;
+const MAX_IMAGE_BYTES = 1_500_000;
+
+type Ctx = { req: IncomingMessage; params: Record<string, string>; query: URLSearchParams; body: Record<string, unknown>; user: Principal & { name: string } };
+type AddRoute = (method: string, path: string, roles: Role[] | null, handler: (ctx: Ctx) => unknown | Promise<unknown>) => void;
+
+export interface StoreApiDeps {
+  store: Store;
+  orders: OrderService;
+  signer: TokenSigner;
+  goong: GoongClient;
+  places?: PlaceStore;
+  storeImagesDir?: string;
+  ipOf: (req: IncomingMessage) => string;
+  onStoresChanged?: () => void;
+}
+
+/** Phiên đăng nhập theo VAI ĐANG DÙNG (1 tài khoản gara: máy A "Khách hàng", máy B "Nhân viên gara"). */
+export function sessionFor(store: Store, signer: TokenSigner, u: UserRow, acting: Role) {
+  const s = u.store_id ? store.storeById(u.store_id) : undefined;
+  return {
+    token: signer.sign(u.id, acting),
+    user: { ...toPublicUser(u), role: acting, accountRole: u.role, roles: rolesOf(u), store: s ? storeDto(store, s) : null },
+  };
+}
+
+/** Chọn vai khi đăng nhập: không chỉ định → vai đầu tiên tài khoản được phép. Không được phép → báo rõ. */
+export function actingRole(u: UserRow, as: unknown): Role {
+  const roles = rolesOf(u);
+  if (as === undefined || as === null || as === '') return roles[0];
+  if (typeof as !== 'string' || !roles.includes(as as Role)) {
+    throw new ApiError(403, 'role_not_allowed', as === 'staff'
+      ? 'Tài khoản này chưa đăng ký gara — hãy đăng nhập vai trò Khách hàng, hoặc bấm "Đăng ký gara đối tác".'
+      : 'Tài khoản này không dùng được vai trò đã chọn.');
+  }
+  return as as Role;
+}
+
+/** Hồ sơ gara gửi xuống app / admin: kèm số người đang trực, giờ mở cửa dạng chữ. */
+export function storeDto(store: Store, s: StoreRow) {
+  const now = store.now();
+  const staff = store.storeStaff(s.id);
+  const pres = new Map(store.presences().map(p => [p.userId, p]));
+  const onDuty = staff.filter(u => { const p = pres.get(u.id); return !!p && p.available && now - p.updatedAt <= DISPATCH_POLICY.presenceFreshMs; }).length;
+  const info = toStoreInfo(s);
+  return { ...info, hoursLines: hoursText(info.week ?? null), staffCount: staff.length, onDuty };
+}
+
+function saveImage(dir: string | undefined, storeId: string, raw: unknown): StoreImage {
+  if (!dir) throw new ApiError(503, 'images_disabled', 'Server chưa bật lưu ảnh');
+  const img = raw as { data?: unknown } | null;
+  const data = typeof img?.data === 'string' ? img.data.replace(/^data:image\/\w+;base64,/, '') : '';
+  if (!data) throw bad('Ảnh không hợp lệ');
+  const buf = Buffer.from(data, 'base64');
+  if (buf.length < 100 || buf.length > MAX_IMAGE_BYTES) throw bad(`Ảnh phải nhỏ hơn ${MAX_IMAGE_BYTES / 1_000_000} MB`);
+  // nhận diện theo NỘI DUNG (magic bytes), không tin đuôi / mime client gửi
+  const ext = buf[0] === 0xff && buf[1] === 0xd8 ? 'jpg'
+    : buf[0] === 0x89 && buf.toString('ascii', 1, 4) === 'PNG' ? 'png'
+    : buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP' ? 'webp' : null;
+  if (!ext) throw bad('Chỉ nhận ảnh JPG, PNG hoặc WebP');
+  mkdirSync(dir, { recursive: true });
+  const file = `${storeId}-${randomBytes(4).toString('hex')}.${ext}`;
+  writeFileSync(join(dir, file), buf);
+  return { url: `/media/stores/${file}`, source: 'store' };
+}
+
+const services = (v: unknown): string[] => {
+  if (!Array.isArray(v)) throw bad('Chọn ít nhất 1 dịch vụ');
+  const out = [...new Set(v.map(String).filter(x => (STORE_SERVICES as readonly string[]).includes(x)))];
+  if (!out.length) throw bad('Chọn ít nhất 1 dịch vụ');
+  return out;
+};
+const position = (lat: unknown, lng: unknown): LngLat => {
+  const p: LngLat = [num(lng, 'kinh độ', { required: true })!, num(lat, 'vĩ độ', { required: true })!];
+  if (!validLngLat(p)) throw bad('Tọa độ gara không hợp lệ');
+  return p;
+};
+
+export function registerStoreRoutes(add: AddRoute, d: StoreApiDeps): void {
+  const { store, orders, signer, goong } = d;
+  const regLimiter = new AttemptLimiter(5, 60 * 60_000);       // 5 đăng ký / giờ / IP
+  const geoLimiter = new AttemptLimiter(60, 10 * 60_000);      // geocode công khai (màn đăng ký chưa đăng nhập)
+  const changed = () => { syncPartners(store, d.places); d.onStoresChanged?.(); };
+  const myStore = (user: Principal, ownerOnly = false): StoreRow => {
+    const u = store.userById(user.id)!;
+    const s = u.store_id ? store.storeById(u.store_id) : undefined;
+    if (!s) throw new ApiError(404, 'no_store', 'Tài khoản chưa thuộc gara nào');
+    if (ownerOnly && s.owner_user_id !== u.id) throw new ApiError(403, 'not_owner', 'Chỉ chủ gara được sửa hồ sơ cửa hàng');
+    return s;
+  };
+
+  // ================= ĐĂNG KÝ GARA =================
+  add('POST', '/api/auth/register-garage', null, ({ body, req }) => {
+    const ip = d.ipOf(req);
+    if (regLimiter.blocked(`ip:${ip}`)) throw new ApiError(429, 'too_many_registrations', 'Đăng ký quá nhiều lần, thử lại sau 1 giờ');
+    regLimiter.fail(`ip:${ip}`);
+    const storeName = str(body.storeName ?? body.name, 'tên cửa hàng', { required: true, min: 3, max: 120 })!;
+    const ownerName = str(body.ownerName, 'tên người phụ trách', { max: 120 }) ?? storeName;
+    const email = str(body.email, 'email (gmail)', { required: true, max: 200 })!.toLowerCase();
+    if (!EMAIL_RE.test(email)) throw bad('Email không đúng định dạng');
+    if (store.userByEmail(email)) throw new ApiError(409, 'email_taken', 'Email này đã được dùng — hãy đăng nhập hoặc dùng email khác');
+    const password = str(body.password, 'mật khẩu', { required: true, min: 8, max: 200 })!;
+    const phone = str(body.phone, 'số điện thoại', { required: true, max: 20 })!;
+    if (!PHONE_RE.test(phone)) throw bad('Số điện thoại không hợp lệ');
+    const address = str(body.address, 'địa chỉ cửa hàng', { required: true, min: 6, max: 300 })!;
+    const pos = position(body.lat, body.lng);
+    const week = validWeek(body.week);
+    if (!week) throw bad('Giờ mở cửa không hợp lệ — chọn ngày và giờ mở / đóng');
+    const svc = services(body.services);
+    const imgs = Array.isArray(body.images) ? body.images.slice(0, 3) : [];
+    const demo = store.demoMode();
+
+    const id = `st-${randomBytes(5).toString('hex')}`;
+    const images = imgs.map(x => saveImage(d.storeImagesDir, id, x));        // lỗi ảnh → dừng trước khi tạo tài khoản
+    const u = store.tx(() => {
+      const user = store.createUser({ email, password, role: 'garage', name: ownerName, phone, unit: storeName });
+      store.upsertStore({
+        id, name: storeName, address, phone, pos, email, rating: 0, reviewsCount: 0, services: svc,
+        week, hours: hoursText(week).join(' · '), images, ownerUserId: user.id,
+        status: demo ? 'active' : 'pending', verifiedBy: demo ? 'demo-auto' : null,
+      });
+      store.setUserStore(user.id, id);
+      return store.userById(user.id)!;
+    });
+    changed();
+    return { ...sessionFor(store, signer, u, 'staff'), autoApproved: demo };
+  });
+
+  // ================= HỒ SƠ GARA (app nhân viên) =================
+  add('GET', '/api/store/me', ['staff'], ({ user }) => {
+    const s = myStore(user);
+    return { ...storeDto(store, s), isOwner: s.owner_user_id === user.id, demoMode: store.demoMode() };
+  });
+  add('PATCH', '/api/store/me', ['staff'], ({ user, body }) => {
+    const s = myStore(user, true);
+    const week = body.week !== undefined ? validWeek(body.week) : undefined;
+    if (body.week !== undefined && !week) throw bad('Giờ mở cửa không hợp lệ');
+    const phone = str(body.phone, 'số điện thoại', { max: 20 });
+    if (phone && !PHONE_RE.test(phone)) throw bad('Số điện thoại không hợp lệ');
+    const email = str(body.email, 'email', { max: 200 });
+    if (email && !EMAIL_RE.test(email)) throw bad('Email không đúng định dạng');
+    store.patchStore(s.id, {
+      name: str(body.storeName, 'tên cửa hàng', { min: 3, max: 120 }), phone, email,
+      services: body.services !== undefined ? services(body.services) : undefined,
+      week: week ?? undefined, hoursText: week ? hoursText(week).join(' · ') : undefined,
+    });
+    let addressPending = false;
+    if (body.address !== undefined || body.lat !== undefined) {
+      const address = str(body.address, 'địa chỉ', { required: true, min: 6, max: 300 })!;
+      const pos = position(body.lat, body.lng);
+      const same = address === s.address && Math.abs(pos[0] - s.lng) < 1e-6 && Math.abs(pos[1] - s.lat) < 1e-6;
+      if (!same) {
+        if (s.status === 'pending') {
+          // gara CHƯA từng được duyệt: chưa nhận đơn, sửa thẳng (tổng đài duyệt cả hồ sơ một lần)
+          store.db.prepare('UPDATE stores SET address = ?, lat = ?, lng = ?, updated_at = ? WHERE id = ?').run(address, pos[1], pos[0], store.now(), s.id);
+        } else {
+          store.setStorePendingAddress(s.id, address, pos);
+          addressPending = true;
+        }
+      }
+    }
+    changed();
+    return { ...storeDto(store, store.storeById(s.id)!), isOwner: true, addressPending };
+  });
+  add('POST', '/api/store/me/images', ['staff'], ({ user, body }) => {
+    const s = myStore(user, true);
+    const cur = toStoreInfo(s).images ?? [];
+    if (cur.filter(i => i.source === 'store').length >= MAX_IMAGES) throw bad(`Tối đa ${MAX_IMAGES} ảnh cửa hàng`);
+    store.patchStore(s.id, { images: [...cur, saveImage(d.storeImagesDir, s.id, body)] });
+    changed();
+    return storeDto(store, store.storeById(s.id)!);
+  });
+  add('DELETE', '/api/store/me/images/:idx', ['staff'], ({ user, params }) => {
+    const s = myStore(user, true);
+    const cur = toStoreInfo(s).images ?? [];
+    const i = Number(params.idx);
+    if (!Number.isInteger(i) || i < 0 || i >= cur.length) throw bad('Ảnh không tồn tại');
+    store.patchStore(s.id, { images: cur.filter((_, k) => k !== i) });
+    changed();
+    return storeDto(store, store.storeById(s.id)!);
+  });
+
+  // ================= ĐỊA CHỈ → TỌA ĐỘ (màn đăng ký: chưa đăng nhập) =================
+  const geoGuard = (req: IncomingMessage) => {
+    const ip = d.ipOf(req);
+    if (geoLimiter.blocked(`ip:${ip}`)) throw new ApiError(429, 'too_many_requests', 'Tra cứu địa chỉ quá nhanh, thử lại sau ít phút');
+    geoLimiter.fail(`ip:${ip}`);
+  };
+  add('GET', '/api/geo/geocode', null, async ({ query, req }) => {
+    geoGuard(req);
+    const address = str(query.get('address'), 'địa chỉ', { required: true, min: 3, max: 200 })!;
+    return { items: await goong.geocode(address) };
+  });
+  add('GET', '/api/geo/reverse', null, async ({ query, req }) => {
+    geoGuard(req);
+    const lat = num(query.get('lat'), 'lat', { min: -90, max: 90, required: true })!;
+    const lng = num(query.get('lng'), 'lng', { min: -180, max: 180, required: true })!;
+    return goong.reverse(lat, lng);
+  });
+
+  // ================= KHÁCH: đồng ý đổi gara (gara mình chọn không nhận được) =================
+  add('POST', '/api/orders/:id/accept-alternative', ['customer'], ({ params, user, body }) =>
+    orders.acceptAlternative(params.id, user, str(body.storeId, 'gara', { required: true, max: 64 })!));
+
+  // ================= TỔNG ĐÀI: gara, chế độ demo, điều phối theo gara =================
+  add('GET', '/api/admin/stores', ['admin'], () => store.listAllStores().map(s => {
+    const owner = s.owner_user_id ? store.userById(s.owner_user_id) : undefined;
+    return { ...storeDto(store, s), active: !!s.active, ownerEmail: owner?.email ?? null, createdAt: s.created_at };
+  }));
+  add('POST', '/api/admin/stores/:id/approve', ['admin'], ({ params, user }) => {
+    if (!store.storeById(params.id)) throw new ApiError(404, 'store_not_found', 'Không tìm thấy gara');
+    store.approveStore(params.id, user.name || 'admin');
+    changed();
+    orders.sweep();                                             // gara vừa duyệt có thể nhận ngay đơn đang chờ
+    return storeDto(store, store.storeById(params.id)!);
+  });
+  add('POST', '/api/admin/stores/:id/reject-address', ['admin'], ({ params }) => {
+    if (!store.storeById(params.id)) throw new ApiError(404, 'store_not_found', 'Không tìm thấy gara');
+    store.rejectStorePendingAddress(params.id);
+    changed();
+    return storeDto(store, store.storeById(params.id)!);
+  });
+  add('POST', '/api/admin/stores/:id/status', ['admin'], ({ params, body }) => {
+    const st = body.status as StoreStatus;
+    if (!['active', 'suspended', 'pending'].includes(st)) throw bad('Trạng thái không hợp lệ');
+    if (!store.storeById(params.id)) throw new ApiError(404, 'store_not_found', 'Không tìm thấy gara');
+    store.setStoreStatus(params.id, st);
+    changed();
+    return storeDto(store, store.storeById(params.id)!);
+  });
+
+  add('GET', '/api/admin/settings', ['admin'], () => ({ demoMode: store.demoMode(), policy: DISPATCH_POLICY }));
+  add('POST', '/api/admin/settings', ['admin'], ({ body }) => {
+    if (typeof body.demoMode === 'boolean') store.setSetting('demo_mode', body.demoMode ? '1' : '0');
+    return { demoMode: store.demoMode(), policy: DISPATCH_POLICY };
+  });
+
+  /** Gara cho một đơn: đủ điều kiện? trong cam kết? cần lý do override? — tổng đài quyết định. */
+  add('GET', '/api/admin/orders/:id/stores', ['admin'], ({ params }) => {
+    const o = orders.get(params.id);
+    return orders.storeOptions(o, { includeDeclined: true }).slice(0, 15).map(x => ({
+      ...x, distanceText: fmtKm(x.distanceM), etaText: fmtMin(x.etaMin), overrideReason: overrideNeeded(x, o),
+    }));
+  });
+}

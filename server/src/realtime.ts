@@ -8,9 +8,9 @@
 //  - server giữ frame + tuyến cuối cùng của mỗi đơn → người vào sau (mở app lại, mạng chập chờn) thấy xe ngay.
 import type { IncomingMessage, Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { ClientMsg, Role, ServerMsg, TelemetryMessage } from './protocol.ts';
+import type { ClientMsg, Presence, Role, ServerMsg, TelemetryMessage } from './protocol.ts';
 import { haversine, isTerminal, validFrame, validLngLat, validRoute } from './protocol.ts';
-import type { Order, Store } from './db.ts';
+import { rolesOf, type Order, type Store } from './db.ts';
 import type { OrderService } from './orders.ts';
 import type { TokenSigner } from './auth.ts';
 
@@ -106,6 +106,23 @@ export class RealtimeHub {
     }
   }
 
+  /**
+   * Server tự phát telemetry (xe ảo). Đi đúng đường của frame thật: lưu frame/tuyến cuối (người vào sau thấy
+   * ngay), gửi cho mọi người đang xem đơn + bản đồ điều hành.
+   */
+  publishSystem(orderId: string, msg: TelemetryMessage): void {
+    if (msg.type === 'route') this.lastRoute.set(orderId, msg);
+    else if (msg.type === 'frame') { this.lastFrame.set(orderId, msg); this.lastFrameAt.set(orderId, this.store.now()); }
+    this.fanout(orderId, { type: 'telemetry', msg }, null);
+  }
+
+  /** Trạng thái sẵn sàng của nhân viên đổi từ phía server (vd. "Đặt lại demo"): báo admin + chính máy nhân viên. */
+  pushPresence(p: Presence): void {
+    const msg: ServerMsg = { type: 'presence', presence: p };
+    for (const c of this.clients) if (c.ops) this.send(c, msg);
+    this.byUser.get(p.userId)?.forEach(c => { if (!c.ops) this.send(c, msg); });
+  }
+
   // ---------- kết nối ----------
   private onConnection(ws: WebSocket, _req: IncomingMessage): void {
     const c: Client = { ws, user: null, orders: new Set(), ops: false, alive: true, tokens: this.cfg.burst, refillAt: Date.now() };
@@ -141,8 +158,9 @@ export class RealtimeHub {
   private onAuth(c: Client, token: string): void {
     const p = this.signer.verify(token);
     const u = p ? this.store.userById(p.sub) : undefined;
-    if (!p || !u || !u.active || u.role !== p.role) { this.error(c, 'unauthenticated', 'Phiên đăng nhập không hợp lệ'); c.ws.close(4401, 'bad token'); return; }
-    c.user = { id: u.id, role: u.role, name: u.name };
+    // vai ĐANG DÙNG của phiên (1 tài khoản gara: máy khách + máy nhân viên) — phải nằm trong các vai được phép
+    if (!p || !u || !u.active || !rolesOf(u).includes(p.role)) { this.error(c, 'unauthenticated', 'Phiên đăng nhập không hợp lệ'); c.ws.close(4401, 'bad token'); return; }
+    c.user = { id: u.id, role: p.role, name: u.name };
     let set = this.byUser.get(u.id);
     if (!set) { set = new Set(); this.byUser.set(u.id, set); }
     set.add(c);
@@ -173,12 +191,15 @@ export class RealtimeHub {
 
   private onTelemetry(c: Client, m: TelemetryMessage): void {
     const u = c.user!;
-    if (u.role !== 'staff') { this.error(c, 'forbidden', 'Chỉ tài xế được phát vị trí'); return; }
+    if (u.role !== 'staff' && u.role !== 'garage') { this.error(c, 'forbidden', 'Chỉ tài xế hoặc gara được phát vị trí'); return; }
     if (!m || typeof m !== 'object') { this.error(c, 'bad_message', 'Telemetry không hợp lệ'); return; }
     const orderId = m.type === 'frame' ? m.frame?.orderId : m.orderId;
     const o = typeof orderId === 'string' ? this.store.order(orderId) : undefined;
     if (!o || o.staff?.id !== u.id) { this.error(c, 'forbidden', 'Bạn không được giao đơn này'); return; }
     if (!PUBLISH_STATUSES.has(o.status)) { this.error(c, 'order_not_active', 'Đơn chưa được nhận hoặc đã kết thúc'); return; }
+    // đơn xe ảo: server là nguồn vị trí duy nhất → bỏ qua GPS thật của máy (đang ngồi trong phòng demo) để
+    // xe không nhảy qua lại giữa phòng họp và tuyến đường. Im lặng, không báo lỗi.
+    if (o.virtualDrive) return;
 
     if (m.type === 'frame') {
       if (!validFrame(m.frame)) { this.error(c, 'bad_frame', 'Frame không hợp lệ'); return; }
@@ -224,7 +245,7 @@ export class RealtimeHub {
 
   private onPresence(c: Client, m: Extract<ClientMsg, { type: 'presence' }>): void {
     const u = c.user!;
-    if (u.role !== 'staff') { this.error(c, 'forbidden', 'Chỉ tài xế cập nhật trạng thái sẵn sàng'); return; }
+    if (u.role !== 'staff' && u.role !== 'garage') { this.error(c, 'forbidden', 'Chỉ tài xế hoặc gara cập nhật trạng thái sẵn sàng'); return; }
     if (!validLngLat(m.pos)) { this.error(c, 'bad_presence', 'Vị trí không hợp lệ'); return; }
     const acc = typeof m.accuracyM === 'number' && Number.isFinite(m.accuracyM) ? m.accuracyM : null;
     const hd = typeof m.heading === 'number' && Number.isFinite(m.heading) ? m.heading : null;

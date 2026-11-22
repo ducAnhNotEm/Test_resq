@@ -17,6 +17,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList, SupportLocation } from '../../types';
 import { useLocation } from '../../features/location/LocationProvider';
+import { useAuth } from '../../context/AuthContext';
 import { ApiError, ISSUE_LABEL, placesApi, type NearbyResult, type RankedPlaceDto } from '../../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GarageList'>;
@@ -39,6 +40,8 @@ function friendlyError(e: unknown): string {
 export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
+  // nhân viên gara: chế độ TRA CỨU — cùng danh sách / xếp hạng / đường đi, không có nút gửi yêu cầu cứu hộ
+  const isStaff = useAuth().user?.role === 'staff';
   const issue = route.params?.issueId ?? 'unknown';
   const loc = useLocation(route.params?.support ? 'low' : 'high');
   // vị trí đã chốt ở ReFix; nếu mở thẳng màn này thì chốt theo GPS hiện tại lần đầu có
@@ -91,13 +94,13 @@ export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
   const send = (place?: RankedPlaceDto) => navigation.navigate('RescueRequest', {
     issueId: issue,
     support: support ?? undefined,
-    ...(place ? { placeId: place.id, placeName: place.name } : {}),
+    ...(place ? { placeId: place.id, placeName: place.name, placePartner: !!place.partner, placePhone: place.phone } : {}),
   });
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <ScreenHeader title="Chọn nơi hỗ trợ" onBack={() => navigation.goBack()} />
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 110 + insets.bottom }]} showsVerticalScrollIndicator={false}>
+      <ScreenHeader title={isStaff ? 'Tra cứu ReFix' : 'Chọn nơi hỗ trợ'} onBack={() => navigation.goBack()} />
+      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: (isStaff ? 24 : 110) + insets.bottom }]} showsVerticalScrollIndicator={false}>
         {!support ? <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} /> : null}
 
         <View style={styles.ctxRow}>
@@ -169,7 +172,7 @@ export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
             item={p}
             rank={sort === 'best' ? i + 1 : undefined}
             onPress={() => navigation.navigate('PlaceDetail', { placeId: p.id, name: p.name, distanceM: p.distanceM, etaMin: p.etaMin, issueId: issue })}
-            onSelect={() => send(p)}
+            onSelect={isStaff ? undefined : () => send(p)}
             selectLabel="Chọn nơi này"
           />
         ))}
@@ -183,14 +186,14 @@ export const GarageListScreen: React.FC<Props> = ({ navigation, route }) => {
         ) : null}
       </ScrollView>
 
-      {/* Hành động chính — luôn ở đáy, không bắt chọn gara */}
-      <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.bgSurface, borderTopColor: colors.borderSubtle }]}>
+      {/* Hành động chính — luôn ở đáy, không bắt chọn gara (khách) */}
+      {isStaff ? null : <View style={[styles.bottom, { paddingBottom: Math.max(insets.bottom, 12), backgroundColor: colors.bgSurface, borderTopColor: colors.borderSubtle }]}>
         <Pressable disabled={!support} onPress={() => send()} accessibilityRole="button" style={[styles.cta, { backgroundColor: colors.sos, opacity: support ? 1 : 0.5 }]}>
           <Ionicons name="paper-plane" size={20} color="#FFFFFF" />
           <Text style={styles.ctaText}>Gửi yêu cầu cứu hộ</Text>
         </Pressable>
         <Text style={[styles.ctaHint, { color: colors.textSecondary }]}>Không cần chọn gara — tổng đài tìm xe gần bạn nhất</Text>
-      </View>
+      </View>}
     </View>
   );
 };

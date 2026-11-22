@@ -3,6 +3,8 @@
 //  - Khách (không orderId): dẫn đường tới một điểm (gara, trạm sạc…).
 // Đã bỏ dữ liệu giả hiển thị như thật: "camera phạt nguội cách 300 m", "giới hạn 60 km/h", màu tắc đường mô phỏng.
 // Testbench mô phỏng chỉ có trong bản dev (__DEV__), mọi frame mô phỏng gắn cờ simulated.
+// Đơn XE ẢO (demo cùng phòng): máy chủ lái xe từ gara theo tuyến Goong thật → màn này KHÔNG bám GPS, KHÔNG phát
+// vị trí; hiển thị đúng luồng frame mà khách + admin đang thấy (cùng tuyến, cùng chỉ dẫn rẽ, cùng ETA).
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,6 +31,9 @@ import { ManeuverGlyph } from '../../features/route/map/ManeuverGlyph';
 import { GoongMapView } from '../../features/route/map/GoongMapView';
 import { useDeviceLocation } from '../../features/location/useDeviceLocation';
 import { useConnState, useOrder } from '../../features/realtime/realtime';
+import { useRescueTelemetry } from '../../features/route/useRescueTelemetry';
+import { virtualBadge } from '../../features/refix/refixFlow';
+import type { Route } from '../../features/route/routeTracker';
 import { ordersApi, type Order } from '../../services/api';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ReMapsNavigation'>;
@@ -52,10 +57,27 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
   const simRef = useRef(false);
   simRef.current = simulating;
 
+  // ---- đơn cứu hộ (tài xế) ----
+  const { order, setOrder } = useOrder(rescueOrderId ?? null, { skip: !rescueOrderId });
+  const virtual = !!rescueOrderId && (route.params?.virtual === true || !!order?.virtualDrive);
+  const vSnap = useRescueTelemetry(virtual ? rescueOrderId : undefined);
+  const vFrame = vSnap && !vSnap.released ? vSnap.frame : null;
+  const vRoute = useMemo<Route | null>(() => (vSnap?.route
+    ? { coords: vSnap.route.coords, encoded: '', distanceM: vSnap.route.distanceM, durationS: vSnap.route.durationS } : null), [vSnap?.route]);
+
   const {
-    status, route: currentRoute, fallback, remainingM, etaS, offRoute, arrived, lastError, lastFixAt, debug,
-    onLocation, retry, clearDestination, tracker,
-  } = useRoute(dest?.[0], dest?.[1], { vehicle: rescueOrderId ? 'truck' : 'car' });
+    status: trackerStatus, route: trackerRoute, fallback, remainingM: trackerRemaining, etaS: trackerEta, offRoute: trackerOff,
+    arrived: trackerArrived, lastError, lastFixAt, debug, onLocation, retry, clearDestination, tracker,
+  } = useRoute(virtual ? undefined : dest?.[0], virtual ? undefined : dest?.[1], { vehicle: rescueOrderId ? 'truck' : 'car' });
+  // giá trị hiển thị: xe ảo (frame của máy chủ) hoặc GPS thật của máy này
+  const currentRoute = virtual ? vRoute : trackerRoute;
+  const status = virtual ? 'ok' : trackerStatus;
+  const remainingM = virtual ? vFrame?.remainingM ?? vRoute?.distanceM ?? 0 : trackerRemaining;
+  const etaS = virtual ? vFrame?.etaS ?? vRoute?.durationS ?? 0 : trackerEta;
+  const offRoute = virtual ? false : trackerOff;
+  const arrived = virtual
+    ? vFrame?.phase === 'arrived' || order?.status === 'arrived' || order?.status === 'in_service'
+    : trackerArrived;
 
   // ĐỒNG HỒ ĐƠN ĐIỆU: tracker loại fix có ts <= fix trước. Mọi nguồn (GPS / testbench) đi qua đây.
   const clockRef = useRef(0);
@@ -63,7 +85,7 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
 
   // ---- GPS thật 1 Hz (tắt khi đang chạy testbench) ----
   const loc = useDeviceLocation({
-    enabled: !simulating && !!dest,
+    enabled: !simulating && !!dest && !virtual,
     watch: true,
     accuracy: Location.Accuracy.BestForNavigation,
     timeInterval: 1000,
@@ -71,9 +93,9 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
     onFix: f => { if (!simRef.current) onLocation(f.pos, f.accuracyM ?? 10, stamp(f.ts)); },
   });
 
-  const currentPos: LngLat | null = debug.lastFix;
-  const progressM = debug.progressM;
-  const totalM = debug.totalM;
+  const currentPos: LngLat | null = virtual ? vFrame?.pos ?? null : debug.lastFix;
+  const progressM = virtual ? vFrame?.progressM ?? 0 : debug.progressM;
+  const totalM = virtual ? vRoute?.distanceM ?? 0 : debug.totalM;
 
   // ---- chỉ dẫn rẽ & hướng xe ----
   const routeIdx = useMemo(() => (currentRoute ? indexRoute(currentRoute.coords) : null), [currentRoute]);
@@ -90,11 +112,12 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
     if (lastFixAt == null || !debug.lastFix) return est.current;
     return est.update(debug.lastFix, lastFixAt, onRoute && routeIdx ? bearingAtDistance(routeIdx, progressM) : null);
   }, [lastFixAt, debug.lastFix, onRoute, routeIdx, progressM]);
-  const speedKmh = motion.speedMps != null ? Math.round(motion.speedMps * 3.6) : null;
+  const speedMps = virtual ? vFrame?.speedMps ?? null : motion.speedMps;
+  const speedKmh = speedMps != null ? Math.round(speedMps * 3.6) : null;
+  const heading = virtual ? vFrame?.heading ?? null : motion.heading;
 
-  // ---- đơn cứu hộ (tài xế) ----
-  const { order, setOrder } = useOrder(rescueOrderId ?? null, { skip: !rescueOrderId });
-  const publishing = !!rescueOrderId && !!order && ['enroute', 'arrived', 'in_service'].includes(order.status);
+  // xe ảo: không phát GPS của máy (máy chủ là nguồn vị trí duy nhất)
+  const publishing = !!rescueOrderId && !!order && !virtual && ['enroute', 'arrived', 'in_service'].includes(order.status);
 
   // đơn bị hủy / bị rút khỏi tài xế trong lúc dẫn đường → dừng phát, báo, quay lại
   const lostEdge = useRef(new RisingEdge()).current;
@@ -177,7 +200,7 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
           mode="follow"
           route={currentRoute?.coords ?? null}
           progressFrac={arrived ? 1 : frac}
-          vehicle={currentPos ? { pos: currentPos, heading: motion.heading, tone: isOff ? 'alert' : 'normal' } : null}
+          vehicle={currentPos ? { pos: currentPos, heading, tone: isOff ? 'alert' : 'normal', glide: virtual } : null}
           destination={{ pos: dest }}
           fallback={fallback.length ? fallback : null}
         />
@@ -193,12 +216,12 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.turnDist}>
-              {arrived ? 'Đã đến' : isOff ? 'Lệch tuyến' : waitingGps ? 'Chờ GPS' : !currentRoute ? formatDistanceVi(haversine(currentPos!, dest)) : instruction.distanceText}
+              {arrived ? 'Đã đến' : isOff ? 'Lệch tuyến' : waitingGps ? (virtual ? 'Chờ xe' : 'Chờ GPS') : !currentRoute ? formatDistanceVi(haversine(currentPos!, dest)) : instruction.distanceText}
             </Text>
             <Text numberOfLines={1} style={styles.turnText}>
               {arrived ? 'Bạn đã tới điểm hẹn'
                 : isOff ? (status === 'off-route' ? 'Đã dừng tự tính lại · bấm "Tính lại"' : 'Đang tìm tuyến mới…')
-                : waitingGps ? 'Đang bắt tín hiệu GPS…'
+                : waitingGps ? (virtual ? 'Đang nhận vị trí xe từ máy chủ…' : 'Đang bắt tín hiệu GPS…')
                 : !currentRoute ? (status === 'error' ? 'Chưa có tuyến — đường nét đứt là đường chim bay' : 'Đang tải tuyến từ Goong…')
                 : instruction.text}
             </Text>
@@ -210,7 +233,12 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
         </View>
 
         <View style={styles.statusRow}>
-          {rescueOrderId ? (
+          {virtual ? (
+            <View style={[styles.pill, { backgroundColor: 'rgba(245,158,11,0.95)' }]}>
+              <View style={styles.pillDot} />
+              <Text style={styles.pillText}>{virtualBadge(vFrame?.timeScale)} · máy chủ lái · khách đang thấy xe</Text>
+            </View>
+          ) : rescueOrderId ? (
             <View style={[styles.pill, { backgroundColor: publishing && conn === 'open' ? 'rgba(16,185,129,0.92)' : 'rgba(180,83,9,0.92)' }]}>
               <View style={styles.pillDot} />
               <Text style={styles.pillText}>
@@ -225,7 +253,7 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
           ) : null}
         </View>
 
-        {loc.status !== 'ready' && !simulating ? <LocationGate status={loc.status} onRecheck={loc.recheck} onOpenSettings={loc.openSettings} compact /> : null}
+        {loc.status !== 'ready' && !simulating && !virtual ? <LocationGate status={loc.status} onRecheck={loc.recheck} onOpenSettings={loc.openSettings} compact /> : null}
       </View>
 
       {/* ===== HUD dưới ===== */}
@@ -237,7 +265,7 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
           </View>
           <View style={[styles.gps, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
             <Ionicons name="locate" size={14} color={debug.accuracyM > 30 ? colors.sos : colors.green} />
-            <Text style={[styles.gpsText, { color: colors.textPrimary }]}>{simulating ? 'Mô phỏng' : currentPos ? `GPS ±${Math.round(debug.accuracyM)} m` : 'Chờ GPS'}</Text>
+            <Text style={[styles.gpsText, { color: colors.textPrimary }]}>{virtual ? 'Xe ảo' : simulating ? 'Mô phỏng' : currentPos ? `GPS ±${Math.round(debug.accuracyM)} m` : 'Chờ GPS'}</Text>
           </View>
           <View style={{ flex: 1 }} />
           <Pressable onPress={() => setSoundOn(v => !v)} style={[styles.roundBtn, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]} accessibilityLabel={soundOn ? 'Tắt rung' : 'Bật rung'}>
@@ -256,7 +284,7 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
                 <Ionicons name="call" size={18} color="#FFFFFF" />
               </Pressable>
             ) : null}
-            {order.status === 'enroute' ? (
+            {order.status === 'enroute' && !virtual ? (
               <Pressable onPress={() => act(() => ordersApi.arrived(order.id))} style={[styles.actBtn, { backgroundColor: arrived ? colors.green : colors.bgSubtle }]}>
                 <Text style={[styles.actText, { color: arrived ? '#FFFFFF' : colors.textPrimary }]}>Đã đến</Text>
               </Pressable>

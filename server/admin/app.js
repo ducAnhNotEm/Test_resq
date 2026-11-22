@@ -14,12 +14,16 @@ const STATUS = {
   in_service: 'Đang hỗ trợ', completed: 'Hoàn thành', cancelled: 'Đã hủy',
 };
 const ISSUE = { tire: 'Thủng/nổ lốp', battery: 'Hết ắc quy', tow: 'Cần kéo xe', fuel: 'Hết nhiên liệu', lockout: 'Kẹt chìa', accident: 'Va chạm', engine: 'Hỏng máy', unknown: 'Chưa rõ' };
-const ROLE = { customer: 'Khách hàng', staff: 'Tài xế cứu hộ', admin: 'Điều phối viên' };
+const ROLE = { customer: 'Khách hàng', staff: 'Nhân viên gara', garage: 'Chủ gara', admin: 'Điều phối viên' };
 const EVENT = {
   created: 'Khách tạo đơn', created_by_dispatcher: 'Tổng đài tạo hộ', assigned: 'Đã điều phối', accepted: 'Tài xế nhận đơn',
   declined: 'Tài xế từ chối', offer_timeout: 'Tài xế không phản hồi (hết 90 giây)', unassigned: 'Điều phối rút đơn',
   arrived: 'Xe tới hiện trường', in_service: 'Bắt đầu hỗ trợ', completed: 'Hoàn thành', cancelled: 'Đã hủy', rated: 'Khách đánh giá', edited: 'Sửa thông tin',
+  held: 'Chưa tự giao — chờ xử lý', override: 'Điều phối vượt điều kiện (có lý do)', alternative_accepted: 'Khách đồng ý đổi gara',
 };
+const STORE_STATUS = { pending: 'Chờ duyệt', active: 'Đang hoạt động', suspended: 'Tạm khóa' };
+const SERVICE = { repair: 'Sửa chữa', tire: 'Lốp', battery: 'Ắc quy', tow: 'Kéo xe', diagnostics: 'Kiểm tra lỗi' };
+const SOURCE = { store: 'Ảnh do cửa hàng cung cấp', google: 'Ảnh từ Google Maps' };
 const ACTOR = { customer: 'khách', staff: 'tài xế', admin: 'điều phối', system: 'hệ thống' };
 
 const statusChip = (s) => `<span class="chip ${esc(s)}">${esc(STATUS[s] ?? s)}</span>`;
@@ -56,6 +60,8 @@ async function boot() {
     state.config = await api('GET', '/api/config');
     $('#login').hidden = true; $('#app').hidden = false;
     $('#meName').textContent = `${state.me.name} · ${state.me.email}`;
+    setDemoUi(!!state.config.demoMode);
+    refreshStoreBadge();
     connectWs();
     route();
   } catch { showLogin(); }
@@ -78,6 +84,33 @@ $('#loginForm').addEventListener('submit', async (e) => {
   } catch (err) { $('#loginError').textContent = err.message; }
 });
 $('#logoutBtn').addEventListener('click', logout);
+// CHẾ ĐỘ DEMO: cờ tường minh — bật mới có xe ảo (không bao giờ suy luận từ GPS)
+function setDemoUi(on) { $('#demoMode').checked = on; $('.demo-toggle').classList.toggle('on', on); }
+$('#demoMode').addEventListener('change', guard(async (e) => {
+  const r = await api('POST', '/api/admin/settings', { demoMode: e.target.checked });
+  setDemoUi(r.demoMode);
+  toast(r.demoMode ? 'Đã BẬT chế độ demo: đơn mới chạy xe ảo từ gara được giao, gara mới tự duyệt' : 'Đã TẮT chế độ demo: dùng GPS thật, gara mới chờ duyệt');
+}));
+async function refreshStoreBadge() {
+  try {
+    const list = await api('GET', '/api/admin/stores');
+    const n = list.filter(x => x.status === 'pending' || x.pending).length;
+    $('#storeBadge').hidden = !n; $('#storeBadge').textContent = n;
+  } catch { /* bỏ qua */ }
+}
+// "Đặt lại demo": tập 10 lần vẫn sạch như lần đầu (hủy đơn mở của tài khoản mẫu, dừng xe ảo, bật lại nhận đơn)
+$('#demoResetBtn').addEventListener('click', guard(async () => {
+  if (!confirm('Đặt lại demo?\n\n• Hủy mọi đơn đang mở của tài khoản mẫu\n• Dừng xe ảo đang chạy\n• Bật lại "Nhận đơn" cho nhân viên mẫu')) return;
+  const r = await api('POST', '/api/admin/demo/reset');
+  closeDrawer();
+  const parts = [`Đã hủy ${r.cancelled.length} đơn`];
+  if (r.staffReady.length) parts.push(`sẵn sàng: ${r.staffReady.join(', ')}`);
+  if (r.staffOffline.length) parts.push(`chưa mở app: ${r.staffOffline.join(', ')}`);
+  toast(`Demo đã sẵn sàng — ${parts.join(' · ')}`);
+  emit('order');
+}));
+const virtualChip = (o) => (o.virtualDrive ? '<span class="chip virtual" title="Server lái xe ảo theo tuyến Goong thật (demo cùng phòng)">XE ẢO</span>' : '');
+const storeLine = (o) => (o.store ? `<b>${esc(o.store.name)}</b>${o.store.distanceM != null ? ` · cách khách ${fmtDist(o.store.distanceM)}` : ''}${o.store.etaS ? ` · ~${Math.max(1, Math.round(o.store.etaS / 60))} phút` : ''}<div class="muted small">${esc(o.store.address || '')}</div>` : '');
 
 // ======================= REALTIME (ops) =======================
 let wsRetry = 0;
@@ -127,7 +160,7 @@ function route() {
   if (cleanup) { cleanup(); cleanup = null; }
   const view = $('#view');
   view.innerHTML = '';
-  const pages = { overview: pageOverview, ops: pageOps, orders: pageOrders, users: pageUsers };
+  const pages = { overview: pageOverview, ops: pageOps, orders: pageOrders, stores: pageStores, users: pageUsers };
   cleanup = (pages[name] ?? pageOverview)(view) ?? null;
 }
 window.addEventListener('hashchange', () => { if (state.me) route(); });
@@ -294,9 +327,11 @@ function pageOps(view) {
       const f = state.live.frames.get(o.id);
       return `<div class="order-card ${o.priority === 'sos' ? 'sos' : ''}" data-id="${esc(o.id)}">
         <div class="top"><b class="mono">${esc(o.id)}</b>${statusChip(o.status)}</div>
-        <div>${sosChip(o)} ${esc(ISSUE[o.issue] ?? o.issue)} · ${esc(o.customer.name)}</div>
+        <div>${sosChip(o)} ${virtualChip(o)} ${esc(ISSUE[o.issue] ?? o.issue)} · ${esc(o.customer.name)}</div>
+        ${o.store ? `<div class="small">Gara ReFix: ${esc(o.store.name)}</div>` : ''}
         <div class="muted small">${esc(o.address || `${o.location.lat.toFixed(5)}, ${o.location.lng.toFixed(5)}`)}</div>
         <div class="small">${o.staff ? `Tài xế: ${esc(o.staff.name)} (${esc(o.staff.vehiclePlate)})` : '<b style="color:var(--critical)">Chưa có tài xế</b>'}${f ? ` · còn ${fmtDist(f.remainingM)}, ~${Math.max(1, Math.round(f.etaS / 60))} phút` : ''}</div>
+        ${o.hold ? `<div class="small" style="color:var(--warning)">⚠ ${esc(o.hold.message)}</div>` : ''}
         <div class="muted small">Tạo ${ago(o.createdAt)}</div></div>`;
     }).join('') : '<div class="empty card">Không có đơn nào đang mở.</div>';
     $('#opsList').querySelectorAll('.order-card').forEach(c => c.onclick = () => openOrder(c.dataset.id));
@@ -315,7 +350,7 @@ function pageOps(view) {
       return e;
     }, p => p.pos);
     syncMarkers('veh', [...state.live.frames.values()], f => f.orderId, f => {
-      const e = document.createElement('div'); e.className = 'mk-veh'; e.title = `Xe đơn ${f.orderId} · ${f.speedMps != null ? Math.round(f.speedMps * 3.6) + ' km/h' : ''}`;
+      const e = document.createElement('div'); e.className = 'mk-veh'; e.title = `${f.simulated ? 'XE ẢO · ' : ''}Xe đơn ${f.orderId} · ${f.speedMps != null ? Math.round(f.speedMps * 3.6) + ' km/h' : ''}${f.timeScale ? ` · tua nhanh ×${f.timeScale}` : ''}`;
       e.innerHTML = `<span style="transform:rotate(${f.heading ?? 0}deg)"></span>`; e.onclick = () => openOrder(f.orderId); return e;
     }, f => f.pos);
     const src = map.getSource('routes');
@@ -426,20 +461,22 @@ async function openOrder(id, refresh = false) {
     const active = !['completed', 'cancelled'].includes(o.status);
     d.hidden = false;
     d.innerHTML = `
-      <div class="head"><div><h1 class="mono">${esc(o.id)}</h1><div>${statusChip(o.status)} ${sosChip(o)}</div></div><button class="btn ghost" id="closeDrawer" aria-label="Đóng">✕</button></div>
+      <div class="head"><div><h1 class="mono">${esc(o.id)}</h1><div>${statusChip(o.status)} ${sosChip(o)} ${virtualChip(o)}</div></div><button class="btn ghost" id="closeDrawer" aria-label="Đóng">✕</button></div>
+      ${o.hold && o.status === 'requested' ? `<div class="hold"><b>Chưa tự giao</b> — ${esc(o.hold.message)}${o.hold.best ? `<div class="small">Gợi ý: <b>${esc(o.hold.best.name)}</b> · ${fmtDist(o.hold.best.distanceM)} · ~${o.hold.best.etaMin} phút</div>` : ''}</div>` : ''}
       ${o.injured ? '<div class="alert critical"><span class="tag">AN TOÀN</span><span>Có người bị thương: xác nhận đã gọi 115 / hướng dẫn khách sơ cứu, không di chuyển nạn nhân.</span></div>' : ''}
       <dl class="kv">
         <dt>Khách</dt><dd>${esc(o.customer.name)} · <a href="tel:${esc(o.customer.phone)}">${esc(o.customer.phone)}</a></dd>
         <dt>Sự cố</dt><dd>${esc(ISSUE[o.issue] ?? o.issue)} · <span class="mono">${esc(o.vehiclePlate)}</span></dd>
         <dt>Vị trí</dt><dd>${esc(o.address || '—')}<div class="muted small mono">${o.location.lat.toFixed(6)}, ${o.location.lng.toFixed(6)}${o.location.accuracyM != null ? ` · sai số ±${Math.round(o.location.accuracyM)} m` : ''}</div></dd>
         <dt>Ghi chú</dt><dd>${esc(o.note || '—')}</dd>
-        ${o.place ? `<dt>Khách chọn</dt><dd><b>${esc(o.place.name)}</b></dd>` : ''}
+        ${o.requestedStore ? `<dt>Khách chọn</dt><dd><b>${esc(o.requestedStore.name)}</b> <span class="chip">đối tác</span>${o.store && o.store.id !== o.requestedStore.id ? ' <span class="chip off">khác gara được giao — xem nhật ký</span>' : ''}</dd>` : o.place ? `<dt>Khách chọn</dt><dd><b>${esc(o.place.name)}</b> <span class="muted small">(chưa là đối tác — không nhận đơn qua app)</span></dd>` : ''}
+        ${o.store ? `<dt>Gara được giao</dt><dd>${storeLine(o)}${o.virtualDrive ? '<div class="muted small">Chế độ demo: server lái xe ảo từ ĐÚNG gara này theo tuyến Goong thật (~48–90 giây).</div>' : ''}</dd>` : ''}
         <dt>Tài xế</dt><dd>${o.staff ? `${esc(o.staff.name)} · ${esc(o.staff.vehiclePlate)} · <a href="tel:${esc(o.staff.phone)}">${esc(o.staff.phone)}</a>` : '<span class="muted">Chưa điều phối</span>'}</dd>
         ${o.cancelReason ? `<dt>Lý do hủy</dt><dd>${esc(o.cancelReason)}</dd>` : ''}
         ${o.rating ? `<dt>Đánh giá</dt><dd>${'★'.repeat(o.rating)}${'☆'.repeat(5 - o.rating)}</dd>` : ''}
       </dl>
       <div class="actions">
-        ${active && ['requested', 'assigned'].includes(o.status) ? '<button class="btn primary" id="aAssign">Điều phối tài xế…</button>' : ''}
+        ${active && ['requested', 'assigned'].includes(o.status) ? '<button class="btn primary" id="aAssign">Điều phối gara…</button>' : ''}
         ${active && ['assigned', 'enroute'].includes(o.status) ? '<button class="btn" id="aUnassign">Rút đơn khỏi tài xế</button>' : ''}
         ${o.status === 'arrived' ? '<button class="btn" id="aStart">Bắt đầu hỗ trợ</button>' : ''}
         ${o.status === 'in_service' ? '<button class="btn" id="aComplete">Hoàn thành</button>' : ''}
@@ -449,10 +486,10 @@ async function openOrder(id, refresh = false) {
       <div id="cands"></div>
       <div id="nearPlaces"></div>
       <div><h2>Hành trình xe ${track.length ? `<span class="muted small">(${track.length} điểm, lưu mỗi 10 giây)</span>` : ''}</h2><div class="mini-map" id="miniMap"></div></div>
-      <div><h2>Nhật ký</h2><ul class="timeline">${events.map(e => `<li><b>${esc(EVENT[e.type] ?? e.type)}</b> <span class="muted small">· ${fmtTime(e.at)} · ${esc(ACTOR[e.actorRole] ?? e.actorRole)}</span>${e.data?.reason ? `<div class="muted small">${esc(e.data.reason)}</div>` : ''}${e.data?.staffName ? `<div class="muted small">→ ${esc(e.data.staffName)}</div>` : ''}</li>`).join('')}</ul></div>`;
+      <div><h2>Nhật ký</h2><ul class="timeline">${events.map(e => `<li><b>${esc(EVENT[e.type] ?? e.type)}</b> <span class="muted small">· ${fmtTime(e.at)} · ${esc(ACTOR[e.actorRole] ?? e.actorRole)}</span>${e.data?.reason ? `<div class="muted small">${esc(e.data.reason)}</div>` : ''}${e.data?.message ? `<div class="muted small">${esc(e.data.message)}</div>` : ''}${e.data?.to ? `<div class="muted small">${esc(e.data.from ?? '—')} → ${esc(e.data.to)}</div>` : ''}${e.data?.staffName ? `<div class="muted small">→ ${esc(e.data.staffName)}${e.data.storeName ? ` · xuất phát từ ${esc(e.data.storeName)}` : ''}${e.data.virtualDrive ? ' · xe ảo' : ''}</div>` : ''}</li>`).join('')}</ul></div>`;
     $('#closeDrawer').onclick = closeDrawer;
     const act = (sel, fn) => { const b = $(sel, d); if (b) b.onclick = guard(fn); };
-    act('#aAssign', () => showCandidates(o));
+    act('#aAssign', () => showStoreOptions(o));
     act('#aUnassign', async () => { const r = prompt('Lý do rút đơn (xe hỏng, tài xế mất liên lạc…)'); if (r === null) return; await api('POST', `/api/admin/orders/${o.id}/unassign`, { reason: r }); toast('Đã đưa đơn về hàng chờ'); });
     act('#aStart', async () => { await api('POST', `/api/orders/${o.id}/start`); });
     act('#aComplete', async () => { await api('POST', `/api/orders/${o.id}/complete`, { note: 'Điều phối xác nhận hoàn thành' }); });
@@ -506,13 +543,72 @@ async function showCandidates(o) {
   const box = $('#cands');
   box.innerHTML = '<div class="muted small">Đang tính tài xế phù hợp…</div>';
   const cands = await api('GET', `/api/admin/orders/${o.id}/candidates`);
-  box.innerHTML = `<h2>Tài xế đề xuất</h2>` + (cands.length ? cands.map(c => `<div class="cand"><div><b>${esc(c.name)}</b><div class="muted small">cách ${fmtDist(c.distanceM)} · ETA ~${Math.max(1, Math.round(c.etaS / 60))} phút ${c.etaSource === 'goong' ? '(Goong, đường thật)' : '(ước lượng)'} · vị trí ${c.presenceAgeS} giây trước</div></div><button class="btn small primary" data-id="${c.staffId}">Giao</button></div>`).join('')
-    : '<div class="empty">Không có tài xế sẵn sàng trong bán kính 30 km (đang bận, tắt nhận đơn, mất tín hiệu, hoặc đã từ chối đơn này).</div>');
+  box.innerHTML = `<h2>Tài xế đề xuất</h2>` + (cands.length ? cands.map(c => `<div class="cand"><div><b>${esc(c.name)}</b>${c.declined ? ' <span class="chip off">đã từ chối / hết giờ</span>' : ''}<div class="muted small">cách ${fmtDist(c.distanceM)} · ETA ~${Math.max(1, Math.round(c.etaS / 60))} phút ${c.etaSource === 'goong' ? '(Goong, đường thật)' : '(ước lượng)'} · vị trí ${c.presenceAgeS} giây trước</div></div><button class="btn small primary" data-id="${c.staffId}">${c.declined ? 'Giao lại' : 'Giao'}</button></div>`).join('')
+    : '<div class="empty">Không có tài xế sẵn sàng trong bán kính 30 km (đang bận, tắt nhận đơn hoặc mất tín hiệu). Demo bị kẹt? Bấm <b>Đặt lại demo</b> ở thanh bên.</div>');
   box.querySelectorAll('button[data-id]').forEach(b => b.onclick = guard(async () => {
     await api('POST', `/api/admin/orders/${o.id}/assign`, { staffId: Number(b.dataset.id) });
     toast('Đã giao đơn — chờ tài xế nhận (90 giây)');
   }));
 }
+
+/** Gara cho đơn: đủ điều kiện? trong cam kết ETA? — giao vượt điều kiện bắt buộc lý do (ghi nhật ký). */
+async function showStoreOptions(o) {
+  const box = $('#cands');
+  box.innerHTML = '<div class="muted small">Đang đánh giá các gara…</div>';
+  const opts = await api('GET', `/api/admin/orders/${o.id}/stores`);
+  box.innerHTML = '<h2>Gara phù hợp</h2>' + (opts.length ? opts.map(x => `<div class="opt">
+      <div><b>${esc(x.name)}</b> ${x.requested ? '<span class="chip">khách chọn</span>' : ''}
+        ${x.eligible ? (x.withinCommitment ? '<span class="chip completed">đủ điều kiện</span>' : '<span class="chip off">ngoài vùng phủ</span>') : '<span class="chip off">chưa đủ điều kiện</span>'}
+        <div class="muted small">${esc(x.distanceText)} · ETA ~${esc(x.etaText)} · ${x.onDuty} người đang trực · ${x.open === 'closed' ? 'đang đóng cửa' : x.open === 'unknown' ? 'chưa khai giờ mở cửa' : 'đang mở'}</div>
+        ${x.problems.length ? `<div class="small why">${esc(x.problems.join(' · '))}</div>` : ''}
+      </div>
+      <button class="btn small ${x.overrideReason ? '' : 'primary'}" data-id="${esc(x.storeId)}" ${x.staffId ? '' : 'disabled'}>${x.overrideReason ? 'Giao (cần lý do)' : 'Giao'}</button>
+    </div>`).join('') : '<div class="empty">Chưa có gara đối tác nào đang hoạt động. Duyệt gara ở trang "Gara đối tác".</div>');
+  box.querySelectorAll('button[data-id]').forEach(b => b.onclick = guard(async () => {
+    const x = opts.find(y => y.storeId === b.dataset.id);
+    let reason;
+    if (x.overrideReason) {
+      reason = prompt(`Giao vượt điều kiện: ${x.overrideReason}\n\nLý do (ghi vào nhật ký, khách sẽ thấy gara mới):`);
+      if (!reason) return;
+    }
+    await api('POST', `/api/admin/orders/${o.id}/assign`, { storeId: x.storeId, reason });
+    toast(`Đã giao cho ${x.name} — chờ nhân viên nhận (90 giây)`);
+  }));
+}
+
+// ======================= GARA ĐỐI TÁC =======================
+function pageStores(view) {
+  view.innerHTML = `
+    <div class="page-head"><div><h1>Gara đối tác</h1><div class="muted small">Gara là đơn vị được điều phối. Địa chỉ do gara tự sửa phải được duyệt trước khi dùng để tính khoảng cách.</div></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Gara</th><th>Trạng thái</th><th>Địa chỉ (dùng để điều phối)</th><th>Dịch vụ · giờ mở cửa</th><th>Ảnh</th><th>Nhân viên</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>`;
+  const load = guard(async () => {
+    const list = await api('GET', '/api/admin/stores');
+    $('#rows').innerHTML = list.length ? list.map(x => `<tr data-id="${esc(x.id)}">
+      <td><b>${esc(x.name)}</b><div class="muted small">${esc(x.phone || '')}${x.email ? ' · ' + esc(x.email) : ''}</div>${x.ownerEmail ? `<div class="muted small">Chủ: ${esc(x.ownerEmail)}</div>` : ''}</td>
+      <td><span class="chip ${x.status === 'active' ? 'completed' : 'off'}">${esc(STORE_STATUS[x.status] ?? x.status)}</span>${x.verifiedBy ? `<div class="muted small">duyệt: ${esc(x.verifiedBy === 'demo-auto' ? 'tự duyệt (chế độ demo)' : x.verifiedBy)}</div>` : ''}</td>
+      <td class="small">${esc(x.address)}<div class="muted mono">${x.pos[1].toFixed(5)}, ${x.pos[0].toFixed(5)}</div>
+        ${x.pending ? `<div class="pending-addr"><b>Chờ xác minh:</b> ${esc(x.pending.address)}<div class="muted mono">${x.pending.pos[1].toFixed(5)}, ${x.pending.pos[0].toFixed(5)} · cách địa chỉ cũ ${fmtDist(distM(x.pos, x.pending.pos))}</div>
+          <button class="btn small primary" data-act="approve">Duyệt địa chỉ mới</button> <button class="btn small" data-act="reject">Từ chối</button></div>` : ''}</td>
+      <td class="small">${(x.services || []).map(k => esc(SERVICE[k] ?? k)).join(', ') || '—'}<div class="muted">${(x.hoursLines || []).slice(0, 2).map(esc).join('<br>') || 'chưa khai giờ mở cửa'}</div></td>
+      <td><div class="thumbs">${(x.images || []).slice(0, 3).map(i => `<figure><img src="${esc(i.url)}" alt=""><figcaption>${esc(i.source === 'store' ? 'cửa hàng' : 'Google')}</figcaption></figure>`).join('') || '<span class="muted small">—</span>'}</div></td>
+      <td class="small">${x.onDuty}/${x.staffCount} đang trực</td>
+      <td style="white-space:nowrap">${x.status === 'pending' ? '<button class="btn small primary" data-act="approve">Duyệt gara</button> ' : ''}${x.status === 'suspended' ? '<button class="btn small" data-act="activate">Mở lại</button>' : '<button class="btn small" data-act="suspend">Tạm khóa</button>'}</td></tr>`).join('')
+      : '<tr><td colspan="7" class="empty">Chưa có gara nào.</td></tr>';
+    $('#rows').querySelectorAll('button[data-act]').forEach(b => b.onclick = guard(async () => {
+      const id = b.closest('tr').dataset.id;
+      const act = b.dataset.act;
+      if (act === 'approve') await api('POST', `/api/admin/stores/${encodeURIComponent(id)}/approve`);
+      if (act === 'reject') await api('POST', `/api/admin/stores/${encodeURIComponent(id)}/reject-address`);
+      if (act === 'suspend') { if (!confirm('Tạm khóa gara này? Gara sẽ không nhận đơn mới.')) return; await api('POST', `/api/admin/stores/${encodeURIComponent(id)}/status`, { status: 'suspended' }); }
+      if (act === 'activate') await api('POST', `/api/admin/stores/${encodeURIComponent(id)}/status`, { status: 'active' });
+      toast('Đã cập nhật gara'); load(); refreshStoreBadge();
+    }));
+  });
+  load();
+  const t = setInterval(load, 15_000);
+  return () => clearInterval(t);
+}
+const distM = (a, b) => { const R = 6371008.8, r = d => d * Math.PI / 180; const x = Math.sin(r(b[1] - a[1]) / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(r(b[0] - a[0]) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
 
 function editOrderModal(o) {
   const dlg = $('#modal');

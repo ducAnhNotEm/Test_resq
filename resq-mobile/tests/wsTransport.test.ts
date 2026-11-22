@@ -122,3 +122,21 @@ test('parseGoongDirections: đổi [lat,lng] → [lng,lat], bỏ điểm trùng,
   assert.equal(parseGoongDirections({ routes: [] }), null);
   assert.equal(parseGoongDirections(null), null);
 });
+
+test('server đổi trạng thái sẵn sàng (Đặt lại demo): báo màn hình + lần kết nối lại KHÔNG gửi đè trạng thái cũ', () => {
+  const { c, timers, last } = setup();
+  const seen: boolean[] = [];
+  c.onPresence(p => seen.push(p.available));
+  c.start();
+  last().open();
+  last().recv({ type: 'hello', user: { id: 7, role: 'staff', name: 'NV' } });
+  c.sendPresence({ pos: [105.8, 21], accuracyM: 10, heading: null, available: false });
+  last().recv({ type: 'presence', presence: { userId: 7, available: true, pos: [105.8, 21], updatedAt: 1 } });
+  assert.deepEqual(seen, [true]);
+  last().drop();
+  timers.shift()!.fn();
+  last().open();
+  last().recv({ type: 'hello', user: { id: 7, role: 'staff', name: 'NV' } });
+  const resent = last().sent.find(m => m.type === 'presence');
+  assert.equal(resent?.available, true, 'gửi lại theo trạng thái server, không phải công tắc cũ');
+});

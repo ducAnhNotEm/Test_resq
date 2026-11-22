@@ -24,6 +24,13 @@
         {
           "locationWhenInUsePermission": "ResQ dùng vị trí của bạn để hiển thị và cập nhật tuyến cứu hộ trực tiếp."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ResQ cần truy cập ảnh để bạn tải ảnh cửa hàng (gara đối tác).",
+          "cameraPermission": "ResQ cần camera để bạn chụp ảnh cửa hàng (gara đối tác)."
+        }
       ]
     ],
     "extra": {

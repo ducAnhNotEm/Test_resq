@@ -30,7 +30,7 @@ interface MapWebViewProps {
 }
 const WebView = RNWebView as unknown as React.ComponentType<MapWebViewProps>;
 
-export interface MapVehicle { pos: LngLat; heading: number | null; tone?: 'normal' | 'alert' | 'muted' }
+export interface MapVehicle { pos: LngLat; heading: number | null; tone?: 'normal' | 'alert' | 'muted'; /** xe ảo: luôn trượt, kể cả bước dài */ glide?: boolean }
 export interface MapDest { pos: LngLat; accuracyM?: number | null }
 export interface MapPoi { id: string; pos: LngLat; cat: 'garage' | 'fuel' | 'charging' | 'parking'; label?: string; rank?: number }
 
@@ -48,6 +48,8 @@ interface Props {
   pois?: MapPoi[] | null;
   selectedPoiId?: string | null;
   onPoiPress?: (id: string) => void;
+  /** Chạm bản đồ (chọn vị trí). */
+  onMapPress?: (pos: LngLat) => void;
 }
 
 type Phase = 'loading' | 'ready' | 'error';
@@ -77,8 +79,8 @@ export const GoongMapView = memo(function GoongMapView(p: Props) {
   }, [ready, d?.pos[0], d?.pos[1], d?.accuracyM, post]);
   const v = p.vehicle;
   useEffect(() => {
-    if (ready) post({ type: 'vehicle', vehicle: v ? { pos: v.pos, heading: v.heading, tone: v.tone ?? 'normal' } : null });
-  }, [ready, v?.pos[0], v?.pos[1], v?.heading, v?.tone, post]);
+    if (ready) post({ type: 'vehicle', vehicle: v ? { pos: v.pos, heading: v.heading, tone: v.tone ?? 'normal', glide: !!v.glide } : null });
+  }, [ready, v?.pos[0], v?.pos[1], v?.heading, v?.tone, v?.glide, post]);
 
   const me = p.me;
   useEffect(() => {
@@ -92,13 +94,14 @@ export const GoongMapView = memo(function GoongMapView(p: Props) {
   useEffect(() => { if (ready) post({ type: 'selectPoi', id: p.selectedPoiId ?? null }); }, [ready, p.selectedPoiId, post]);
 
   const onMessage = useCallback((e: WebViewMessageEvent) => {
-    let m: { type?: string; message?: string; paused?: boolean; id?: string };
+    let m: { type?: string; message?: string; paused?: boolean; id?: string; pos?: LngLat };
     try { m = JSON.parse(e.nativeEvent.data); } catch { return; }
     if (m.type === 'ready') { setPhase('ready'); setErr(''); }
     else if (m.type === 'error') { setPhase('error'); setErr(m.message ?? 'Lỗi bản đồ'); }
     else if (m.type === 'follow') p.onFollowPausedChange?.(!!m.paused);
     else if (m.type === 'poiPress' && m.id) p.onPoiPress?.(m.id);
-  }, [p.onFollowPausedChange, p.onPoiPress]);
+    else if (m.type === 'mapPress' && Array.isArray(m.pos)) p.onMapPress?.(m.pos);
+  }, [p.onFollowPausedChange, p.onPoiPress, p.onMapPress]);
 
   const reload = useCallback(() => { setPhase('loading'); setErr(''); setReloadKey(k => k + 1); }, []);
 

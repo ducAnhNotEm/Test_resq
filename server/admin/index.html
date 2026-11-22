@@ -29,8 +29,13 @@
       <a href="#/overview" data-route="overview">Tổng quan</a>
       <a href="#/ops" data-route="ops">Bản đồ điều hành</a>
       <a href="#/orders" data-route="orders">Đơn cứu hộ</a>
+      <a href="#/stores" data-route="stores">Gara đối tác <span id="storeBadge" class="nav-badge" hidden></span></a>
       <a href="#/users" data-route="users">Người dùng</a>
       <div class="nav-foot">
+        <label class="demo-toggle" title="Xe ảo chạy từ gara được giao theo tuyến Goong thật + gara mới tự duyệt. Tắt = GPS thật, gara mới chờ duyệt.">
+          <input type="checkbox" id="demoMode"> <span>Chế độ demo (xe ảo)</span>
+        </label>
+        <button id="demoResetBtn" class="btn demo-reset" title="Hủy đơn đang mở của tài khoản mẫu, dừng xe ảo, bật lại nhận đơn cho nhân viên">🔄 Đặt lại demo</button>
         <div id="wsState" class="ws-state" title="Kết nối realtime"><i></i><span>Đang kết nối…</span></div>
         <div id="meName" class="muted small"></div>
         <button id="logoutBtn" class="btn ghost small">Đăng xuất</button>

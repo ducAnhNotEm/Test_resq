@@ -380,6 +380,11 @@ export class GridIndex<T> {
     this.all.push(e);
   }
   get size(): number { return this.all.length; }
+  /** Gỡ phần tử thỏa điều kiện (cập nhật gara đối tác không cần dựng lại chỉ mục). */
+  remove(pred: (item: T) => boolean): void {
+    this.all = this.all.filter(e => !pred(e.item));
+    for (const [k, c] of this.cells) { const kept = c.filter(e => !pred(e.item)); if (kept.length) this.cells.set(k, kept); else this.cells.delete(k); }
+  }
   /** Mọi phần tử trong bán kính radiusM, kèm khoảng cách, sắp xếp gần → xa. */
   within(center: LngLat, radiusM: number): Array<{ item: T; distM: number }> {
     const [ci, cj] = this.key(center);

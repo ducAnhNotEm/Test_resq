@@ -109,18 +109,24 @@ export type RootStackParamList = {
   Login: { deviceType: DeviceType };
   MainTabs: undefined;
   GarageList: { issueId: IssueId; initialTab?: GarageType; support?: SupportLocation };
-  RescueRequest: { issueId: IssueId; sos?: boolean; placeId?: string; placeName?: string; support?: SupportLocation };
+  RescueRequest: { issueId: IssueId; sos?: boolean; placeId?: string; placeName?: string; support?: SupportLocation; placePartner?: boolean; placePhone?: string | null };
   /** Chi tiết gara / trạm (dữ liệu thật + ảnh). distanceM/etaMin: từ danh sách xếp hạng. */
   PlaceDetail: { placeId: string; name?: string; distanceM?: number; etaMin?: number; issueId?: IssueId };
   /** Không truyền orderId = đơn đang mở của chính khách. */
   OrderTracking: { orderId?: string } | undefined;
   Rating: { orderId?: string };
   CrashDetection: { autoDispatched?: boolean } | undefined;
+  /** Đăng ký gara đối tác (chưa đăng nhập). */
+  GarageRegister: undefined;
+  /** Hồ sơ gara (nhân viên / chủ gara). */
+  StoreProfile: undefined;
   ReMapsNavigation: {
     destinationName?: string;
     destCoords?: [number, number];
     /** Có orderId = chế độ cứu hộ: phát vị trí realtime cho khách hàng của đơn này. */
     orderId?: string;
+    /** Đơn xe ảo (demo cùng phòng): máy chủ lái, màn này chỉ hiển thị — không bám GPS, không phát vị trí. */
+    virtual?: boolean;
   } | undefined;
   /** Tài xế cứu hộ: nhận đơn, trạng thái sẵn sàng. */
   StaffJobs: undefined;
@@ -128,6 +134,13 @@ export type RootStackParamList = {
   AdminNotice: undefined;
   EmergencyContacts: undefined;
   QBinAssistant: undefined;
+};
+
+/** Tab của nhân viên gara ReFix. */
+export type StaffTabParamList = {
+  StaffJobsTab: undefined;
+  StaffReFixTab: undefined;
+  StaffMapsTab: undefined;
 };
 
 export type MainTabParamList = {

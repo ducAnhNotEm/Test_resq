@@ -20,10 +20,20 @@ import { RootStackParamList } from '../../types';
 
 export const SettingsScreen: React.FC = () => {
   const { colors, isDark, toggleTheme, contacts } = useAppTheme();
-  const { logout } = useAuth();
+  const { logout, user, switchRole } = useAuth();
+  // tài khoản gara đang dùng vai khách: đổi sang vai nhân viên gara (không cần mật khẩu)
+  const canStaff = !!user?.roles?.includes('staff');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const menuRows = [
+    ...(canStaff ? [{
+      icon: 'swap-horizontal',
+      bg: colors.blueBg,
+      fg: colors.blue,
+      title: 'Chuyển sang vai Nhân viên gara',
+      sub: `Cùng tài khoản · nhận đơn của ${user?.store?.name ?? 'gara của bạn'}`,
+      onPress: () => { switchRole('staff').catch(e => Alert.alert('Không đổi được vai', (e as Error).message)); },
+    }] : []),
     {
       icon: 'people',
       bg: colors.sosBg,
@@ -82,8 +92,9 @@ export const SettingsScreen: React.FC = () => {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.ownerName, { color: colors.textPrimary }]}>
-              {USER_PROFILE.owner}
+              {user?.name ?? USER_PROFILE.owner}
             </Text>
+            {user?.email ? <Text style={[styles.carSub, { color: colors.textSecondary }]}>{user.email}{canStaff ? ' · tài khoản gara (đang dùng vai Khách hàng)' : ''}</Text> : null}
             <Text style={[styles.carSub, { color: colors.textSecondary }]}>
               {USER_PROFILE.carName} · <Text style={styles.mono}>{USER_PROFILE.plate}</Text>
             </Text>

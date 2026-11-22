@@ -7,7 +7,7 @@
 //   { type:'dest', pos, accuracyM }     ghim điểm cứu hộ + vòng sai số GPS
 //   { type:'fallback', coords }         đường chim bay nét đứt khi chưa có tuyến
 //   { type:'mode', mode }               'follow' (tài xế: bám xe, xoay theo hướng) | 'overview' (khách: toàn cảnh)
-// (Web → RN): { type:'ready' } | { type:'error', code, message } | { type:'follow', paused }
+// (Web → RN): { type:'ready' } | { type:'error', code, message } | { type:'follow', paused } | { type:'mapPress', pos }
 
 export const GOONG_JS_VERSION = '1.0.9';
 
@@ -76,6 +76,8 @@ function init(){
     map.addLayer({ id:'route-casing', type:'line', source:'route', layout:{ 'line-cap':'round', 'line-join':'round' }, paint:{ 'line-color':'#ffffff', 'line-width':11 } });
     map.addLayer({ id:'route', type:'line', source:'route', layout:{ 'line-cap':'round', 'line-join':'round' }, paint:{ 'line-width':7, 'line-gradient': grad(0) } });
     ready = true;
+    // chạm bản đồ → RN (chọn vị trí cửa hàng khi đăng ký gara)
+    map.on('click', function(e){ post({ type:'mapPress', pos:[e.lngLat.lng, e.lngLat.lat] }); });
     post({ type:'ready' });
   });
   map.on('dragstart', function(e){
@@ -150,7 +152,8 @@ function setVehicle(v){
   } else {
     var cur = sample(now) || veh.cur;
     var h = v.heading == null ? cur.h : v.heading;
-    var far = hav(cur.pos, v.pos) > 400;            // reset / GPS nhảy được chấp nhận: đặt thẳng, không trượt
+    // reset / GPS nhảy được chấp nhận: đặt thẳng, không trượt. glide: xe ảo của máy chủ trên tuyến rất dài (bước > 400 m) vẫn trượt
+    var far = !v.glide && hav(cur.pos, v.pos) > 400;
     veh.from = far ? { pos: v.pos, h: h } : { pos: cur.pos, h: cur.h };
     veh.to = { pos: v.pos, h: h };
     veh.start = now;

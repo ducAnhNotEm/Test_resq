@@ -33,6 +33,8 @@ export interface RealtimeOptions {
 }
 
 export interface Presence { pos: [number, number]; accuracyM: number | null; heading: number | null; available: boolean }
+/** Server báo trạng thái sẵn sàng của nhân viên (vd. điều phối bấm "Đặt lại demo"). */
+export interface ServerPresence { userId: number; available: boolean; pos: [number, number]; updatedAt: number }
 
 const OPEN = 1;
 
@@ -48,6 +50,7 @@ export class RealtimeClient implements TelemetryTransport {
   private presence: Presence | null = null;
   private telemetryListeners = new Set<(m: TelemetryMessage) => void>();
   private orderListeners = new Set<(o: Order) => void>();
+  private presenceListeners = new Set<(p: ServerPresence) => void>();
   private stateListeners = new Set<(s: ConnState) => void>();
   private errorListeners = new Set<(code: string, message: string) => void>();
 
@@ -128,6 +131,7 @@ export class RealtimeClient implements TelemetryTransport {
     if (this.isOpen) this.raw({ type: 'presence', ...p });
   }
 
+  onPresence(cb: (p: ServerPresence) => void): () => void { this.presenceListeners.add(cb); return () => { this.presenceListeners.delete(cb); }; }
   onOrder(cb: (o: Order) => void): () => void { this.orderListeners.add(cb); return () => { this.orderListeners.delete(cb); }; }
   onState(cb: (s: ConnState) => void): () => void { this.stateListeners.add(cb); return () => { this.stateListeners.delete(cb); }; }
   onError(cb: (code: string, message: string) => void): () => void { this.errorListeners.add(cb); return () => { this.errorListeners.delete(cb); }; }
@@ -169,6 +173,13 @@ export class RealtimeClient implements TelemetryTransport {
       case 'order':
         this.orderListeners.forEach(l => l(m.order as Order));
         return;
+      case 'presence': {
+        const p = m.presence as ServerPresence;
+        // server là nguồn sự thật: cập nhật bản lưu để lần kết nối lại KHÔNG gửi đè trạng thái cũ
+        if (this.presence && typeof p?.available === 'boolean') this.presence = { ...this.presence, available: p.available };
+        this.presenceListeners.forEach(l => l(p));
+        return;
+      }
       case 'error':
         this.errorListeners.forEach(l => l(String(m.code), String(m.message)));
         return;

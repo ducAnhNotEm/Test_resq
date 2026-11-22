@@ -1,6 +1,7 @@
 // OrderTrackingScreen (KHÁCH HÀNG): theo dõi đơn cứu hộ thật.
 //  - Trạng thái đơn: REST + WebSocket (server đẩy khi tài xế nhận / tới / hoàn thành).
-//  - Vị trí xe: GPS thật của tài xế qua TelemetryHub ← WebSocket. Không có mô phỏng.
+//  - Vị trí xe: GPS thật của tài xế qua TelemetryHub ← WebSocket. Đơn demo cùng phòng: XE ẢO do máy chủ lái
+//    từ gara ReFix thật theo tuyến Goong thật — gắn nhãn "XE ẢO · tua nhanh ×N", không bao giờ giả làm GPS thật.
 //  - Bản đồ Goong thật: ghim vị trí khách (+ vòng sai số GPS), tuyến của tài xế, xe xoay theo hướng.
 //  - Giúp người đang đứng bên đường: checklist an toàn, gọi 115/113/112, gọi tài xế, cảnh báo xe sắp tới.
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
@@ -22,12 +23,12 @@ import { rescueTelemetry, type TelemetrySnapshot } from '../../features/route/re
 import { useNow, useRescueTelemetry } from '../../features/route/useRescueTelemetry';
 import { GoongMapView } from '../../features/route/map/GoongMapView';
 import { useConnState, useOrder } from '../../features/realtime/realtime';
-import { ISSUE_LABEL, ORDER_STATUS_LABEL, isActiveStatus, ordersApi, type Order, type OrderStatus } from '../../services/api';
+import { ISSUE_LABEL, isActiveStatus, ordersApi, type Order, type OrderStatus } from '../../services/api';
+import { OrderTimeline } from '../../components/OrderTimeline';
+import { storeLine, stripGara, virtualBadge } from '../../features/refix/refixFlow';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OrderTracking'>;
 
-const STEPS = ['Đã tiếp nhận', 'Đã điều phối', 'Đang đến', 'Đang hỗ trợ', 'Hoàn thành'];
-const STEP_INDEX: Record<OrderStatus, number> = { requested: 0, assigned: 1, enroute: 2, arrived: 3, in_service: 3, completed: 4, cancelled: -1 };
 
 const SAFETY = [
   { icon: 'flash' as const, text: 'Bật đèn khẩn cấp (đèn hazard) ngay.' },
@@ -102,7 +103,6 @@ export const OrderTrackingScreen: React.FC<Props> = ({ navigation, route }) => {
     );
   }
 
-  const stepIdx = STEP_INDEX[order.status];
   const active = isActiveStatus(order.status);
   const canCancel = order.status === 'requested' || order.status === 'assigned' || order.status === 'enroute';
 
@@ -134,22 +134,13 @@ export const OrderTrackingScreen: React.FC<Props> = ({ navigation, route }) => {
               </Text>
               {order.priority === 'sos' ? <Text style={[styles.sos, { color: colors.sos }]}>SOS</Text> : null}
             </View>
-            <View style={styles.stepper}>
-              {STEPS.map((label, i) => (
-                <View key={label} style={styles.stepItem}>
-                  <View style={[styles.stepDot, { backgroundColor: i < stepIdx || order.status === 'completed' ? colors.green : i === stepIdx ? colors.blue : colors.bgSubtle }]}>
-                    {i < stepIdx || order.status === 'completed' ? <Ionicons name="checkmark" size={14} color="#FFFFFF" /> : <Text style={styles.stepNum}>{i + 1}</Text>}
-                  </View>
-                  <Text numberOfLines={2} style={[styles.stepLabel, { color: i === stepIdx ? colors.textPrimary : colors.textSecondary }]}>{label}</Text>
-                </View>
-              ))}
-            </View>
-            <Text style={[styles.statusText, { color: colors.blue }]}>{ORDER_STATUS_LABEL[order.status]}</Text>
+            {/* cùng dải 5 bước với máy nhân viên gara */}
+            <OrderTimeline status={order.status} role="customer" storeName={order.store?.name} />
           </View>
         ) : null}
 
         {/* Chờ điều phối */}
-        {order.status === 'requested' || order.status === 'assigned' ? <WaitingCard order={order} /> : null}
+        {order.status === 'requested' || order.status === 'assigned' ? <WaitingCard order={order} onOrder={setOrder} /> : null}
 
         {/* ETA */}
         {order.status === 'enroute' && frame ? (
@@ -186,7 +177,7 @@ export const OrderTrackingScreen: React.FC<Props> = ({ navigation, route }) => {
               route={liveRoute?.coords ?? null}
               progressFrac={frame && routeTotal > 0 ? frame.progressM / routeTotal : 0}
               destination={customerPos ? { pos: customerPos, accuracyM: order.location.accuracyM } : null}
-              vehicle={frame ? { pos: frame.pos, heading: frame.heading, tone: stale ? 'muted' : frame.phase === 'off-route' ? 'alert' : 'normal' } : null}
+              vehicle={frame ? { pos: frame.pos, heading: frame.heading, tone: stale ? 'muted' : frame.phase === 'off-route' ? 'alert' : 'normal', glide: frame.source === 'demo' } : null}
             />
             <View style={styles.badgeWrap} pointerEvents="none">
               <SignalBadge snap={snap} status={order.status} now={now} />
@@ -204,8 +195,13 @@ export const OrderTrackingScreen: React.FC<Props> = ({ navigation, route }) => {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.driverName, { color: colors.textPrimary }]}>{order.staff.name}</Text>
                 <Text style={[styles.driverMeta, { color: colors.textSecondary }]}>
-                  {order.staff.vehiclePlate}{order.staff.unit ? ` · ${order.staff.unit}` : ''}
+                  {order.staff.vehiclePlate}{order.store ? ` · Gara ReFix ${stripGara(order.store.name)}` : order.staff.unit ? ` · ${order.staff.unit}` : ''}
                 </Text>
+                {order.store ? (
+                  <Text numberOfLines={2} style={[styles.driverMeta, { color: colors.textSecondary }]}>
+                    <Ionicons name="storefront" size={12} color={colors.blue} /> Xuất phát: {storeLine(order.store)}
+                  </Text>
+                ) : null}
               </View>
               {order.staff.phone ? (
                 <>
@@ -267,8 +263,16 @@ export const OrderTrackingScreen: React.FC<Props> = ({ navigation, route }) => {
 const initials = (name: string) => name.trim().split(/\s+/).slice(-2).map(w => w[0]?.toUpperCase() ?? '').join('');
 
 /** Đang chờ điều phối: cho khách thấy hệ thống đang làm gì và bao lâu rồi. */
-const WaitingCard = memo(function WaitingCard({ order }: { order: Order }) {
+const WaitingCard = memo(function WaitingCard({ order, onOrder }: { order: Order; onOrder: (o: Order) => void }) {
   const { colors } = useAppTheme();
+  const [busy, setBusy] = useState(false);
+  const hold = order.status === 'requested' ? order.hold ?? null : null;
+  const accept = async (storeId: string) => {
+    setBusy(true);
+    try { onOrder(await ordersApi.acceptAlternative(order.id, storeId)); }
+    catch (e) { Alert.alert('Không đổi được gara', (e as Error).message); }
+    finally { setBusy(false); }
+  };
   const now = useNow(1000);
   const waitedS = Math.max(0, Math.round((now - order.createdAt) / 1000));
   const mm = Math.floor(waitedS / 60);
@@ -279,11 +283,28 @@ const WaitingCard = memo(function WaitingCard({ order }: { order: Order }) {
         <ActivityIndicator color={colors.blue} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
-            {order.status === 'assigned' ? `Đã tìm thấy ${order.staff?.name ?? 'xe cứu hộ'} — chờ xác nhận` : 'Đang tìm xe cứu hộ gần nhất'}
+            {order.status === 'assigned'
+              ? `${order.store ? `Gara ReFix ${stripGara(order.store.name)}` : order.staff?.name ?? 'Xe cứu hộ'} đã nhận thông tin — chờ xác nhận`
+              : hold ? (hold.code === 'out_of_coverage' ? 'Ngoài vùng phủ tự động — tổng đài đang xử lý' : hold.code === 'requested_unavailable' ? 'Gara bạn chọn chưa nhận được đơn' : 'Đang tìm gara đối tác đang trực')
+              : order.requestedStore ? `Đang gửi cho ${order.requestedStore.name}` : 'Đang tìm gara ReFix gần bạn nhất'}
           </Text>
           <Text style={[styles.driverMeta, { color: colors.textSecondary }]}>Đã chờ {mm}:{ss}{waitedS > 300 ? ' · tổng đài sẽ gọi lại cho bạn' : ''}</Text>
         </View>
       </View>
+      {/* vì sao chưa có xe — trung thực, không hứa ETA bịa */}
+      {hold ? (
+        <View style={[styles.holdBox, { backgroundColor: colors.amberBg }]}>
+          <Text style={[styles.holdText, { color: colors.amberText }]}>{hold.message}</Text>
+          {hold.code === 'requested_unavailable' && hold.best ? (
+            <View style={{ gap: 6 }}>
+              <Pressable disabled={busy} onPress={() => void accept(hold.best!.storeId)} style={[styles.primaryBtn, { backgroundColor: colors.blue, opacity: busy ? 0.6 : 1 }]}>
+                <Text style={styles.primaryText}>Chuyển sang {hold.best.name} (~{hold.best.etaMin} phút)</Text>
+              </Pressable>
+              <Text style={[styles.driverMeta, { color: colors.amberText, textAlign: 'center' }]}>Hoặc chờ thêm — đơn sẽ tự gửi cho {hold.requested?.name ?? 'gara bạn chọn'} khi gara nhận được.</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : null}
       <Pressable onPress={() => { void Linking.openURL('tel:19006868'); }} style={[styles.cancelBtn, { borderColor: colors.borderSubtle, marginTop: 0 }]}>
         <Text style={[styles.cancelText, { color: colors.blue }]}>Gọi tổng đài 1900 6868</Text>
       </Pressable>
@@ -300,6 +321,7 @@ const SignalBadge = memo(function SignalBadge({ snap, status, now }: { snap: Tel
   else {
     const ageS = Math.max(0, Math.round((now - snap.receivedAt) / 1000));
     if (ageS * 1000 > rescueTelemetry.config.staleAfterMs) { label = `Mất tín hiệu GPS xe · ${ageS}s`; color = '#EF4444'; }
+    else if (snap.frame.source === 'demo' && snap.frame.timeScale) { label = `${virtualBadge(snap.frame.timeScale)} · tuyến thật`; color = '#F59E0B'; }
     else if (snap.frame.simulated) { label = 'GPS MÔ PHỎNG (thử nghiệm)'; color = '#F59E0B'; }
     else { label = ageS <= 3 ? 'TRỰC TIẾP · GPS xe cứu hộ' : `TRỰC TIẾP · ${ageS}s trước`; color = '#10B981'; }
   }
@@ -378,6 +400,8 @@ const styles = StyleSheet.create({
   emText: { fontFamily: FONTS.semiBold, fontSize: 11 },
   primaryBtn: { minHeight: 48, borderRadius: METRICS.radiusBtn, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, alignSelf: 'stretch' },
   primaryText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.sm, color: '#FFFFFF' },
+  holdBox: { borderRadius: 12, padding: 12, gap: 10, marginTop: 10 },
+  holdText: { fontFamily: FONTS.semiBold, fontSize: 13, lineHeight: 19 },
   cancelBtn: { borderWidth: 1, borderRadius: METRICS.radiusBtn, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   cancelText: { fontFamily: FONTS.semiBold, fontSize: TYPOGRAPHY.sm },
   emptyTitle: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.base, textAlign: 'center' },

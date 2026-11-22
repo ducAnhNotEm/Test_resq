@@ -13,6 +13,7 @@ import { CATEGORY_LABEL, mediaUrl, placesApi, type PlaceDto } from '../../servic
 import { fmtDistance, openLabel } from '../../components/PlaceCard';
 import { RoutePreview } from '../../components/RoutePreview';
 import { useLocation } from '../../features/location/LocationProvider';
+import { useAuth } from '../../context/AuthContext';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PlaceDetail'>;
 
@@ -25,6 +26,7 @@ export const PlaceDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [err, setErr] = useState<string | null>(null);
   const [photo, setPhoto] = useState(0);
   const loc = useLocation();
+  const isStaff = useAuth().user?.role === 'staff';
 
   useEffect(() => {
     placesApi.get(placeId).then(setP).catch(e => setErr((e as Error).message));
@@ -102,7 +104,7 @@ export const PlaceDetailScreen: React.FC<Props> = ({ navigation, route }) => {
                 <Ionicons name="call" size={18} color="#FFFFFF" /><Text style={styles.btnText}>Gọi</Text>
               </Pressable>
             ) : null}
-            {p.category === 'garage' ? (
+            {p.category === 'garage' && !isStaff ? (
               <Pressable
                 onPress={() => navigation.navigate('RescueRequest', { issueId: issueId ?? 'unknown', placeId: p.id, placeName: p.name })}
                 style={[styles.btn, { backgroundColor: colors.sos, flex: 1 }]}

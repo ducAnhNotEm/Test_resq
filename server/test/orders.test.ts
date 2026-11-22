@@ -23,7 +23,12 @@ function setup() {
     lat: HN[1], lng: HN[0], accuracyM: 12, address: '72A Nguyễn Trãi', issue: 'tire', note: '', injured: false,
     priority: 'normal', vehiclePlate: '30H-123.45', ...extra,
   });
-  return { store, svc, cust, s1, s2, admin, order, changes, advance: (ms: number) => { t += ms; }, now: () => t };
+  // cửa hàng là đơn vị điều phối: mỗi nhân viên thuộc 1 gara; khoảng cách tính từ GARA
+  const garage = (id: string, user: { id: number }, pos: LngLat) => {
+    store.upsertStore({ id, name: id, pos, services: ['repair', 'tire'], status: 'active' });
+    store.setUserStore(user.id, id);
+  };
+  return { store, svc, cust, s1, s2, admin, order, changes, garage, advance: (ms: number) => { t += ms; }, now: () => t };
 }
 
 test('auth: scrypt + token ký HMAC, token sửa / hết hạn bị từ chối', () => {
@@ -50,12 +55,16 @@ test('state machine: chỉ đúng vai trò mới được chuyển trạng thái
 });
 
 test('vòng đời đầy đủ: tạo → tự điều phối tài xế gần nhất → nhận → tới → hỗ trợ → hoàn thành → đánh giá', () => {
-  const { store, svc, cust, s1, s2, order, now } = setup();
-  store.upsertPresence(s1.id, near(3000), 10, 0, true);
-  store.upsertPresence(s2.id, near(800), 10, 0, true);
+  const { store, svc, cust, s1, s2, order, now, garage } = setup();
+  garage('Gara xa', s1, near(3000));
+  garage('Gara gần', s2, near(800));
+  store.upsertPresence(s1.id, near(10), 10, 0, true);           // GPS điện thoại KHÔNG quyết định: s1 đứng cạnh khách
+  store.upsertPresence(s2.id, near(5000), 10, 0, true);
   const o = order();
   assert.equal(o.status, 'assigned');
-  assert.equal(o.staff?.id, s2.id, 'tài xế gần hơn được giao');
+  assert.equal(o.staff?.id, s2.id, 'gara gần hơn được giao (tính từ gara, không từ điện thoại)');
+  assert.equal(o.store?.name, 'Gara gần');
+  assert.ok(Math.abs(o.store!.distanceM! - 800) < 5, 'khoảng cách của GARA, không phải của điện thoại');
   assert.ok(o.times.assigned);
 
   const staff = { id: s2.id, role: 'staff' as const };
@@ -73,7 +82,9 @@ test('vòng đời đầy đủ: tạo → tự điều phối tài xế gần n
 });
 
 test('điều phối: bỏ qua tài xế bận / tắt nhận đơn / vị trí cũ / đã từ chối; từ chối thì chuyển người khác', () => {
-  const { store, svc, s1, s2, order, advance } = setup();
+  const { store, svc, s1, s2, order, advance, garage } = setup();
+  garage('G1', s1, near(500));
+  garage('G2', s2, near(2000));
   store.upsertPresence(s1.id, near(500), 10, 0, true);
   store.upsertPresence(s2.id, near(2000), 10, 0, false);          // tắt nhận đơn
   const o = order();

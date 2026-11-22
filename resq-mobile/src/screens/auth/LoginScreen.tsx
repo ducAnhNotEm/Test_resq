@@ -17,10 +17,17 @@ import { useAuth } from '../../context/AuthContext';
 import { CONFIG_HELP, probeServer } from '../../config';
 import { ServerSettingsModal } from '../../components/ServerSettingsModal';
 
-// Tài khoản mẫu do server tạo khi DB rỗng (RESQ_SEED_PASSWORD). Mỗi điện thoại đăng nhập 1 vai trò.
+// Tài khoản mẫu do server tạo khi DB rỗng (RESQ_SEED_PASSWORD).
+// Tài khoản GARA dùng được 2 vai: 2 điện thoại đăng nhập CÙNG tài khoản — máy chọn "Khách hàng" gửi yêu cầu,
+// máy chọn "Nhân viên gara" nhận đơn và chạy tới.
 const SAMPLE_ACCOUNTS = [
-  { label: 'Khách hàng', email: 'khachhang@resq.vn', icon: 'person-circle' as const },
-  { label: 'Tài xế cứu hộ', email: 'cuuho@resq.vn', icon: 'car-sport' as const },
+  { label: 'Khách hàng', email: 'khachhang@resq.vn', icon: 'person-circle' as const, as: 'customer' as const },
+  { label: 'Gara mẫu', email: 'gara@resq.vn', icon: 'storefront' as const, as: 'staff' as const },
+  { label: 'Tài xế cứu hộ', email: 'cuuho@resq.vn', icon: 'car-sport' as const, as: 'staff' as const },
+];
+const ROLE_OPTIONS = [
+  { k: 'customer' as const, label: 'Khách hàng', icon: 'person' as const },
+  { k: 'staff' as const, label: 'Nhân viên gara', icon: 'construct' as const },
 ];
 import { RootStackParamList } from '../../types';
 
@@ -46,6 +53,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   const shownError = error ?? (serverUrl ? null : CONFIG_HELP);
   const [showPassword, setShowPassword] = useState(false);
   const [qrModalVisible, setQrModalVisible] = useState(false);
+  const [as, setAs] = useState<'customer' | 'staff'>('customer');
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -55,7 +63,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
     setBusy(true);
     setError(null);
     try {
-      await login(email, password);           // AppNavigator tự chuyển sang giao diện đúng vai trò
+      await login(email, password, as);       // AppNavigator tự chuyển sang giao diện đúng vai trò
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -67,18 +75,24 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
     <AuthHeroLayout>
       <View style={styles.container}>
         <View style={styles.registerRow}>
-          <Text style={styles.registerPrompt}>Bạn chưa có tài khoản </Text>
-          <Pressable
-            onPress={() =>
-              Alert.alert(
-                'Đăng ký tài khoản ResQ',
-                'Tài khoản do tổng đài ResQ cấp. Liên hệ hotline 1900 6868 hoặc dùng tài khoản mẫu bên dưới.'
-              )
-            }
-            style={styles.registerBtn}
-          >
-            <Text style={styles.registerAction}>Đăng ký</Text>
+          <Text style={styles.registerPrompt}>Bạn có gara / tiệm sửa xe? </Text>
+          <Pressable onPress={() => navigation.navigate('GarageRegister')} style={styles.registerBtn} accessibilityRole="button">
+            <Text style={styles.registerAction}>Đăng ký gara đối tác</Text>
           </Pressable>
+        </View>
+
+        {/* vai trò trên MÁY NÀY — cùng 1 tài khoản gara: máy khách + máy nhân viên */}
+        <View>
+          <Text style={styles.roleLabel}>Đăng nhập với vai trò</Text>
+          <View style={styles.roleRow} accessibilityRole="radiogroup">
+            {ROLE_OPTIONS.map(r => (
+              <Pressable key={r.k} onPress={() => { setAs(r.k); setError(null); }} accessibilityRole="radio" accessibilityState={{ selected: as === r.k }}
+                style={[styles.roleChip, as === r.k && styles.roleChipActive]}>
+                <Ionicons name={r.icon} size={16} color={as === r.k ? '#5B050D' : '#FFFFFF'} />
+                <Text style={[styles.roleText, as === r.k && styles.roleTextActive]}>{r.label}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={styles.formGroup}>
@@ -133,7 +147,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
               key={a.email}
               accessibilityRole="button"
               accessibilityLabel={`Điền tài khoản ${a.label}`}
-              onPress={() => { setEmail(a.email); setError(null); }}
+              onPress={() => { setEmail(a.email); setAs(a.as); setError(null); }}
               style={[styles.quickChip, email === a.email && styles.quickChipActive]}
             >
               <Ionicons name={a.icon} size={16} color="#FFFFFF" />
@@ -213,6 +227,12 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  roleLabel: { fontFamily: FONTS.semiBold, fontSize: 12, color: 'rgba(255,255,255,0.8)', textAlign: 'center', marginBottom: 6 },
+  roleRow: { flexDirection: 'row', gap: 8, justifyContent: 'center' },
+  roleChip: { flex: 1, maxWidth: 170, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44, borderRadius: 999, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.55)' },
+  roleChipActive: { backgroundColor: '#FFFFFF', borderColor: '#FFFFFF' },
+  roleText: { fontFamily: FONTS.bold, fontSize: 13, color: '#FFFFFF' },
+  roleTextActive: { color: '#5B050D' },
   serverText: { fontFamily: FONTS.regular, fontSize: 11, color: "rgba(255,255,255,0.75)", textAlign: "center" },
   serverLink: { fontFamily: FONTS.bold, color: "#FFFFFF", textDecorationLine: "underline" },
   quickRow: { flexDirection: "row", gap: 8, justifyContent: "center", flexWrap: "wrap", marginTop: 4 },

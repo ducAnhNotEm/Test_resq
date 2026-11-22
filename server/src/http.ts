@@ -4,7 +4,10 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import type { Role, OrderStatus } from './protocol.ts';
 import { ACTIVE_STATUSES, validLngLat } from './protocol.ts';
-import { toPublicUser, type Store } from './db.ts';
+import { rolesOf, toPublicUser, toStoreInfo, type Store } from './db.ts';
+import { actingRole, registerStoreRoutes, sessionFor, storeDto } from './storeApi.ts';
+import { EMAIL_RE, bad, num, str } from './validate.ts';
+import type { Demo } from './demo.ts';
 import { ApiError, type OrderService, type Principal } from './orders.ts';
 import { AttemptLimiter, verifyPassword, type TokenSigner } from './auth.ts';
 import type { GoongClient } from './goong.ts';
@@ -23,6 +26,10 @@ export interface AppDeps {
   adminDir: string;
   places?: PlaceStore;
   placeImagesDir?: string;
+  /** Xe ảo + "Đặt lại demo" (không có: tắt các tính năng demo). */
+  demo?: Demo | null;
+  /** Thư mục ảnh do gara tải lên (/media/stores/…). */
+  storeImagesDir?: string;
 }
 
 interface Ctx {
@@ -38,25 +45,7 @@ interface Route { method: string; re: RegExp; keys: string[]; roles: Role[] | nu
 
 const ISSUES = new Set(['tire', 'battery', 'tow', 'fuel', 'lockout', 'accident', 'engine', 'unknown']);
 const STATUSES = new Set<OrderStatus>(['requested', 'assigned', 'enroute', 'arrived', 'in_service', 'completed', 'cancelled']);
-const ROLES = new Set<Role>(['customer', 'staff', 'admin']);
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// ---- kiểm tra input ----
-const bad = (msg: string, code = 'invalid_input') => new ApiError(400, code, msg);
-function str(v: unknown, name: string, { max = 500, required = false, min = 0 } = {}): string | undefined {
-  if (v === undefined || v === null || v === '') { if (required) throw bad(`Thiếu ${name}`); return undefined; }
-  if (typeof v !== 'string') throw bad(`${name} phải là chuỗi`);
-  const s = v.trim();
-  if (s.length < min) throw bad(`${name} quá ngắn (tối thiểu ${min} ký tự)`);
-  if (s.length > max) throw bad(`${name} quá dài (tối đa ${max} ký tự)`);
-  return s;
-}
-function num(v: unknown, name: string, { min = -Infinity, max = Infinity, required = false } = {}): number | undefined {
-  if (v === undefined || v === null || v === '') { if (required) throw bad(`Thiếu ${name}`); return undefined; }
-  const n = typeof v === 'number' ? v : Number(v);
-  if (!Number.isFinite(n) || n < min || n > max) throw bad(`${name} không hợp lệ`);
-  return n;
-}
+const ROLES = new Set<Role>(['customer', 'staff', 'admin', 'garage']);
 
 export function createApp(deps: AppDeps) {
   const { store, orders, signer, goong } = deps;
@@ -69,7 +58,7 @@ export function createApp(deps: AppDeps) {
     routes.push({ method, re, keys, roles, handler });
   };
   const PUBLIC: Role[] | null = null;
-  const ANY: Role[] = ['customer', 'staff', 'admin'];
+  const ANY: Role[] = ['customer', 'staff', 'admin', 'garage'];
 
   // ================= AUTH =================
   add('POST', '/api/auth/login', PUBLIC, ({ body, req }) => {
@@ -86,18 +75,25 @@ export function createApp(deps: AppDeps) {
     }
     if (!u.active) throw new ApiError(403, 'account_disabled', 'Tài khoản đã bị khóa, liên hệ tổng đài');
     loginLimiter.reset(`e:${email}`);
-    return { token: signer.sign(u.id, u.role), user: toPublicUser(u) };
+    // vai đang dùng: 1 tài khoản gara đăng nhập 2 máy — máy "Khách hàng", máy "Nhân viên gara"
+    return sessionFor(store, signer, u, actingRole(u, body.as));
+  });
+  add('POST', '/api/auth/switch', ANY, ({ body, user }) => {
+    const u = store.userById(user.id)!;
+    return sessionFor(store, signer, u, actingRole(u, body.as));
   });
 
-  add('GET', '/api/me', ANY, ({ user }) => toPublicUser(store.userById(user.id)!));
-  add('GET', '/api/config', ANY, () => ({ goongMapKey: deps.mapKey, geocoding: goong.enabled }));
+  // kèm gara ReFix của nhân viên (tiêu đề app: "ĐỐI TÁC REFIX · GARA <tên>")
+  const storeOf = (id: string | null) => { const s = id ? store.storeById(id) : undefined; return s ? toStoreInfo(s) : null; };
+  add('GET', '/api/me', ANY, ({ user }) => {
+    const u = store.userById(user.id)!;
+    const st = u.store_id ? store.storeById(u.store_id) : undefined;
+    return { ...toPublicUser(u), role: user.role, accountRole: u.role, roles: rolesOf(u), store: st ? storeDto(store, st) : null };
+  });
+  // công khai: key bản đồ Goong là key PHÍA TRÌNH DUYỆT (đã lộ trong trang admin) — màn đăng ký gara cần bản đồ trước khi đăng nhập
+  add('GET', '/api/config', PUBLIC, () => ({ goongMapKey: deps.mapKey, geocoding: goong.enabled, demoMode: store.demoMode() }));
 
   // ================= GEO (proxy Goong, key ở server) =================
-  add('GET', '/api/geo/reverse', ANY, async ({ query }) => {
-    const lat = num(query.get('lat'), 'lat', { min: -90, max: 90, required: true })!;
-    const lng = num(query.get('lng'), 'lng', { min: -180, max: 180, required: true })!;
-    return goong.reverse(lat, lng);
-  });
   add('GET', '/api/geo/directions', ANY, async ({ query }) => {
     const parse = (s: string | null, name: string): [number, number] => {
       const [lat, lng] = (s ?? '').split(',').map(Number);
@@ -130,14 +126,19 @@ export function createApp(deps: AppDeps) {
         const id = str(body.placeId, 'placeId', { max: 128 });
         return id ? deps.places?.byId.get(id)?.name ?? str(body.placeName, 'tên đơn vị', { max: 200 }) ?? null : null;
       })(),
+      // khách chọn gara ĐỐI TÁC → hệ thống chỉ giao đúng gara đó (không được thì hỏi khách, không âm thầm đổi)
+      requestedStoreId: (() => {
+        const id = str(body.placeId, 'placeId', { max: 128 });
+        return id ? deps.places?.partners.get(id) ?? (store.storeById(id)?.status === 'active' ? id : null) : null;
+      })(),
     });
   });
 
-  add('GET', '/api/orders/active', ['customer', 'staff'], ({ user }) => {
+  add('GET', '/api/orders/active', ['customer', 'staff', 'garage'], ({ user }) => {
     const f = user.role === 'customer' ? { customerId: user.id } : { staffId: user.id };
     return store.listOrders({ ...f, status: ACTIVE_STATUSES, limit: 1 }).items[0] ?? null;
   });
-  add('GET', '/api/orders/mine', ['customer', 'staff'], ({ user, query }) => {
+  add('GET', '/api/orders/mine', ['customer', 'staff', 'garage'], ({ user, query }) => {
     const f = user.role === 'customer' ? { customerId: user.id } : { staffId: user.id };
     return store.listOrders({ ...f, limit: num(query.get('limit'), 'limit', { min: 1, max: 100 }) ?? 20 });
   });
@@ -147,21 +148,28 @@ export function createApp(deps: AppDeps) {
   add('POST', '/api/orders/:id/rate', ['customer'], ({ params, user, body }) =>
     orders.rate(params.id, user, num(body.rating, 'điểm', { required: true })!));
 
-  add('POST', '/api/orders/:id/accept', ['staff'], ({ params, user }) => orders.accept(params.id, user));
-  add('POST', '/api/orders/:id/decline', ['staff'], ({ params, user, body }) =>
+  add('POST', '/api/orders/:id/accept', ['staff', 'garage'], ({ params, user }) => orders.accept(params.id, user));
+  add('POST', '/api/orders/:id/decline', ['staff', 'garage'], ({ params, user, body }) =>
     orders.decline(params.id, user, str(body.reason, 'lý do', { max: 300 }) ?? ''));
-  add('POST', '/api/orders/:id/arrived', ['staff'], ({ params, user }) => orders.arrived(params.id, user));
-  add('POST', '/api/orders/:id/start', ['staff', 'admin'], ({ params, user }) => orders.start(params.id, user));
-  add('POST', '/api/orders/:id/complete', ['staff', 'admin'], ({ params, user, body }) =>
+  add('POST', '/api/orders/:id/arrived', ['staff', 'garage'], ({ params, user }) => orders.arrived(params.id, user));
+  add('POST', '/api/orders/:id/start', ['staff', 'garage', 'admin'], ({ params, user }) => orders.start(params.id, user));
+  add('POST', '/api/orders/:id/complete', ['staff', 'garage', 'admin'], ({ params, user, body }) =>
     orders.complete(params.id, user, str(body.note, 'ghi chú', { max: 1000 }) ?? ''));
 
-  // tài xế: bật/tắt nhận đơn + vị trí (khi không có WebSocket)
-  add('POST', '/api/staff/presence', ['staff'], ({ user, body }) => {
+  // tài xế / gara: bật/tắt nhận đơn + vị trí (khi không có WebSocket)
+  add('POST', '/api/staff/presence', ['staff', 'garage'], ({ user, body }) => {
     const pos: [number, number] = [num(body.lng, 'kinh độ', { required: true })!, num(body.lat, 'vĩ độ', { required: true })!];
     if (!validLngLat(pos)) throw bad('Vị trí không hợp lệ');
     store.upsertPresence(user.id, pos, num(body.accuracyM, 'độ chính xác', { min: 0 }) ?? null, num(body.heading, 'hướng') ?? null, body.available === true);
     if (body.available === true) orders.sweep();                // có tài xế mới sẵn sàng: thử điều phối đơn đang chờ
     return { ok: true };
+  });
+
+  // nhân viên / gara mở app: trạng thái "sẵn sàng" lưu ở SERVER (không phải công tắc cục bộ)
+  add('GET', '/api/staff/me', ['staff', 'garage'], ({ user }) => {
+    const u = store.userById(user.id)!;
+    const p = store.presenceOf(user.id);
+    return { available: !!p?.available, presenceAt: p?.updatedAt ?? null, store: storeOf(u.store_id) };
   });
 
   // ================= ADMIN: NGƯỜI DÙNG (CRUD) =================
@@ -273,13 +281,30 @@ export function createApp(deps: AppDeps) {
   });
   add('GET', '/api/admin/orders/:id/candidates', ['admin'], async ({ params }) => {
     const o = orders.get(params.id);
-    const base = orders.candidates(o);
+    const base = orders.candidates(o, { includeDeclined: true });      // người đã từ chối vẫn hiện (gắn nhãn) để giao lại
     return refineCandidates(base, [o.location.lng, o.location.lat], goong.enabled ? (oo, d) => goong.durations(oo, d) : null);
   });
-  add('POST', '/api/admin/orders/:id/assign', ['admin'], ({ params, body, user }) =>
-    orders.assign(params.id, num(body.staffId, 'nhân viên', { required: true })!, user));
+  add('POST', '/api/admin/orders/:id/assign', ['admin'], ({ params, body, user }) => {
+    const storeId = str(body.storeId, 'gara', { max: 64 });
+    if (storeId) return orders.assignStore(params.id, storeId, user, str(body.reason, 'lý do', { max: 300 }));
+    return orders.assign(params.id, num(body.staffId, 'nhân viên', { required: true })!, user);
+  });
   add('POST', '/api/admin/orders/:id/unassign', ['admin'], ({ params, body, user }) =>
     orders.unassign(params.id, user, str(body.reason, 'lý do', { max: 300 }) ?? ''));
+
+  registerStoreRoutes(add, {
+    store, orders, signer, goong, places: deps.places, storeImagesDir: deps.storeImagesDir, ipOf: clientIp,
+  });
+
+  // ================= DEMO =================
+  add('POST', '/api/admin/demo/reset', ['admin'], ({ user }) => {
+    if (!deps.demo) throw new ApiError(503, 'demo_disabled', 'Server chưa bật chế độ demo');
+    return deps.demo.reset(user);
+  });
+  add('GET', '/api/admin/demo', ['admin'], () => ({
+    enabled: !!deps.demo, driving: deps.demo?.driver.active ?? [],
+    stores: store.listStores().map(toStoreInfo),
+  }));
 
   // ================= ĐỊA ĐIỂM: gara / trạm xăng / trạm sạc / bãi đỗ =================
   const CATS = new Set<PlaceCategory>(['garage', 'fuel', 'charging', 'parking']);
@@ -293,8 +318,16 @@ export function createApp(deps: AppDeps) {
     id: p.id, name: p.name, category: p.category, services: p.services, serviceLabels: p.services.map(s => SERVICE_LABEL[s]),
     address: p.address, district: p.district, pos: p.pos, phone: p.phone, website: p.website,
     rating: p.rating, reviewsCount: p.reviewsCount, open: openState(p.hours, now), hoursText: p.hoursText,
-    images: p.images.map(f => `/media/places/${f}`), trust: p.trust, confidence: p.confidence, flags: p.flags,
+    images: p.images.map(f => (f.startsWith('/') ? f : `/media/places/${f}`)), trust: p.trust, confidence: p.confidence, flags: p.flags,
     googleCategory: p.googleCategory, sourceUrl: p.sourceUrl, updatedAt: p.updatedAt,
+    // đối tác ReFix: nhận đơn qua app; onDuty = đang có người trực (khách biết trước khi chọn)
+    partner: (() => {
+      const sid = deps.places?.partners.get(p.id);
+      const st = sid ? store.storeById(sid) : undefined;
+      if (!st) return null;
+      const d = storeDto(store, st);
+      return { storeId: st.id, onDuty: d.onDuty > 0, imageSource: (d.images ?? []).some(i => i.source === 'store') ? 'store' : 'google' };
+    })(),
   });
   const rankedDto = (r: RankedPlace) => ({
     ...placeDto(r.place), distanceM: r.distanceM, etaMin: r.etaMin, etaSource: r.etaSource, score: r.score, breakdown: r.breakdown, reasons: r.reasons,
@@ -350,7 +383,7 @@ export function createApp(deps: AppDeps) {
   });
 
   /** Địa điểm → khách: đơn đang chờ quanh gara này, ưu tiên SOS / chờ lâu / gần. */
-  add('GET', '/api/places/:id/orders', ['admin', 'staff'], ({ params, query }) => {
+  add('GET', '/api/places/:id/orders', ['admin', 'staff', 'garage'], ({ params, query }) => {
     const p = placeStore().byId.get(params.id);
     if (!p) throw new ApiError(404, 'place_not_found', 'Không tìm thấy địa điểm');
     const active = store.listOrders({ status: ['requested', 'assigned'], limit: 500 }).items;
@@ -403,6 +436,7 @@ export function createApp(deps: AppDeps) {
     if (url.pathname === '/' ) { res.writeHead(302, { Location: '/admin/' }); res.end(); return; }
     if (url.pathname.startsWith('/admin')) return serveStatic(deps.adminDir, url.pathname.slice('/admin'.length) || '/', res);
     if (url.pathname.startsWith('/media/places/') && deps.placeImagesDir) return serveImage(deps.placeImagesDir, url.pathname.slice('/media/places/'.length), res);
+    if (url.pathname.startsWith('/media/stores/') && deps.storeImagesDir) return serveStoreImage(deps.storeImagesDir, url.pathname.slice('/media/stores/'.length), res);
     if (!url.pathname.startsWith('/api/')) return json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy' } });
 
     // API dùng token Bearer (không cookie) → mở CORS an toàn cho Expo web / công cụ
@@ -424,11 +458,13 @@ export function createApp(deps: AppDeps) {
         const p = signer.verify(auth.startsWith('Bearer ') ? auth.slice(7) : null);
         const u = p ? store.userById(p.sub) : undefined;
         // kiểm tra DB mỗi request: khóa tài khoản / đổi vai trò có hiệu lực ngay, không chờ token hết hạn
-        if (!p || !u || !u.active || u.role !== p.role) throw new ApiError(401, 'unauthenticated', 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
-        if (!route.roles.includes(u.role)) throw new ApiError(403, 'forbidden', 'Bạn không có quyền thực hiện thao tác này');
-        user = { id: u.id, role: u.role, name: u.name };
+        if (!p || !u || !u.active || !rolesOf(u).includes(p.role)) throw new ApiError(401, 'unauthenticated', 'Phiên đăng nhập hết hạn, vui lòng đăng nhập lại');
+        if (!route.roles.includes(p.role)) throw new ApiError(403, 'forbidden', 'Bạn không có quyền thực hiện thao tác này');
+        user = { id: u.id, role: p.role, name: u.name };
       }
-      const body = req.method === 'POST' || req.method === 'PATCH' ? await readJson(req) : {};
+      // đăng ký gara / tải ảnh cửa hàng: cho phép body lớn hơn (ảnh base64)
+      const big = url.pathname === '/api/auth/register-garage' || url.pathname === '/api/store/me/images';
+      const body = req.method === 'POST' || req.method === 'PATCH' ? await readJson(req, big ? 8 * 1024 * 1024 : undefined) : {};
       const out = await route.handler({ req, params, query: url.searchParams, body, user });
       json(res, 200, out ?? null);
     } catch (e) {
@@ -489,6 +525,20 @@ async function serveImage(dir: string, name: string, res: ServerResponse): Promi
   try {
     const buf = await readFile(join(dir, name));
     res.writeHead(200, { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=2592000, immutable', 'Access-Control-Allow-Origin': '*' });
+    res.end(buf);
+  } catch {
+    json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy ảnh' } });
+  }
+}
+
+/** Ảnh do gara tải lên. Tên file do server sinh → chỉ nhận đúng mẫu (chặn đường dẫn lạ). */
+async function serveStoreImage(dir: string, name: string, res: ServerResponse): Promise<void> {
+  const m = name.match(/^st-[a-f0-9]{10}-[a-f0-9]{8}\.(jpg|png|webp)$|^[A-Za-z0-9_-]{1,80}-[a-f0-9]{8}\.(jpg|png|webp)$/);
+  if (!m) return json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy ảnh' } });
+  const ext = m[1] ?? m[2];
+  try {
+    const buf = await readFile(join(dir, name));
+    res.writeHead(200, { 'Content-Type': ext === 'jpg' ? 'image/jpeg' : `image/${ext}`, 'Cache-Control': 'public, max-age=2592000, immutable', 'Access-Control-Allow-Origin': '*' });
     res.end(buf);
   } catch {
     json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy ảnh' } });

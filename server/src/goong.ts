@@ -83,6 +83,24 @@ export class GoongClient {
     return out;
   }
 
+  private geocodeCache = new TtlCache<Array<{ address: string; pos: [number, number] }>>(500, 24 * 3600_000);
+
+  /** Địa chỉ → tọa độ (gara nhập địa chỉ lúc đăng ký). Tối đa 5 kết quả, cache 24 h. */
+  async geocode(address: string): Promise<Array<{ address: string; pos: [number, number] }>> {
+    const k = address.trim().toLowerCase();
+    const hit = this.geocodeCache.get(k);
+    if (hit) return hit;
+    const body = await this.get('/Geocode', { address: address.trim() }) as {
+      results?: Array<{ formatted_address?: string; geometry?: { location?: { lat?: number; lng?: number } } }>;
+    };
+    const out = (body?.results ?? []).slice(0, 5).flatMap(r => {
+      const l = r.geometry?.location;
+      return l && typeof l.lat === 'number' && typeof l.lng === 'number' ? [{ address: r.formatted_address ?? '', pos: [l.lng, l.lat] as [number, number] }] : [];
+    });
+    if (out.length) this.geocodeCache.set(k, out);
+    return out;
+  }
+
   private matrixCache = new TtlCache<Array<number | null>>(500, 10 * 60_000);
 
   /**
