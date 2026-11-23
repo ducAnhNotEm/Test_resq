@@ -87,3 +87,34 @@ test('Gara: lịch sử sửa chữa — khách, xe, lỗi, chi nhánh, thời g
   const r2 = repairRow({ ...base, id: 'RQ-2', status: 'cancelled', rating: null, times: {} } as unknown as Order);
   assert.deepEqual(repairSummary([r, r2]), { total: 2, done: 1, customers: 1, avgRating: 5 });
 });
+
+// ---- lỗi gửi SOS: nói ĐÚNG nguyên nhân (trước đây mọi lỗi đều thành "mất kết nối") ----
+import { classifySendError, retryDelayFor } from '../src/features/sos/sosLogic.ts';
+import { REQUIRED_API_VERSION, hasFeature, serverIssueOf, serverIssueText } from '../src/features/server/compat.ts';
+
+test('SOS: phân loại lỗi gửi — mất mạng / server bản cũ / phiên hết hạn / lỗi server; giai đoạn hiển thị tương ứng', () => {
+  assert.equal(classifySendError({ status: 0, code: 'network' }), 'network');
+  assert.equal(classifySendError({ status: 0, code: 'timeout' }), 'network');
+  assert.equal(classifySendError({ status: 404, code: 'route_missing' }), 'unsupported');
+  assert.equal(classifySendError({ status: 401, code: 'unauthenticated' }), 'auth');
+  assert.equal(classifySendError({ status: 500, code: 'server_error' }), 'server');
+  assert.equal(stageOf(null, 'retrying', false, 'unsupported'), 'unsupported');
+  assert.equal(stageOf(null, 'retrying', false, 'network'), 'retrying');
+  assert.equal(stageOf(null, 'retrying', false, 'server'), 'failed');
+  assert.match(sosHeadline('unsupported').sub, /phiên bản cũ/);
+  assert.doesNotMatch(sosHeadline('unsupported').title, /kết nối/, 'server bản cũ KHÔNG được nói là mất kết nối');
+  assert.equal(retryDelayFor('network', 0), 2000, 'mất mạng: thử lại nhanh');
+  assert.equal(retryDelayFor('unsupported', 0), 15_000, 'server bản cũ: thử lại chậm, chờ khởi động lại');
+});
+
+test('tương thích server: bản cũ / chưa khởi động lại được nhận ra và nói rõ cách sửa', () => {
+  assert.equal(serverIssueOf(null), null, 'chưa dò được: không báo bừa');
+  assert.equal(serverIssueOf({ apiVersion: 0, features: [], stale: false }), 'outdated', 'server rất cũ không khai apiVersion');
+  assert.equal(serverIssueOf({ apiVersion: REQUIRED_API_VERSION - 1, features: [], stale: false }), 'outdated');
+  assert.equal(serverIssueOf({ apiVersion: REQUIRED_API_VERSION, features: [], stale: true }), 'stale');
+  assert.equal(serverIssueOf({ apiVersion: REQUIRED_API_VERSION, features: ['sos'], stale: false }), null);
+  assert.equal(hasFeature({ apiVersion: 4, features: ['sos'], stale: false }, 'sos'), true);
+  assert.equal(hasFeature(null, 'sos'), null);
+  assert.match(serverIssueText('outdated')!.text, /npm run online/);
+  assert.equal(serverIssueText(null), null);
+});

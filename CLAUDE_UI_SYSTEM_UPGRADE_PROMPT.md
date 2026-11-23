@@ -314,8 +314,11 @@ cách gara nhận đơn.
 | Giao diện gara | Tab: Đơn · Lịch sử · Bản đồ · Cài đặt. **Bỏ tab ReFix.** Cài đặt gara có ảnh, vị trí, giờ, chi nhánh, chuyển sang vai Khách hàng | `GarageSettingsScreen`, `GarageHistoryScreen` |
 | Lịch sử sửa chữa | Khách nào, xe nào, lỗi gì, chi nhánh, thời gian, đánh giá. **Không được bỏ** (cả lịch sử của khách lẫn của gara) | `/api/store/history`, `ActivityHistoryScreen` |
 | Màn auth | Ảnh nền đẩy lên 18% như `hieu`: **ô tô phải nhìn thấy**. Form bắt đầu dưới dải xe (đo bằng `onLayout`) | `AuthHeroLayout` |
+| Server bản cũ / chưa khởi động lại | `API_VERSION` (server) = `REQUIRED_API_VERSION` (app) — **tăng cả hai** khi thêm route app cần. `/api/health` báo `stale`; `npm run online` tự nạp lại khi mã đổi và từ chối server cũ giữ cổng | `server/src/build.ts`, `features/server/compat.ts`, `ServerIssueBanner` |
+| Màn SOS | Màu theo giao diện chung (sáng / tối), chỉ nút 115 đỏ đặc. Luôn có nút **Thoát** (chưa gửi xong = hủy gửi; đã gửi = SOS vẫn chạy). Lỗi phân loại đúng: mất mạng / server bản cũ / lỗi server | `SosAlertScreen`, `classifySendError` |
+| Sửa cửa hàng | **Mỗi mục một màn**: Thông tin · Ảnh · Vị trí · Giờ & dịch vụ (không dồn 1 form); dùng chung cho chi nhánh | `StoreEditScreens.tsx`, `useStoreEditor` |
 
-**Test bắt buộc giữ:** `server/test/sos-garage.test.ts`, `resq-mobile/tests/sosGarage.test.ts`.
+**Test bắt buộc giữ:** `server/test/sos-garage.test.ts`, `resq-mobile/tests/sosGarage.test.ts`, `server/test/build.test.ts`.
 
 **Chưa làm, chờ bàn bạc:**
 - Thay thế tab ReFix cho gara (xem đề xuất trong báo cáo).

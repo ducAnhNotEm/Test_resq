@@ -65,6 +65,16 @@ Giữ nút SOS 3 giây (hoặc phát hiện va chạm mà người dùng không 
 - **Chi nhánh**: chủ gara thêm cửa hàng khác (`/api/store/branches`), mỗi chi nhánh có địa chỉ / giờ / dịch vụ / ảnh riêng, **chờ tổng đài duyệt** như gara mới. Chủ gara nhận đơn thay chi nhánh chưa có nhân viên. Tối đa 10 cửa hàng / chủ.
 - **Lịch sử sửa chữa** `GET /api/store/history`: đơn của mọi chi nhánh — khách nào, biển số, lỗi, thời gian, đánh giá. SĐT khách của đơn đã xong chỉ hiện 3 số cuối.
 
+## Cập nhật code xong: server PHẢI chạy bản mới
+
+Node **không tự nạp lại code**. Server bật từ trước vẫn chạy bản cũ → mọi tính năng mới trả 404 → app báo lỗi (đã xảy ra
+24/11/2026: SOS, đăng ký, chi nhánh, lịch sử đều "không kết nối được").
+
+- `npm run online` giờ **tự khởi động lại server khi mã nguồn đổi**, tunnel GIỮ NGUYÊN địa chỉ (không phải quét lại QR); server sập thì tự bật lại. Tắt tự nạp: `RESQ_WATCH=0`.
+- `npm run online` / `npm start` **từ chối** dùng một server ResQ bản cũ đang chiếm cổng, và in lệnh tắt nó.
+- `/api/health` trả `apiVersion`, `features`, `stale` (mã đã đổi mà chưa khởi động lại). App hiện banner "Máy chủ đang chạy phiên bản cũ" + nút "Kiểm tra lại"; trang admin cũng cảnh báo.
+- **Đừng chạy `npm install` / `npm ci` trong `server/` khi `npm run online` đang chạy** (Windows khóa `cloudflared.exe` → cài dở, mất thư viện `ws` → lần bật sau server không chạy). Tắt server + tunnel trước rồi mới cài.
+
 ## Gara đối tác và điều phối
 
 **Cửa hàng (gara) là đơn vị được điều phối, không phải điện thoại.** GPS của nhân viên chỉ trả lời câu hỏi "gara này có ai đang trực không". Khoảng cách và ETA luôn tính từ **tọa độ đã xác minh của gara**.

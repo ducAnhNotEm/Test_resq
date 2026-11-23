@@ -10,6 +10,7 @@ import { ApiError } from '../../services/api';
 import { customerFormErrors, type CustomerFormInput } from '../../features/auth/validation';
 import { AUTH_PALETTE, FONTS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
+import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CustomerRegister'>;
 
@@ -73,6 +74,7 @@ export const CustomerRegisterScreen: React.FC<Props> = ({ navigation }) => {
       </AuthGlassCard>
 
       <View style={styles.bottom}>
+        <ServerIssueBanner onDark />
         <AuthErrorBox message={serverError} />
         <AuthPrimaryButton title="Tạo tài khoản" onPress={submit} busy={busy} disabled={!serverUrl} />
         <Text style={styles.note}>

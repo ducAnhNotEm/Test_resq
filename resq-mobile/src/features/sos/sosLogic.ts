@@ -37,14 +37,35 @@ export function movedEnough(prev: { lat: number; lng: number; at: number } | nul
 export const newClientRef = (rand: () => number = Math.random, now = Date.now()) =>
   `${now.toString(36)}-${Math.floor(rand() * 1e9).toString(36)}`;
 
-export type SosStage = 'locating' | 'sending' | 'retrying' | 'waiting' | 'handling' | 'resolved' | 'cancelled';
+export type SosStage = 'locating' | 'sending' | 'retrying' | 'unsupported' | 'failed' | 'waiting' | 'handling' | 'resolved' | 'cancelled';
+
+/**
+ * Lỗi khi gửi SOS — phân loại ĐÚNG nguyên nhân (trước đây mọi lỗi đều hiện "mất kết nối", kể cả khi server bản cũ
+ * chưa có tính năng SOS → người dùng tưởng mạng hỏng).
+ *  - network: mất mạng / server không phản hồi → thử lại nhanh;
+ *  - unsupported: server bản cũ (404 route_missing) → thử lại chậm (chờ quản trị khởi động lại), chỉ ngay 115 / tổng đài;
+ *  - auth: phiên đăng nhập hết hạn;
+ *  - server: lỗi khác từ server (5xx / dữ liệu) → thử lại chậm, hiện thông báo của server.
+ */
+export type SendErrorKind = 'network' | 'unsupported' | 'auth' | 'server';
+export function classifySendError(e: { status?: number; code?: string } | null | undefined): SendErrorKind {
+  const code = e?.code ?? '';
+  if (code === 'network' || code === 'timeout' || e?.status === 0) return 'network';
+  if (code === 'route_missing') return 'unsupported';
+  if (e?.status === 401 || e?.status === 403) return 'auth';
+  return 'server';
+}
+/** Giãn cách thử lại theo loại lỗi (lỗi không phải mạng: thử lại chậm, không dội server). */
+export const retryDelayFor = (kind: SendErrorKind, attempt: number) => (kind === 'network' ? retryDelay(attempt) : 15_000);
 
 /** Một câu tiêu đề cho từng giai đoạn — nói đúng sự thật, không hứa điều chưa xảy ra. */
 export function sosHeadline(stage: SosStage): { title: string; sub: string } {
   switch (stage) {
     case 'locating': return { title: 'Đang xác định vị trí…', sub: 'Tín hiệu sẽ được gửi ngay, kể cả khi chưa có GPS.' };
     case 'sending': return { title: 'Đang gửi tín hiệu SOS…', sub: 'Gửi thẳng tới tổng đài ResQ.' };
-    case 'retrying': return { title: 'Chưa gửi được — đang thử lại', sub: 'Mất kết nối mạng. Hãy gọi 115 hoặc nhắn người thân ngay bên dưới.' };
+    case 'retrying': return { title: 'Mất kết nối — đang gửi lại', sub: 'Chưa tới được tổng đài. App tự gửi lại khi có mạng. Cần gấp: gọi 115 hoặc nhắn người thân bên dưới.' };
+    case 'unsupported': return { title: 'Tổng đài chưa nhận được SOS', sub: 'Máy chủ đang chạy phiên bản cũ, chưa hỗ trợ SOS. App sẽ thử lại. Hãy gọi 115 hoặc tổng đài 1900 6868 ngay.' };
+    case 'failed': return { title: 'Chưa gửi được SOS', sub: 'Máy chủ báo lỗi. App sẽ thử lại. Cần gấp: gọi 115 hoặc tổng đài 1900 6868.' };
     case 'waiting': return { title: 'Đã gửi tới tổng đài', sub: 'Đang chờ tổng đài viên tiếp nhận. Giữ máy bên mình.' };
     case 'handling': return { title: 'Tổng đài đã tiếp nhận', sub: 'Tổng đài đang xử lý và sẽ gọi cho bạn.' };
     case 'resolved': return { title: 'SOS đã được xử lý', sub: 'Cảm ơn bạn đã giữ liên lạc.' };
@@ -52,12 +73,14 @@ export function sosHeadline(stage: SosStage): { title: string; sub: string } {
   }
 }
 
-export function stageOf(alert: SosAlert | null, sending: 'idle' | 'sending' | 'retrying', locating: boolean): SosStage {
+export function stageOf(alert: SosAlert | null, sending: 'idle' | 'sending' | 'retrying', locating: boolean, error: SendErrorKind | null = null): SosStage {
   if (alert) {
     if (alert.status === 'resolved') return 'resolved';
     if (alert.status === 'cancelled') return 'cancelled';
     return alert.status === 'acknowledged' ? 'handling' : 'waiting';
   }
+  if (error === 'unsupported') return 'unsupported';
+  if (error === 'server' || error === 'auth') return 'failed';
   if (sending === 'retrying') return 'retrying';
   if (sending === 'sending') return 'sending';
   return locating ? 'locating' : 'sending';

@@ -10,6 +10,7 @@ import {
   ENV_MAP_KEY, getApiSource, getApiUrl, loadSavedApiUrl, parseServerLink, probeServer, setApiUrl, subscribeApiUrl,
   type ApiSource,
 } from '../config';
+import { serverIssueOf, type ServerInfo, type ServerIssue } from '../features/server/compat';
 
 const STORAGE_KEY = 'resq.session.v1';
 
@@ -35,6 +36,11 @@ interface AuthValue {
   logout: () => Promise<void>;
   /** Đổi server (null = mặc định). Token gắn với từng server nên luôn đăng xuất trước. */
   changeServer: (url: string | null) => Promise<void>;
+  /** Bản của server đang kết nối (null: chưa dò được). */
+  serverInfo: ServerInfo | null;
+  serverIssue: ServerIssue;
+  /** Dò lại bản server (vd. sau khi quản trị khởi động lại). */
+  refreshServerInfo: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -46,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [status, setStatus] = useState<AuthValue['status']>('loading');
   const [mapKey, setMapKey] = useState(ENV_MAP_KEY);
   const [demoMode, setDemoMode] = useState(false);
+  const [serverInfo, setServerInfo] = useState<ServerInfo | null>(null);
   const serverUrl = useSyncExternalStore(subscribeApiUrl, getApiUrl, getApiUrl);
   const serverSource = useSyncExternalStore(subscribeApiUrl, getApiSource, getApiSource);
 
@@ -66,6 +73,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     realtime.start(s.token, () => { void logout(); });
     configApi.get().then(c => { if (!ENV_MAP_KEY) setMapKey(c.goongMapKey); setDemoMode(!!c.demoMode); }).catch(() => {});
   }, [logout]);
+
+  const refreshServerInfo = useCallback(async () => {
+    const url = getApiUrl();
+    if (!url) { setServerInfo(null); return; }
+    const p = await probeServer(url, 75_000);           // Render free có thể đang thức dậy
+    if (getApiUrl() === url) setServerInfo(p.ok ? p.info : null);
+  }, []);
+  // đổi server / mở app: dò bản server — server cũ thì báo RÕ ngay từ màn đăng nhập (không đợi tới lúc 404)
+  useEffect(() => { setServerInfo(null); void refreshServerInfo(); }, [serverUrl, refreshServerInfo]);
 
   // /api/config công khai: màn đăng ký gara cần bản đồ (chọn vị trí cửa hàng) TRƯỚC khi đăng nhập
   useEffect(() => {
@@ -184,8 +200,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ status, user: session?.user ?? null, mapKey, serverUrl, serverSource, login, registerCustomer, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode }),
-    [status, session, mapKey, serverUrl, serverSource, login, registerCustomer, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode],
+    () => ({
+      status, user: session?.user ?? null, mapKey, serverUrl, serverSource, login, registerCustomer, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode,
+      serverInfo, serverIssue: serverIssueOf(serverInfo), refreshServerInfo,
+    }),
+    [status, session, mapKey, serverUrl, serverSource, login, registerCustomer, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode, serverInfo, refreshServerInfo],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

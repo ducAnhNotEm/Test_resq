@@ -74,6 +74,8 @@ async function boot() {
     setDemoUi(!!state.config.demoMode);
     refreshStoreBadge();
     refreshSosBadge();
+    // server chạy mã cũ (đã sửa code mà chưa khởi động lại) → nói rõ, thay vì để các tính năng mới lỗi 404 khó hiểu
+    fetch('/api/health').then(r => r.json()).then(h => { if (h.stale) toast('⚠ Mã server đã đổi nhưng server CHƯA khởi động lại — tính năng mới có thể lỗi. Tắt rồi chạy lại server.', true); }).catch(() => {});
     clearInterval(state.sosTimer);
     state.sosTimer = setInterval(refreshSosBadge, 15_000);      // dự phòng khi mất realtime
     connectWs();

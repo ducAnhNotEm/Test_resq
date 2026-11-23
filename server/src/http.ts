@@ -14,6 +14,7 @@ import { AttemptLimiter, hashPassword, verifyPassword, type TokenSigner } from '
 import { registerHomeRoutes } from './homeApi.ts';
 import { registerNotificationRoutes } from './notificationApi.ts';
 import { registerSosRoutes } from './sosApi.ts';
+import { API_VERSION, FEATURES, type BuildInfo } from './build.ts';
 import { randomBytes } from 'node:crypto';
 import type { GoongClient } from './goong.ts';
 import type { RealtimeHub } from './realtime.ts';
@@ -40,6 +41,8 @@ export interface AppDeps {
    * Sai số này → mọi người dùng chung 1 "IP" → 1 người nhập sai mật khẩu khóa đăng nhập của cả hệ thống.
    */
   trustProxyHops?: number;
+  /** Bản đang chạy + phát hiện mã nguồn đã đổi mà chưa khởi động lại (không có: chỉ báo apiVersion). */
+  build?: BuildInfo;
   /** false: tắt tự đăng ký tài khoản khách (vd. khi đưa server demo lên Internet). Mặc định bật. */
   publicSignup?: boolean;
 }
@@ -502,7 +505,7 @@ export function createApp(deps: AppDeps) {
 
     if (url.pathname === '/api/health') {
       res.setHeader('Access-Control-Allow-Origin', '*');
-      return json(res, 200, { ok: true, service: 'resq', realtime: deps.realtime?.stats ?? null });
+      return json(res, 200, { ok: true, service: 'resq', realtime: deps.realtime?.stats ?? null, ...(deps.build?.health() ?? { apiVersion: API_VERSION, features: FEATURES }) });
     }
     if (url.pathname === '/' ) { res.writeHead(302, { Location: '/admin/' }); res.end(); return; }
     if (url.pathname.startsWith('/admin')) return serveStatic(deps.adminDir, url.pathname.slice('/admin'.length) || '/', res);

@@ -18,6 +18,7 @@ import { storeApi, type StoreProfile } from '../../services/api';
 import { formatPhone } from '../../features/account/accountLogic';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
+import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 
 const HOTLINE = '19006868';
 const APP_VERSION = Constants.expoConfig?.version ?? '';
@@ -57,6 +58,7 @@ export const GarageSettingsScreen: React.FC = () => {
     <View style={[styles.root, { backgroundColor: colors.bgSurface, paddingTop: insets.top + 8 }]}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
         <Text accessibilityRole="header" style={[styles.heading, { color: colors.textPrimary }]}>Cài đặt gara</Text>
+        <ServerIssueBanner />
 
         {/* Hồ sơ cửa hàng */}
         <Pressable
@@ -88,11 +90,12 @@ export const GarageSettingsScreen: React.FC = () => {
         ) : null}
 
         <SettingsSection title="Cửa hàng">
-          <SettingsRow icon="images-outline" tone="blue" title="Ảnh cửa hàng" subtitle="Thêm / thay ảnh khách nhìn thấy" value={store?.images?.length ? `${store.images.length} ảnh` : undefined}
-            onPress={() => navigation.navigate('StoreProfile')} />
+          <SettingsRow icon="business-outline" tone="blue" title="Thông tin cửa hàng" subtitle="Tên, số điện thoại" onPress={() => navigation.navigate('StoreInfo')} />
+          <SettingsRow icon="images-outline" tone="blue" title="Ảnh cửa hàng" subtitle="Thêm / xóa ảnh khách nhìn thấy" value={store ? `${store.images?.length ?? 0}/5` : undefined}
+            onPress={() => navigation.navigate('StorePhotos')} />
           <SettingsRow icon="location-outline" tone="green" title="Vị trí cửa hàng" subtitle={store?.pending ? 'Địa chỉ mới đang chờ tổng đài xác minh' : (store?.address || 'Địa chỉ dùng để tính khoảng cách tới khách')}
-            badge={store?.pending ? { label: 'Chờ duyệt', tone: 'amber' } : undefined} onPress={() => navigation.navigate('StoreProfile')} />
-          <SettingsRow icon="time-outline" tone="amber" title="Giờ làm việc & dịch vụ" subtitle="Trong giờ này gara tự nhận đơn" onPress={() => navigation.navigate('StoreProfile')} />
+            badge={store?.pending ? { label: 'Chờ duyệt', tone: 'amber' } : undefined} onPress={() => navigation.navigate('StoreLocation')} />
+          <SettingsRow icon="time-outline" tone="amber" title="Giờ làm việc & dịch vụ" subtitle={store?.hoursLines?.[0] ?? 'Trong giờ này gara tự nhận đơn'} onPress={() => navigation.navigate('StoreHours')} />
           {isOwner ? (
             <SettingsRow icon="git-branch-outline" tone="blue" title="Chi nhánh" subtitle="Thêm cửa hàng khác của bạn — mỗi chi nhánh nhận đơn gần nó"
               value={branches ? `${branchCount}` : undefined} onPress={() => navigation.navigate('Branches')} />

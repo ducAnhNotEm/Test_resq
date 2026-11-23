@@ -6,6 +6,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthHeroLayout } from '../../components/AuthHeroLayout';
 import { AUTH_PALETTE, FONTS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
+import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -24,6 +25,7 @@ const OPTIONS: Array<{ route: 'CustomerRegister' | 'GarageRegister'; icon: IconN
 export const RegisterScreen: React.FC<Props> = ({ navigation }) => (
   <AuthHeroLayout title="Tạo tài khoản ResQ" subtitle="Chọn loại tài khoản phù hợp với bạn" onBack={() => navigation.goBack()}>
     <View style={styles.list}>
+      <ServerIssueBanner onDark />
       {OPTIONS.map(o => (
         <Pressable
           key={o.route}

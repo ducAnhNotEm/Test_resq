@@ -127,6 +127,11 @@ export type RootStackParamList = {
   /** Hồ sơ gara (nhân viên / chủ gara). */
   /** Hồ sơ cửa hàng. storeId = chi nhánh cụ thể (chủ gara); không có = cửa hàng của tài khoản. */
   StoreProfile: { storeId?: string } | undefined;
+  /** Sửa TỪNG mục của cửa hàng (không dồn một form). storeId = chi nhánh. */
+  StoreInfo: { storeId?: string } | undefined;
+  StorePhotos: { storeId?: string } | undefined;
+  StoreLocation: { storeId?: string } | undefined;
+  StoreHours: { storeId?: string } | undefined;
   Branches: undefined;
   BranchCreate: undefined;
   ReMapsNavigation: {

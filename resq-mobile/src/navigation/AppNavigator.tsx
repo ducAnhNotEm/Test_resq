@@ -17,6 +17,7 @@ import { GarageHistoryScreen } from '../screens/staff/GarageHistoryScreen';
 import { GarageSettingsScreen } from '../screens/staff/GarageSettingsScreen';
 import { BranchesScreen } from '../screens/staff/BranchesScreen';
 import { BranchCreateScreen } from '../screens/staff/BranchCreateScreen';
+import { StoreHoursScreen, StoreInfoScreen, StoreLocationScreen, StorePhotosScreen } from '../screens/staff/StoreEditScreens';
 import { StoreProfileScreen } from '../screens/staff/StoreProfileScreen';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { ReFixIssueScreen } from '../screens/refix/ReFixIssueScreen';
@@ -235,6 +236,10 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen name="PlaceDetail" component={PlaceDetailScreen} />
         <Stack.Screen name="ReMapsNavigation" component={ReMapsNavigationScreen} />
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="StoreInfo" component={StoreInfoScreen} />
+        <Stack.Screen name="StorePhotos" component={StorePhotosScreen} />
+        <Stack.Screen name="StoreLocation" component={StoreLocationScreen} />
+        <Stack.Screen name="StoreHours" component={StoreHoursScreen} />
         <Stack.Screen name="Branches" component={BranchesScreen} />
         <Stack.Screen name="BranchCreate" component={BranchCreateScreen} />
         <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />

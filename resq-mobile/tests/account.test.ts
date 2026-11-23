@@ -117,7 +117,7 @@ test('lịch sử: từ đơn THẬT — nơi xảy ra, đơn vị, thời gian 
 });
 
 test('lỗi: máy chủ cũ / mất mạng ra câu tiếng Việt dễ hiểu', () => {
-  assert.match(friendlyError({ code: 'route_missing' }), /cập nhật server/);
+  assert.match(friendlyError({ code: 'route_missing' }), /phiên bản cũ/, 'nói đúng nguyên nhân: server chạy bản cũ');
   assert.match(friendlyError({ code: 'network', message: 'x' }), /Kiểm tra mạng/);
   assert.equal(friendlyError({ code: 'plate_taken', message: 'Biển trùng' }), 'Biển trùng');
   assert.match(friendlyError(null), /thử lại/);

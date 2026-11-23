@@ -12,6 +12,7 @@ import { TokenSigner } from './auth.ts';
 import { GoongClient } from './goong.ts';
 import { RealtimeHub } from './realtime.ts';
 import { createApp } from './http.ts';
+import { API_VERSION, BuildInfo, killPortHint, remoteBuild } from './build.ts';
 import { PlaceStore } from './placeStore.ts';
 import { Demo } from './demo.ts';
 import { ensureSeedStores, syncPartners } from './refix.ts';
@@ -51,6 +52,16 @@ const goong = new GoongClient(goongApiKey);
 if (!goong.enabled) console.warn('Chưa có key Goong REST (biến GOONG_API_KEY, hoặc EXPO_PUBLIC_GOONG_API_KEY trong resq-mobile/.env): chỉ đường / địa chỉ sẽ báo lỗi.');
 if (!goongMapKey) console.warn('Chưa có key Goong Map (biến GOONG_MAP_KEY, hoặc EXPO_PUBLIC_GOONG_MAP_KEY): bản đồ trên trang admin sẽ không hiển thị.');
 
+// bản đang chạy: mã nguồn đổi mà chưa khởi động lại → báo NGAY trên console (app / admin cũng thấy qua /api/health)
+const build = new BuildInfo();
+const staleTimer = setInterval(() => {
+  if (build.stale()) {
+    console.warn('\n⚠⚠ MÃ NGUỒN SERVER ĐÃ ĐỔI nhưng server đang chạy bản cũ — tính năng mới sẽ báo 404 trên app.');
+    console.warn('   Khởi động lại: Ctrl+C rồi chạy lại lệnh (npm start / npm run online). `npm run online` tự nạp lại khi mã đổi.\n');
+    clearInterval(staleTimer);
+  }
+}, 30_000);
+staleTimer.unref();
 const server = createServer();
 realtime = new RealtimeHub({ store, orders, signer });
 realtime.attach(server, '/ws');
@@ -69,6 +80,7 @@ const resumed = demo.resume();
 if (resumed) console.log(`Chạy lại ${resumed} xe ảo đang dở hành trình`);
 const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin'), places, placeImagesDir: join(root, 'seed', 'place-images'), demo, storeImagesDir: join(dataDir, 'store-images'),
   // Render đứng sau 1 reverse proxy (biến RENDER do Render tự đặt). Khác: đặt RESQ_TRUST_PROXY_HOPS cho đúng hạ tầng.
+  build,
   trustProxyHops: Number(env.RESQ_TRUST_PROXY_HOPS ?? (env.RENDER ? 1 : 0)) || 0,
   publicSignup: env.RESQ_PUBLIC_SIGNUP !== '0',
 });
@@ -78,11 +90,20 @@ server.on('request', (req, res) => { void handle(req, res); });
 const sweep = setInterval(() => { try { orders.sweep(); } catch (e) { console.error('[sweep]', e); } }, 10_000);
 const purge = setInterval(() => store.purgeTracks(30 * 24 * 3600_000), 6 * 3600_000);
 
-server.on('error', (e: NodeJS.ErrnoException) => {
+server.on('error', async (e: NodeJS.ErrnoException) => {
   if (e.code === 'EADDRINUSE') {
-    console.error(`\n✖ Cổng ${port} đang được dùng — có thể server ResQ đã chạy ở một terminal khác.`);
-    console.error('  • Muốn đưa lên Internet: chỉ cần chạy `npm run online` (tự dùng server đang chạy).');
-    console.error('  • Hoặc tắt terminal kia, hoặc đổi cổng (PowerShell):  $env:PORT=8788; npm start\n');
+    // nói RÕ server đang chiếm cổng là bản nào: bản cũ cứ chạy tiếp là nguồn gốc lỗi "tính năng mới báo 404"
+    const other = await remoteBuild(`http://127.0.0.1:${port}`);
+    if (other?.resq && (other.apiVersion < API_VERSION || other.stale)) {
+      console.error(`\n✖ Cổng ${port} đang bị một server ResQ BẢN CŨ giữ (apiVersion ${other.apiVersion}, bản hiện tại ${API_VERSION}${other.stale ? ', mã đã đổi sau khi nó khởi động' : ''}).`);
+      console.error('  App sẽ báo lỗi ở mọi tính năng mới cho tới khi tắt server cũ đó:');
+      console.error(`    ${killPortHint(port)}`);
+      console.error('  rồi chạy lại lệnh này.\n');
+    } else {
+      console.error(`\n✖ Cổng ${port} đang được dùng${other?.resq ? ' bởi một server ResQ cùng bản (đang chạy sẵn — dùng luôn được)' : ''}.`);
+      console.error('  • Muốn đưa lên Internet: chỉ cần chạy `npm run online`.');
+      console.error(`  • Tắt server kia: ${killPortHint(port)}   — hoặc đổi cổng (PowerShell):  $env:PORT=8788; npm start\n`);
+    }
   } else {
     console.error('Lỗi server:', e.message);
   }

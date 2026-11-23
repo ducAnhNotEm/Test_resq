@@ -20,6 +20,7 @@ import { HoursEditor, ImageStrip, LocationField, ServiceChips, type LocationValu
 import { DEFAULT_HOURS, draftToWeek, hoursSummary, validateGarage, type HoursDraft } from '../../features/refix/storeForm';
 import { normalizeUsername, validateUsername } from '../../features/auth/validation';
 import type { StoreService } from '../../services/api';
+import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GarageRegister'>;
 
@@ -100,6 +101,7 @@ export const GarageRegisterScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         <View style={[styles.sheet, { backgroundColor: colors.bgSurface }]}>
+          <ServerIssueBanner />
           <View style={[styles.intro, { backgroundColor: colors.blueBg }]}>
             <Ionicons name="storefront" size={22} color={colors.blue} />
             <Text style={[styles.introText, { color: colors.textPrimary }]}>

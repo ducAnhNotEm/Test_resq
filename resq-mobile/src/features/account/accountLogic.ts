@@ -205,7 +205,7 @@ export const alreadyGone = (e: unknown): boolean => {
 
 export function friendlyError(e: unknown): string {
   const err = e as { code?: string; message?: string } | null;
-  if (err?.code === 'route_missing') return 'Máy chủ chưa có tính năng này — cần cập nhật server.';
+  if (err?.code === 'route_missing') return err.message || 'Máy chủ đang chạy phiên bản cũ nên chưa có tính năng này.';
   if (err?.code === 'network' || err?.code === 'timeout') return 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.';
   return err?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.';
 }

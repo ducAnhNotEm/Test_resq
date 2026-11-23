@@ -26,6 +26,7 @@ import { api, ISSUE_LABEL, ordersApi, staffApi, storeApi, type Order, type Store
 import { DutyCard } from '../../components/DutyCard';
 import { useUnreadNotifications } from '../../features/notifications/useUnreadNotifications';
 import { badgeText } from '../../features/home/homeLogic';
+import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 
 const OFFER_MS = 90_000;
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -155,6 +156,7 @@ export const StaffJobsScreen: React.FC = () => {
       ) : null}
 
       <ScrollView contentContainerStyle={styles.scroll}>
+        <ServerIssueBanner />
         {store?.status === 'pending' || store?.status === 'suspended' ? (
           <Pressable onPress={() => navigation.navigate('StoreProfile')} style={[styles.card, { backgroundColor: colors.amberBg, borderColor: colors.amber }]}>
             <Text style={[styles.cardTitle, { color: colors.amberText }]}>

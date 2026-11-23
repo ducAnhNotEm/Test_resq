@@ -11,13 +11,14 @@
 // An toàn trước khi mở ra Internet: TỪ CHỐI chạy nếu còn tài khoản dùng mật khẩu mẫu công khai.
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer as createNetServer } from 'node:net';
-import { existsSync } from 'node:fs';
+import { existsSync, watch } from 'node:fs';
 import { join } from 'node:path';
 import { Tunnel, bin, install } from 'cloudflared';
 import qrcode from 'qrcode-terminal';
 import { Store } from '../src/db.ts';
 import { DEFAULT_SEED_PASSWORD, ROOT, dbPathOf, loadEnv } from '../src/env.ts';
 import { accountsWithDefaultPassword, printAccounts } from './accounts.ts';
+import { API_VERSION, killPortHint, remoteBuild } from '../src/build.ts';
 
 const env = loadEnv();
 const port = Number(env.PORT ?? 8787);
@@ -95,20 +96,60 @@ if (!existsSync(bin)) {
 }
 
 // ---------- 3. Server ----------
-if (await isResq(local)) {
-  console.log(`Dùng server ResQ đang chạy sẵn trên cổng ${port} (tắt tunnel sẽ KHÔNG tắt server đó).`);
+// Server chạy dưới một "người giám sát": mã nguồn đổi → tự khởi động lại server (tunnel GIỮ NGUYÊN địa chỉ, điện thoại
+// không phải quét lại QR); server sập → tự bật lại. Trước đây: sửa code mà quên khởi động lại → app gọi tính năng mới
+// vào server cũ → 404 → "mất kết nối" khó hiểu.
+const existing = await remoteBuild(local);
+if (existing?.resq) {
+  if (existing.apiVersion < API_VERSION || existing.stale) {
+    console.error(`\n✖ Cổng ${port} đang có một server ResQ BẢN CŨ (apiVersion ${existing.apiVersion}, cần ${API_VERSION}${existing.stale ? ', mã đã đổi sau khi nó khởi động' : ''}).`);
+    console.error('  Đưa bản cũ lên Internet sẽ làm app lỗi ở mọi tính năng mới (SOS, chi nhánh, lịch sử, đăng ký…). Tắt nó trước:');
+    console.error(`    ${killPortHint(port)}`);
+    console.error('  rồi chạy lại: npm run online\n');
+    process.exit(1);
+  }
+  console.log(`Dùng server ResQ đang chạy sẵn trên cổng ${port} (cùng bản; tắt tunnel sẽ KHÔNG tắt server đó).`);
 } else if (!(await portFree(port))) {
   console.error(`\n✖ Cổng ${port} đang bị một chương trình KHÁC chiếm (không phải server ResQ).`);
-  console.error('  Tắt chương trình đó, hoặc dùng cổng khác (PowerShell):  $env:PORT=8788; npm run online\n');
+  console.error(`  Tắt chương trình đó (${killPortHint(port)}), hoặc dùng cổng khác (PowerShell):  $env:PORT=8788; npm run online\n`);
   process.exit(1);
 } else {
-  const c = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', '--experimental-strip-types', join(ROOT, 'src', 'index.ts')], {
-    stdio: 'inherit',
-    env: { ...process.env, PORT: String(port) },
-  });
-  child = c;
-  c.on('exit', code => { if (!stopping) { console.error(`Server dừng (mã ${code}).`); shutdown(1); } });
+  const crashes: number[] = [];
+  let restarting = false;
+  const start = () => {
+    const c = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', '--experimental-strip-types', join(ROOT, 'src', 'index.ts')], {
+      stdio: 'inherit',
+      env: { ...process.env, PORT: String(port) },
+    });
+    child = c;
+    c.on('exit', code => {
+      if (stopping) return;
+      if (restarting) { restarting = false; start(); return; }            // khởi động lại có chủ đích (mã đổi)
+      const now = Date.now();
+      crashes.push(now);
+      while (crashes.length && now - crashes[0] > 60_000) crashes.shift();
+      if (crashes.length > 5) { console.error('Server sập liên tục (> 5 lần / phút) — dừng. Xem lỗi ở trên.'); shutdown(1); return; }
+      console.error(`Server dừng (mã ${code}) — tự bật lại sau 2 giây (tunnel giữ nguyên địa chỉ).`);
+      setTimeout(() => { if (!stopping) start(); }, 2000);
+    });
+  };
+  start();
   if (!(await waitFor(local, 20_000))) { console.error('Server không khởi động được.'); shutdown(1); }
+  if (env.RESQ_WATCH !== '0') {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      watch(join(ROOT, 'src'), { recursive: true }, (_evt, file) => {
+        if (!file || !String(file).endsWith('.ts')) return;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          console.log(`\n↻ Mã nguồn đổi (${file}) — khởi động lại server, tunnel giữ nguyên địa chỉ…`);
+          restarting = true;
+          child?.kill('SIGTERM');
+        }, 800);
+      });
+      console.log('Tự nạp lại server khi sửa mã nguồn: BẬT (tắt: RESQ_WATCH=0).');
+    } catch { console.warn('Không theo dõi được thư mục src — sửa code xong hãy khởi động lại thủ công.'); }
+  }
 }
 
 // ---------- 4. Tunnel ----------

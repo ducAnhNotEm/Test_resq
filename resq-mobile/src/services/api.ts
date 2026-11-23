@@ -12,6 +12,9 @@ export class ApiError extends Error {
   }
 }
 
+/** Route chưa có trên server = server đang chạy BẢN CŨ (chưa khởi động lại sau khi cập nhật) — nói đúng nguyên nhân. */
+export const ROUTE_MISSING_MESSAGE = 'Máy chủ đang chạy phiên bản cũ nên chưa có tính năng này. Người quản trị cần khởi động lại server (tắt rồi chạy lại npm run online).';
+
 let token: string | null = null;
 let onUnauthorized: (() => void) | null = null;
 
@@ -44,7 +47,7 @@ export async function api<T>(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: 
     if (res.status === 401 && token) onUnauthorized?.();
     // Route chưa có trên server (server đang chạy bản cũ): không đưa chuỗi kỹ thuật "API không tồn tại" lên màn hình
     if (res.status === 404 && data?.error?.code === 'not_found' && path.startsWith('/api/')) {
-      throw new ApiError(404, 'route_missing', 'Máy chủ chưa có tính năng này — cần cập nhật server.');
+      throw new ApiError(404, 'route_missing', ROUTE_MISSING_MESSAGE);
     }
     throw new ApiError(res.status, data?.error?.code ?? 'http_error', data?.error?.message ?? `Lỗi máy chủ (${res.status})`);
   }

@@ -70,13 +70,16 @@ export async function setApiUrl(url: string | null): Promise<void> {
 }
 
 /** Kiểm tra địa chỉ có đúng là server ResQ đang chạy. */
-export async function probeServer(url: string, timeoutMs = 8000): Promise<{ ok: true } | { ok: false; message: string }> {
+import type { ServerInfo } from './features/server/compat';
+export { REQUIRED_API_VERSION, type ServerInfo } from './features/server/compat';
+
+export async function probeServer(url: string, timeoutMs = 8000): Promise<{ ok: true; info: ServerInfo } | { ok: false; message: string }> {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), timeoutMs);
   try {
     const r = await fetch(`${url}/api/health`, { signal: ac.signal });
-    const j = await r.json().catch(() => null) as { service?: string } | null;
-    if (r.ok && j?.service === 'resq') return { ok: true };
+    const j = await r.json().catch(() => null) as { service?: string; apiVersion?: number; features?: string[]; stale?: boolean } | null;
+    if (r.ok && j?.service === 'resq') return { ok: true, info: { apiVersion: j.apiVersion ?? 0, features: j.features ?? [], stale: !!j.stale } };
     return { ok: false, message: `Địa chỉ phản hồi nhưng không phải server ResQ (HTTP ${r.status}).` };
   } catch (e) {
     return { ok: false, message: (e as Error).name === 'AbortError' ? 'Quá thời gian chờ — server có đang bật không?' : 'Không kết nối được tới địa chỉ này.' };

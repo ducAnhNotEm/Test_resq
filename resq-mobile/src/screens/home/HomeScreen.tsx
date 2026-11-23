@@ -21,6 +21,7 @@ import { useLocation } from '../../features/location/LocationProvider';
 import { ApiError, homeApi, ORDER_STATUS_LABEL, ordersApi, sosApi, type HomeContent, type Order, type SosAlert } from '../../services/api';
 import { useUnreadNotifications } from '../../features/notifications/useUnreadNotifications';
 import { firstName, formatPrice, greeting, planLabel, safeHttps, updatedLabel } from '../../features/home/homeLogic';
+import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 const ME_REFRESH_MS = 60_000;          // hồ sơ (gói vừa được tổng đài đổi) tải lại tối đa 1 lần / phút
@@ -86,6 +87,7 @@ export const HomeScreen: React.FC = () => {
       />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 32 + QBIN_FAB_SIZE + 16 }]} showsVerticalScrollIndicator={false}>
+        <ServerIssueBanner />
         <View style={styles.helloRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.hello, { color: colors.textSecondary }]}>{greeting(new Date().getHours())}{name ? `, ${name}` : ''}</Text>

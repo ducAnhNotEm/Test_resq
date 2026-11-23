@@ -29,6 +29,7 @@ const ROLE_OPTIONS = [
   { k: 'staff' as const, label: 'Gara', icon: 'storefront' as const },
 ];
 import { RootStackParamList } from '../../types';
+import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
@@ -154,6 +155,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
           ))}
         </View>
 
+        <ServerIssueBanner onDark />
         {shownError ? <Text accessibilityRole="alert" style={styles.errorText}>{shownError}</Text> : null}
         <Pressable onPress={() => setServerModal(true)} accessibilityRole="button" hitSlop={8}>
           <Text style={styles.serverText}>
