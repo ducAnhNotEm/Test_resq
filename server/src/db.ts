@@ -91,6 +91,81 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS vehicles (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  plate TEXT NOT NULL,
+  vin TEXT,
+  color TEXT,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(user_id, plate)
+);
+CREATE INDEX IF NOT EXISTS idx_vehicles_user ON vehicles(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vehicles_one_default ON vehicles(user_id) WHERE is_default = 1;
+CREATE TABLE IF NOT EXISTS emergency_contacts (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  relation TEXT NOT NULL DEFAULT 'Người thân',
+  share_location INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  UNIQUE(user_id, phone)
+);
+CREATE INDEX IF NOT EXISTS idx_contacts_user ON emergency_contacts(user_id);
+CREATE TABLE IF NOT EXISTS saved_places (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL DEFAULT 'other' CHECK (type IN ('home','work','other')),
+  title TEXT NOT NULL,
+  address TEXT NOT NULL,
+  latitude REAL,
+  longitude REAL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_saved_places_user ON saved_places(user_id);
+-- TÍN HIỆU SOS: đi thẳng tới TỔNG ĐÀI (không phải đơn gara). Tổng đài báo người thân, báo 115, điều cứu hộ nếu cần.
+CREATE TABLE IF NOT EXISTS sos_alerts (
+  id TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  client_ref TEXT,
+  status TEXT NOT NULL CHECK (status IN ('open','acknowledged','resolved','cancelled')),
+  source TEXT NOT NULL DEFAULT 'hold' CHECK (source IN ('hold','crash','manual')),
+  lat REAL, lng REAL, accuracy_m REAL, location_at INTEGER,
+  address TEXT NOT NULL DEFAULT '',
+  vehicle_plate TEXT NOT NULL DEFAULT '',
+  contacts_snapshot TEXT NOT NULL DEFAULT '[]',
+  handled_by INTEGER,
+  resolution TEXT NOT NULL DEFAULT '',
+  order_id TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  acknowledged_at INTEGER, resolved_at INTEGER, cancelled_at INTEGER
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sos_client_ref ON sos_alerts(user_id, client_ref) WHERE client_ref IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_sos_status ON sos_alerts(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_sos_user ON sos_alerts(user_id, created_at);
+CREATE TABLE IF NOT EXISTS sos_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sos_id TEXT NOT NULL REFERENCES sos_alerts(id) ON DELETE CASCADE,
+  at INTEGER NOT NULL,
+  actor_id INTEGER,
+  actor_role TEXT NOT NULL,
+  type TEXT NOT NULL,
+  data TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_sos_events ON sos_events(sos_id, at);
+CREATE TABLE IF NOT EXISTS sos_track (
+  sos_id TEXT NOT NULL REFERENCES sos_alerts(id) ON DELETE CASCADE,
+  at INTEGER NOT NULL,
+  lat REAL NOT NULL, lng REAL NOT NULL, accuracy_m REAL
+);
+CREATE INDEX IF NOT EXISTS idx_sos_track ON sos_track(sos_id, at);
 `;
 // Cột thêm sau (store_id, virtual_drive...) KHÔNG nằm trong CREATE TABLE: mọi DB — mới hay cũ — đi chung
 // một đường migrate() → không bao giờ có chuyện DB mới chạy được còn DB cũ thì lỗi "no such column".
@@ -101,11 +176,27 @@ export const SEED_EMAILS = ['admin@resq.vn', 'khachhang@resq.vn', 'cuuho@resq.vn
 export interface UserRow {
   id: number; email: string; password_hash: string; role: Role; name: string; phone: string;
   vehicle_plate: string; unit: string; store_id: string | null; active: number; created_at: number; updated_at: number;
+  avatar_url: string;
+  /** Tên đăng nhập (chữ thường) — bắt buộc với gara, tùy chọn với khách. null = chưa có. */
+  username: string | null;
+  plan: string; plan_expires_at: number | null; notifications_seen_at: number;
 }
+
+export type Plan = 'free' | 'premium';
 
 export interface PublicUser {
   id: number; email: string; role: Role; name: string; phone: string;
   vehiclePlate: string; unit: string; storeId: string | null; active: boolean; createdAt: number; updatedAt: number;
+  /** Ảnh đại diện (https) — rỗng: app hiện chữ cái đầu. */
+  avatarUrl: string;
+  username: string | null;
+  plan: Plan;
+  /** Hết hạn Premium (epoch ms, cuối ngày giờ VN). null = không hết hạn. */
+  planExpiresAt: number | null;
+  /** Premium CÒN HIỆU LỰC — tính bằng đồng hồ SERVER (đồng hồ điện thoại có thể sai). */
+  premiumActive: boolean;
+  /** Số ngày Premium còn lại (làm tròn lên); null khi không Premium hoặc không hết hạn. */
+  planDaysLeft: number | null;
 }
 
 /**
@@ -119,9 +210,23 @@ export function rolesOf(u: Pick<UserRow, 'role'>): Role[] {
   return ['customer'];
 }
 
-export const toPublicUser = (u: UserRow): PublicUser => ({
+const DAY_MS = 86_400_000;
+
+/** Gói đang hiệu lực theo giờ SERVER. Giá trị lạ (dữ liệu cũ / sửa tay) coi như free. */
+export function planState(u: Pick<UserRow, 'plan' | 'plan_expires_at'>, now: number): { plan: Plan; premiumActive: boolean; planDaysLeft: number | null } {
+  const plan: Plan = u.plan === 'premium' ? 'premium' : 'free';
+  const exp = u.plan_expires_at ?? null;
+  const premiumActive = plan === 'premium' && (exp == null || exp > now);
+  return { plan, premiumActive, planDaysLeft: premiumActive && exp != null ? Math.max(1, Math.ceil((exp - now) / DAY_MS)) : null };
+}
+
+export const toPublicUser = (u: UserRow, now: number = Date.now()): PublicUser => ({
   id: u.id, email: u.email, role: u.role, name: u.name, phone: u.phone,
   vehiclePlate: u.vehicle_plate, unit: u.unit, storeId: u.store_id ?? null, active: !!u.active, createdAt: u.created_at, updatedAt: u.updated_at,
+  avatarUrl: u.avatar_url ?? '',
+  username: u.username || null,
+  planExpiresAt: u.plan_expires_at ?? null,
+  ...planState(u, now),
 });
 
 /**
@@ -140,6 +245,10 @@ export interface StoreRow {
   owner_user_id: number | null; status: StoreStatus; hours_json: string; images: string;
   pending_address: string | null; pending_lat: number | null; pending_lng: number | null; pending_at: number | null;
   verified_at: number | null; verified_by: string | null;
+  /** Gara tự TẠM NGƯNG nhận đơn tới mốc này (null = không tạm ngưng). Hết mốc tự nhận lại — không ai phải nhớ bật. */
+  paused_until: number | null;
+  /** Chi nhánh: id cửa hàng chính (null = cửa hàng chính). Cùng chủ (owner_user_id). */
+  parent_store_id: string | null;
 }
 export interface StoreInfo {
   id: string; name: string; address: string; phone: string; pos: LngLat; placeId: string | null;
@@ -152,6 +261,8 @@ export interface StoreInfo {
   pending?: { address: string; pos: LngLat; at: number } | null;
   verifiedBy?: string | null;
   ownerUserId?: number | null;
+  pausedUntil?: number | null;
+  parentStoreId?: string | null;
 }
 export const parseWeek = (s: string | null | undefined): WeekHours | null => {
   if (!s) return null;
@@ -169,6 +280,7 @@ export const toStoreInfo = (s: StoreRow): StoreInfo => {
     pending: s.pending_address != null && s.pending_lat != null && s.pending_lng != null
       ? { address: s.pending_address, pos: [s.pending_lng, s.pending_lat], at: s.pending_at ?? 0 } : null,
     verifiedBy: s.verified_by, ownerUserId: s.owner_user_id,
+    pausedUntil: s.paused_until ?? null, parentStoreId: s.parent_store_id ?? null,
   };
 };
 
@@ -307,7 +419,11 @@ export class Store {
   /** Thêm cột mới cho DB đã tồn tại (CREATE TABLE IF NOT EXISTS không thêm cột). */
   private migrate(): void {
     const colsOf = (t: string) => new Set((this.db.prepare(`PRAGMA table_info(${t})`).all() as Array<{ name: string }>).map(c => c.name));
-    const add = (t: string, cols: Set<string>, col: string, def: string) => { if (!cols.has(col)) this.db.exec(`ALTER TABLE ${t} ADD COLUMN ${col} ${def}`); };
+    const add = (t: string, cols: Set<string>, col: string, def: string): boolean => {
+      if (cols.has(col)) return false;
+      this.db.exec(`ALTER TABLE ${t} ADD COLUMN ${col} ${def}`);
+      return true;
+    };
     const o = colsOf('orders');
     add('orders', o, 'place_id', 'TEXT');
     add('orders', o, 'place_name', 'TEXT');
@@ -334,6 +450,8 @@ export class Store {
     add('stores', st, 'pending_at', 'INTEGER');
     add('stores', st, 'verified_at', 'INTEGER');
     add('stores', st, 'verified_by', 'TEXT');
+    add('stores', st, 'paused_until', 'INTEGER');
+    add('stores', st, 'parent_store_id', 'TEXT');
     const o2 = colsOf('orders');
     add('orders', o2, 'requested_store_id', 'TEXT');
     add('orders', o2, 'dispatch_hold', 'TEXT');
@@ -369,9 +487,38 @@ export class Store {
       // bỏ qua lỗi nếu không thể recreate table
     }
 
+    // Cột users mới: thêm SAU khối dựng lại bảng users ở trên (khối đó liệt kê cột cố định → thêm trước sẽ bị mất).
+    add('users', colsOf('users'), 'avatar_url', "TEXT NOT NULL DEFAULT ''");
+    add('users', colsOf('users'), 'username', 'TEXT');
+    add('users', colsOf('users'), 'plan', "TEXT NOT NULL DEFAULT 'free'");
+    add('users', colsOf('users'), 'plan_expires_at', 'INTEGER');
+    // Mốc "đã xem thông báo": tài khoản cũ đặt = lúc nâng cấp → không bung hàng trăm thông báo cũ. Chạy ĐÚNG 1 LẦN
+    // (khi cột vừa được thêm) — chạy mỗi lần khởi động sẽ âm thầm đánh dấu "đã đọc" cả thông báo thật chưa xem.
+    if (add('users', colsOf('users'), 'notifications_seen_at', 'INTEGER NOT NULL DEFAULT 0')) {
+      this.db.prepare('UPDATE users SET notifications_seen_at = ?').run(this.now());
+    }
+
     // index trên cột mới: chỉ tạo SAU khi chắc chắn cột đã có
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_store ON orders(store_id, created_at);
-      CREATE INDEX IF NOT EXISTS idx_users_store ON users(store_id);`);
+      CREATE INDEX IF NOT EXISTS idx_users_store ON users(store_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL AND username <> '';
+      CREATE INDEX IF NOT EXISTS idx_events_at ON order_events(at);`);
+
+    this.backfillVehicles();
+  }
+
+  /**
+   * Biển số cũ (users.vehicle_plate) → 1 xe mặc định trong bảng vehicles. Idempotent: chỉ chạm tài khoản CHƯA có xe nào.
+   * Xóa hết xe → vehicle_plate được đặt rỗng → không bị tạo lại. Không truyền userId: chạy cho mọi tài khoản.
+   */
+  backfillVehicles(userId?: number): number {
+    const r = this.db.prepare(`INSERT INTO vehicles (id, user_id, name, plate, is_default, created_at, updated_at)
+      SELECT lower(hex(randomblob(16))), id, 'Xe của tôi', replace(upper(trim(vehicle_plate)), ' ', ''), 1, created_at, updated_at
+      FROM users
+      WHERE trim(vehicle_plate) <> ''
+        AND (? IS NULL OR id = ?)
+        AND NOT EXISTS (SELECT 1 FROM vehicles v WHERE v.user_id = users.id)`).run(userId ?? null, userId ?? null);
+    return Number(r.changes);
   }
 
   tx<T>(fn: () => T): T {
@@ -386,28 +533,46 @@ export class Store {
   userByEmail(email: string): UserRow | undefined {
     return this.db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim()) as UserRow | undefined;
   }
+  userByUsername(username: string): UserRow | undefined {
+    const u = username.trim().toLowerCase();
+    if (!u) return undefined;
+    return this.db.prepare('SELECT * FROM users WHERE username = ? COLLATE NOCASE').get(u) as UserRow | undefined;
+  }
   listUsers(f: { role?: Role; q?: string; limit?: number; offset?: number } = {}): { items: PublicUser[]; total: number } {
     const where: string[] = [];
     const args: Array<string | number> = [];
     if (f.role) { where.push('role = ?'); args.push(f.role); }
-    if (f.q) { where.push('(name LIKE ? OR email LIKE ? OR phone LIKE ? OR vehicle_plate LIKE ?)'); const q = `%${f.q}%`; args.push(q, q, q, q); }
+    if (f.q) {
+      where.push("(name LIKE ? OR email LIKE ? OR phone LIKE ? OR vehicle_plate LIKE ? OR IFNULL(username, '') LIKE ?)");
+      const q = `%${f.q}%`; args.push(q, q, q, q, q);
+    }
     const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const total = (this.db.prepare(`SELECT COUNT(*) AS n FROM users ${w}`).get(...args) as { n: number }).n;
     const rows = this.db.prepare(`SELECT * FROM users ${w} ORDER BY id DESC LIMIT ? OFFSET ?`)
       .all(...args, Math.min(f.limit ?? 50, 200), f.offset ?? 0) as unknown as UserRow[];
-    return { items: rows.map(toPublicUser), total };
+    const now = this.now();
+    return { items: rows.map(r => toPublicUser(r, now)), total };
   }
-  createUser(u: { email: string; password: string; role: Role; name: string; phone?: string; vehiclePlate?: string; unit?: string }): UserRow {
+  createUser(u: {
+    email: string; password: string; role: Role; name: string; phone?: string; vehiclePlate?: string; unit?: string;
+    username?: string | null; plan?: Plan; planExpiresAt?: number | null;
+  }): UserRow {
     const t = this.now();
-    const r = this.db.prepare(`INSERT INTO users (email, password_hash, role, name, phone, vehicle_plate, unit, active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`)
-      .run(u.email.trim().toLowerCase(), hashPassword(u.password), u.role, u.name.trim(), u.phone ?? '', u.vehiclePlate ?? '', u.unit ?? '', t, t);
+    const plan: Plan = u.plan ?? 'free';
+    const r = this.db.prepare(`INSERT INTO users (email, password_hash, role, name, phone, vehicle_plate, unit, username, plan, plan_expires_at,
+        notifications_seen_at, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`)
+      .run(u.email.trim().toLowerCase(), hashPassword(u.password), u.role, u.name.trim(), u.phone ?? '', u.vehiclePlate ?? '', u.unit ?? '',
+        u.username ? u.username.trim().toLowerCase() : null, plan, plan === 'premium' ? (u.planExpiresAt ?? null) : null, t, t, t);
     return this.userById(Number(r.lastInsertRowid))!;
   }
-  updateUser(id: number, p: Partial<{ email: string; password: string; role: Role; name: string; phone: string; vehiclePlate: string; unit: string; active: boolean }>): UserRow | undefined {
+  updateUser(id: number, p: Partial<{
+    email: string; password: string; role: Role; name: string; phone: string; vehiclePlate: string; unit: string; active: boolean;
+    avatarUrl: string; username: string | null; plan: Plan; planExpiresAt: number | null;
+  }>): UserRow | undefined {
     const cols: string[] = [];
-    const args: Array<string | number> = [];
-    const set = (c: string, v: string | number) => { cols.push(`${c} = ?`); args.push(v); };
+    const args: Array<string | number | null> = [];
+    const set = (c: string, v: string | number | null) => { cols.push(`${c} = ?`); args.push(v); };
     if (p.email !== undefined) set('email', p.email.trim().toLowerCase());
     if (p.password !== undefined) set('password_hash', hashPassword(p.password));
     if (p.role !== undefined) set('role', p.role);
@@ -416,6 +581,12 @@ export class Store {
     if (p.vehiclePlate !== undefined) set('vehicle_plate', p.vehiclePlate);
     if (p.unit !== undefined) set('unit', p.unit);
     if (p.active !== undefined) set('active', p.active ? 1 : 0);
+    if (p.avatarUrl !== undefined) set('avatar_url', p.avatarUrl);
+    if (p.username !== undefined) set('username', p.username ? p.username.trim().toLowerCase() : null);
+    if (p.plan !== undefined) set('plan', p.plan);
+    // về Free → luôn xóa hạn (không để hạn cũ "sống lại" khi lần sau bật Premium)
+    if (p.plan === 'free') set('plan_expires_at', null);
+    else if (p.planExpiresAt !== undefined) set('plan_expires_at', p.planExpiresAt);
     if (!cols.length) return this.userById(id);
     set('updated_at', this.now());
     this.db.prepare(`UPDATE users SET ${cols.join(', ')} WHERE id = ?`).run(...args, id);
@@ -424,7 +595,8 @@ export class Store {
   /** Xóa cứng chỉ khi user chưa từng có đơn; có đơn thì phải vô hiệu hóa (giữ lịch sử, đối soát). */
   deleteUser(id: number): 'deleted' | 'has-orders' | 'not-found' {
     if (!this.userById(id)) return 'not-found';
-    const n = (this.db.prepare('SELECT COUNT(*) AS n FROM orders WHERE customer_id = ? OR staff_id = ?').get(id, id) as { n: number }).n;
+    const n = (this.db.prepare('SELECT COUNT(*) AS n FROM orders WHERE customer_id = ? OR staff_id = ?').get(id, id) as { n: number }).n
+      + (this.db.prepare('SELECT COUNT(*) AS n FROM sos_alerts WHERE user_id = ?').get(id) as { n: number }).n;
     if (n > 0) return 'has-orders';
     this.db.prepare('DELETE FROM users WHERE id = ?').run(id);
     return 'deleted';
@@ -438,17 +610,28 @@ export class Store {
   orderRow(id: string): OrderRow | undefined {
     return this.db.prepare('SELECT * FROM orders WHERE id = ?').get(id) as OrderRow | undefined;
   }
-  listOrders(f: { status?: OrderStatus[]; customerId?: number; staffId?: number; q?: string; since?: number; limit?: number; offset?: number } = {}): { items: Order[]; total: number } {
+  listOrders(f: {
+    status?: OrderStatus[]; customerId?: number; staffId?: number; q?: string; since?: number; limit?: number; offset?: number;
+    /** Đơn của các gara này (lịch sử sửa chữa của gara + chi nhánh). */
+    storeIds?: string[];
+    /** 'recent': mới nhất trước (lịch sử); mặc định: SOS trước rồi mới nhất (bảng điều phối). */
+    sort?: 'recent';
+  } = {}): { items: Order[]; total: number } {
     const where: string[] = [];
     const args: Array<string | number> = [];
     if (f.status?.length) { where.push(`o.status IN (${f.status.map(() => '?').join(',')})`); args.push(...f.status); }
+    if (f.storeIds) {
+      if (!f.storeIds.length) return { items: [], total: 0 };
+      where.push(`o.store_id IN (${f.storeIds.map(() => '?').join(',')})`); args.push(...f.storeIds);
+    }
     if (f.customerId != null) { where.push('o.customer_id = ?'); args.push(f.customerId); }
     if (f.staffId != null) { where.push('o.staff_id = ?'); args.push(f.staffId); }
     if (f.since != null) { where.push('o.created_at >= ?'); args.push(f.since); }
     if (f.q) { where.push('(o.id LIKE ? OR o.address LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR o.vehicle_plate LIKE ?)'); const q = `%${f.q}%`; args.push(q, q, q, q, q); }
     const w = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const total = (this.db.prepare(`SELECT COUNT(*) AS n FROM orders o JOIN users c ON c.id = o.customer_id ${w}`).get(...args) as { n: number }).n;
-    const rows = this.db.prepare(`${ORDER_SELECT} ${w} ORDER BY (o.priority = 'sos') DESC, o.created_at DESC LIMIT ? OFFSET ?`)
+    const orderBy = f.sort === 'recent' ? 'o.created_at DESC' : "(o.priority = 'sos') DESC, o.created_at DESC";
+    const rows = this.db.prepare(`${ORDER_SELECT} ${w} ORDER BY ${orderBy} LIMIT ? OFFSET ?`)
       .all(...args, Math.min(f.limit ?? 50, 500), f.offset ?? 0) as unknown as JoinedOrder[];
     return { items: rows.map(toOrder), total };
   }
@@ -531,6 +714,34 @@ export class Store {
   /** Nhân viên (đang hoạt động) thuộc gara. */
   storeStaff(storeId: string): UserRow[] {
     return this.db.prepare(`SELECT * FROM users WHERE store_id = ? AND active = 1 AND role IN ('staff','garage')`).all(storeId) as unknown as UserRow[];
+  }
+  /**
+   * Người NHẬN ĐƠN của một gara: nhân viên gắn với gara + CHỦ gara. Chi nhánh mới chưa có nhân viên riêng → chủ nhận
+   * thay (đơn ghi rõ chi nhánh nào), nên mở chi nhánh không làm mất đơn.
+   */
+  storeMembers(s: Pick<StoreRow, 'id' | 'owner_user_id'>): UserRow[] {
+    return this.db.prepare(`SELECT * FROM users WHERE active = 1 AND role IN ('staff','garage') AND (store_id = ? OR id = ?) ORDER BY id`)
+      .all(s.id, s.owner_user_id ?? -1) as unknown as UserRow[];
+  }
+  /** Mọi cửa hàng (chính + chi nhánh) của một chủ gara. Cửa hàng chính trước. */
+  ownedStores(userId: number): StoreRow[] {
+    return this.db.prepare(`SELECT * FROM stores WHERE owner_user_id = ? ORDER BY (parent_store_id IS NOT NULL), created_at, id`).all(userId) as unknown as StoreRow[];
+  }
+  setStorePause(id: string, until: number | null): void {
+    this.db.prepare('UPDATE stores SET paused_until = ?, updated_at = ? WHERE id = ?').run(until, this.now(), id);
+  }
+  setStoreParent(id: string, parentId: string | null): void {
+    this.db.prepare('UPDATE stores SET parent_store_id = ? WHERE id = ?').run(parentId, id);
+  }
+  /**
+   * Tài khoản "nhân viên cứu hộ" mẫu cũ (cuuho@, cuuho2@) không còn dùng: hệ thống chỉ còn tài khoản GARA. KHÓA (không
+   * xóa — còn lịch sử đơn để đối soát). Chạy 1 lần (cờ trong settings). Trả số tài khoản đã khóa.
+   */
+  retireSeedStaff(): number {
+    if (this.setting('seed_staff_retired_v1')) return 0;
+    const r = this.db.prepare(`UPDATE users SET active = 0, updated_at = ? WHERE role = 'staff' AND email IN ('cuuho@resq.vn','cuuho2@resq.vn') AND active = 1`).run(this.now());
+    this.setSetting('seed_staff_retired_v1', '1');
+    return Number(r.changes);
   }
   /** Hồ sơ gara (không gồm địa chỉ): áp dụng ngay. */
   patchStore(id: string, p: Partial<{ name: string; phone: string; email: string; services: string[]; week: WeekHours | null; hoursText: string; images: StoreImage[] }>): void {
@@ -662,8 +873,6 @@ export class Store {
     const seed: Array<Parameters<Store['createUser']>[0]> = [
       { email: 'admin@resq.vn', password, role: 'admin', name: 'Điều phối viên ResQ', phone: '19006868' },
       { email: 'khachhang@resq.vn', password, role: 'customer', name: 'Nguyễn Văn Anh', phone: '0987654321', vehiclePlate: '30H-123.45' },
-      { email: 'cuuho@resq.vn', password, role: 'staff', name: 'Nguyễn Văn Hùng', phone: '0912345678', vehiclePlate: '29C-123.45', unit: 'Cứu hộ Minh Tâm' },
-      { email: 'cuuho2@resq.vn', password, role: 'staff', name: 'Trần Quốc Bảo', phone: '0934567890', vehiclePlate: '29C-678.90', unit: 'Cứu hộ Minh Tâm' },
       { email: 'gara@resq.vn', password, role: 'garage', name: 'Gara ReFix Auto Hà Nội', phone: '0901234567', unit: 'ReFix Auto Center' },
     ];
     this.tx(() => {
@@ -687,6 +896,7 @@ export class Store {
         });
         this.setUserStore(garaUser.id, store.id);
       }
+      this.backfillVehicles();
     });
     log(`[seed] Đã tạo ${seed.length} tài khoản mẫu: ${seed.map(s => `${s.email} (${s.role})`).join(', ')}`);
   }

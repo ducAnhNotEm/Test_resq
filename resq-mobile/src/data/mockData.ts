@@ -109,14 +109,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
 
 export const INITIAL_CONTACTS: EmergencyContact[] = [
   {
-    id: 1,
+    id: '1',
     name: 'Nguyễn Thị Mai',
     phone: '0912 345 678',
     relation: 'Vợ',
     shareLocation: true,
   },
   {
-    id: 2,
+    id: '2',
     name: 'Nguyễn Văn Bình',
     phone: '0904 567 890',
     relation: 'Bố',

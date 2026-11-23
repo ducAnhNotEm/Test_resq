@@ -22,7 +22,10 @@ import { useNow, useRescueTelemetry } from '../../features/route/useRescueTeleme
 import { formatDistanceVi } from '../../features/route/maneuvers';
 import { DECLINE_REASONS, partnerTitle, storeLine, virtualBadge } from '../../features/refix/refixFlow';
 import { ISSUES_DATA } from '../../data/mockData';
-import { api, ISSUE_LABEL, ordersApi, staffApi, type Order, type StoreInfo } from '../../services/api';
+import { api, ISSUE_LABEL, ordersApi, staffApi, storeApi, type Order, type StoreInfo, type StoreProfile } from '../../services/api';
+import { DutyCard } from '../../components/DutyCard';
+import { useUnreadNotifications } from '../../features/notifications/useUnreadNotifications';
+import { badgeText } from '../../features/home/homeLogic';
 
 const OFFER_MS = 90_000;
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -32,11 +35,15 @@ export const StaffJobsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { user, logout, switchRole, demoMode } = useAuth();
-  const canCustomer = !!user?.roles?.includes('customer');
+  const { user, demoMode } = useAuth();
+  const unread = useUnreadNotifications();
   const conn = useConnState();
-  const [available, setAvailableState] = useState(false);
+  // công tắc tay CHỈ còn cho gara chưa khai giờ làm việc (dữ liệu cũ); gara có giờ → tự nhận đơn theo giờ
+  const [manualOn, setAvailableState] = useState(false);
   const [store, setStore] = useState<(StoreInfo & { status?: string }) | null>(null);
+  const [profile, setProfile] = useState<StoreProfile | null>(null);
+  const dutyMode = profile?.dutyMode ?? 'manual';
+  const available = dutyMode === 'schedule' || (dutyMode === 'manual' && manualOn);
   const [busy, setBusy] = useState(false);
 
   const mine = useCallback((o: Order) => o.staff?.id === user?.id, [user?.id]);
@@ -49,6 +56,15 @@ export const StaffJobsScreen: React.FC = () => {
     if (conn !== 'open' && conn !== 'idle') return;
     staffApi.me().then(r => { if (!userTouched.current) setAvailableState(r.available); setStore(r.store); }).catch(() => {});
   }, [conn]);
+  // trạng thái nhận đơn theo giờ: tải khi mở màn + mỗi phút (tự chuyển lúc tới giờ mở / đóng cửa, hết tạm ngưng)
+  useEffect(() => {
+    if (!isFocused) return;
+    let alive = true;
+    const load = () => storeApi.me().then(p => { if (alive) setProfile(p); }).catch(() => {});
+    void load();
+    const t = setInterval(load, 60_000);
+    return () => { alive = false; clearInterval(t); };
+  }, [isFocused, conn]);
   useEffect(() => {
     const c = realtime.client;
     if (!c || !user) return;
@@ -121,16 +137,15 @@ export const StaffJobsScreen: React.FC = () => {
             {user?.name}{user?.vehiclePlate ? ` · ${user.vehiclePlate}` : ''}
           </Text>
         </View>
-        <Pressable onPress={() => navigation.navigate('StoreProfile')} accessibilityLabel="Hồ sơ gara" style={styles.logout}>
-          <Ionicons name="storefront-outline" size={22} color={colors.textSecondary} />
-        </Pressable>
-        <Pressable onPress={() => Alert.alert('Tài khoản', user?.email ?? '', [
-          ...(canCustomer ? [{ text: 'Chuyển sang vai Khách hàng', onPress: () => { switchRole('customer').catch(e => Alert.alert('Không đổi được vai', (e as Error).message)); } }] : []),
-          { text: 'Đăng xuất', style: 'destructive' as const, onPress: () => { void logout(); } },
-          { text: 'Đóng', style: 'cancel' as const },
-        ])} accessibilityLabel="Tài khoản" style={styles.logout}>
-          <Ionicons name="person-circle-outline" size={24} color={colors.textSecondary} />
-        </Pressable>
+        {unread != null ? (
+          <Pressable onPress={() => navigation.navigate('Notifications')} accessibilityRole="button"
+            accessibilityLabel={badgeText(unread) ? `Thông báo, ${badgeText(unread)} chưa đọc` : 'Thông báo'} style={styles.logout}>
+            <Ionicons name="notifications-outline" size={22} color={colors.textSecondary} />
+            {badgeText(unread) ? (
+              <View style={[styles.bellBadge, { backgroundColor: colors.sos }]}><Text style={styles.bellBadgeText}>{badgeText(unread)}</Text></View>
+            ) : null}
+          </Pressable>
+        ) : null}
       </View>
       {demoMode ? (
         <View style={[styles.demoBar, { backgroundColor: colors.amberBg }]}>
@@ -150,25 +165,20 @@ export const StaffJobsScreen: React.FC = () => {
             </Text>
           </Pressable>
         ) : null}
-        {/* ===== nhận đơn tự động ===== */}
-        <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: online ? colors.green : colors.borderSubtle }]}>
-          <View style={styles.row}>
-            <View style={{ flex: 1, gap: 4 }}>
-              <View style={[styles.chip, { backgroundColor: online ? colors.greenBg : colors.bgSubtle }]}>
-                <View style={[styles.dot, { backgroundColor: online ? colors.green : available ? colors.amber : '#94A3B8' }]} />
-                <Text style={[styles.chipText, { color: online ? colors.greenText : colors.textSecondary }]}>
-                  {online ? 'ReFix trực tuyến' : available ? 'Đang kết nối tổng đài…' : 'ReFix tạm nghỉ'}
-                </Text>
-              </View>
-              <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Nhận phân phối đơn ReFix tự động</Text>
-              <Text style={[styles.meta, { color: colors.textSecondary }]}>
-                {available ? 'Tổng đài tự giao đơn gần bạn nhất. Đơn mới sẽ đổ chuông ở đây.' : 'Bật để bắt đầu nhận đơn cứu hộ.'}
-              </Text>
+        {/* ===== nhận đơn: TỰ ĐỘNG theo giờ làm việc đã đăng ký ===== */}
+        <DutyCard store={profile} onChanged={setProfile} compact />
+        {dutyMode === 'manual' && profile && profile.status === 'active' ? (
+          <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
+            <View style={styles.row}>
+              <Text style={[styles.meta, { color: colors.textPrimary, flex: 1 }]}>Chưa khai giờ làm việc — bật tay để nhận đơn (hoặc khai giờ trong Cài đặt → Hồ sơ cửa hàng).</Text>
+              <Switch value={manualOn} onValueChange={setAvailable} trackColor={{ false: '#334155', true: colors.green }} accessibilityLabel="Nhận đơn (bật tay)" />
             </View>
-            <Switch value={available} onValueChange={setAvailable} trackColor={{ false: '#334155', true: colors.green }} accessibilityLabel="Nhận phân phối đơn ReFix tự động" />
           </View>
-          {available || job ? <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} compact /> : null}
-        </View>
+        ) : null}
+        {(available || job) && conn !== 'open' ? (
+          <Text style={[styles.meta, { color: colors.amberText, textAlign: 'center' }]}>Đang kết nối tổng đài… đơn mới sẽ tới khi có mạng.</Text>
+        ) : null}
+        {available || job ? <LocationGate status={loc.status} onRecheck={loc.request} onOpenSettings={loc.openSettings} compact /> : null}
 
         {loading ? <ActivityIndicator color={colors.blue} /> : null}
 
@@ -191,9 +201,9 @@ export const StaffJobsScreen: React.FC = () => {
           <View style={styles.empty}>
             <Ionicons name={available ? 'radio-outline' : 'moon-outline'} size={36} color={colors.textSecondary} />
             <Text style={[styles.meta, { color: colors.textSecondary, textAlign: 'center' }]}>
-              {available ? 'Chưa có đơn. Đơn ReFix mới sẽ hiện ở đây ngay khi được điều phối.' : 'Bật "Nhận phân phối đơn ReFix tự động" để bắt đầu.'}
+              {available ? 'Chưa có đơn. Đơn mới sẽ đổ chuông ở đây ngay khi được điều phối.' : 'Ngoài giờ nhận đơn. Gara tự nhận đơn lại khi tới giờ làm việc.'}
             </Text>
-            <Text style={[styles.meta, { color: colors.textSecondary, textAlign: 'center' }]}>Tab ReFix: tra cứu gara, phụ tùng, trạm quanh đây — giống app khách.</Text>
+            <Text style={[styles.meta, { color: colors.textSecondary, textAlign: 'center' }]}>Đơn đã làm xem ở tab Lịch sử.</Text>
           </View>
         ) : null}
       </ScrollView>
@@ -352,6 +362,8 @@ const styles = StyleSheet.create({
   name: { fontFamily: FONTS.extraBold, fontSize: 19 },
   meta: { fontFamily: FONTS.regular, fontSize: 12 },
   logout: { padding: 8 },
+  bellBadge: { position: 'absolute', top: 2, right: 0, minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center' },
+  bellBadgeText: { fontFamily: FONTS.extraBold, fontSize: 10, color: '#FFFFFF' },
   demoBar: { flexDirection: 'row', alignItems: 'center', gap: 6, marginHorizontal: 16, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
   demoText: { flex: 1, fontFamily: FONTS.bold, fontSize: 11 },
   scroll: { padding: 16, paddingBottom: 40, gap: 14 },

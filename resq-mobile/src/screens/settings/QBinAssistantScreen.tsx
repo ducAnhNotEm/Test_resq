@@ -15,19 +15,27 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { QBinMascotSvg } from '../../components/ResQBrandSvg';
 import { useAppTheme } from '../../context/ThemeContext';
-import { INITIAL_CHAT_MESSAGES } from '../../data/mockData';
+import { useAuth } from '../../context/AuthContext';
+import { useAccountData } from '../../context/AccountDataContext';
+import { qbinGreeting, qbinReply } from '../../features/qbin/qbinReplies';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { ChatMessage, RootStackParamList } from '../../types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QBinAssistant'>;
-const SUGGESTIONS = ['Xe kêu lạ', 'Lịch bảo dưỡng', 'Gara gần nhất'];
+const SUGGESTIONS = ['Đề không nổ', 'Lốp bị xịt', 'Đèn báo đỏ', 'Xe kêu lạ', 'Lịch bảo dưỡng'];
 
 export const QBinAssistantScreen: React.FC<Props> = ({ navigation }) => {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<any>(null);
 
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_CHAT_MESSAGES);
+  const { user } = useAuth();
+  const { defaultVehicle } = useAccountData();
+  // lời chào dùng tên + xe THẬT của tài khoản (bản trước cố định "Toyota Camry 30H-123.45")
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const d = new Date();
+    return [{ id: 'hello', sender: 'ai', text: qbinGreeting(user?.name, defaultVehicle), time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }];
+  });
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
 
@@ -48,19 +56,8 @@ export const QBinAssistantScreen: React.FC<Props> = ({ navigation }) => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
 
     setTimeout(() => {
-      const lower = trimmed.toLowerCase();
-      let reply =
-        'Em đã ghi nhận thông tin cho xe Toyota Camry 30H-123.45. Anh có thể mở mục ReFix hoặc gọi 1900-6868 để kỹ thuật viên hỗ trợ ngay nhé!';
-      if (lower.includes('kêu')) {
-        reply =
-          'Tiếng kêu lạ khi đánh lái hoặc phanh thường do má phanh mòn hoặc rô-tuyn. Anh nên dừng ở nơi an toàn và để Phương Đông Car Service (cách 0,6 km) kiểm tra miễn phí nhé.';
-      } else if (lower.includes('bảo dưỡng')) {
-        reply =
-          'Xe Toyota Camry 2023 (30H-123.45) sắp đến mốc bảo dưỡng 20.000 km: nên thay dầu máy, lọc dầu, đảo lốp và kiểm tra bình ắc quy trong 10 ngày tới.';
-      } else if (lower.includes('gara')) {
-        reply =
-          'Gần R6 Vincom Royal City nhất hiện có Phương Đông Car Service (0,6 km · 4.8★ · mở 24/7). Anh có thể mở ReMaps để dẫn đường ngay!';
-      }
+      // trả lời theo từ khóa, không bịa xe / gara / số liệu (features/qbin/qbinReplies.ts)
+      const reply = qbinReply(trimmed);
 
       setTyping(false);
       setMessages((prev) => [
@@ -73,7 +70,7 @@ export const QBinAssistantScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <ScreenHeader title="Trợ lý AI ResQ (Q-Bin)" onBack={() => navigation.goBack()} />
+      <ScreenHeader title="Trợ lý Q-Bin" onBack={() => navigation.goBack()} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -154,7 +151,7 @@ export const QBinAssistantScreen: React.FC<Props> = ({ navigation }) => {
             <TextInput
               value={input}
               onChangeText={setInput}
-              placeholder="Hỏi Q-Bin về xe Camry của bạn..."
+              placeholder="Mô tả sự cố, vd. đề không nổ…"
               placeholderTextColor={colors.textSecondary}
               onSubmitEditing={() => sendMessage(input)}
               returnKeyType="send"

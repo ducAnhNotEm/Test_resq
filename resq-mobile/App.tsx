@@ -18,6 +18,8 @@ import {
 import { ThemeProvider, useAppTheme } from './src/context/ThemeContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { AuthProvider } from './src/context/AuthContext';
+import { AccountDataProvider } from './src/context/AccountDataContext';
+import { ToastProvider } from './src/components/ui/Toast';
 import { LocationProvider } from './src/features/location/LocationProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -84,11 +86,16 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
+        <ToastProvider>
         <AuthProvider>
-          <LocationProvider>
-            <RootNavigationShell />
-          </LocationProvider>
+          {/* dữ liệu tài khoản (danh bạ SOS, xe): trong Auth, ngoài Location */}
+          <AccountDataProvider>
+            <LocationProvider>
+              <RootNavigationShell />
+            </LocationProvider>
+          </AccountDataProvider>
         </AuthProvider>
+        </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

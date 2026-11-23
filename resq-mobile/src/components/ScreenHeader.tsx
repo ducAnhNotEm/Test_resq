@@ -1,21 +1,32 @@
 import React from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../context/ThemeContext';
 import { FONTS, METRICS, TYPOGRAPHY } from '../theme/tokens';
 import { locationLabel, useLocation } from '../features/location/LocationProvider';
+import { AUTH_LOGO, AUTH_LOGO_RATIO } from '../theme/authAssets';
+import { badgeText } from '../features/home/homeLogic';
 
 interface ScreenHeaderProps {
   title?: string;
   onBack?: () => void;
   onLocationPress?: () => void;
+  /**
+   * Nút bên phải (tùy màn). Bản trước có chuông "thông báo" luôn hiện chấm đỏ nhưng chưa có hệ thống thông báo
+   * thật — đã bỏ; màn nào có hành động thật thì truyền vào đây.
+   */
+  right?: React.ReactNode;
+  /** Header thương hiệu: logo ResQ thật (ảnh) thay cho chữ ghép. */
+  brandLogo?: boolean;
 }
 
 export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   title,
   onBack,
   onLocationPress,
+  right,
+  brandLogo = false,
 }) => {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
@@ -64,19 +75,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
           {title}
         </Text>
 
-        <Pressable
-          onPress={() =>
-            Alert.alert('Thông báo ResQ', 'Hệ thống bảo vệ 24/7 đang hoạt động ổn định.')
-          }
-          accessibilityLabel="Thông báo"
-          style={[
-            styles.iconBtn,
-            { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
-          ]}
-        >
-          <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
-          <View style={[styles.dot, { backgroundColor: colors.sos }]} />
-        </Pressable>
+        {right ?? <View style={styles.iconSpacer} />}
       </View>
     );
   }
@@ -88,14 +87,18 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
         { paddingTop: insets.top + 8, backgroundColor: colors.bgSurface },
       ]}
     >
-      <View style={styles.brandRow}>
-        <View style={[styles.brandBadge, { backgroundColor: colors.sosBg }]}>
-          <Ionicons name="shield-checkmark" size={20} color={colors.sos} />
+      {brandLogo ? (
+        <Image source={AUTH_LOGO} style={{ width: 104, height: 104 / AUTH_LOGO_RATIO }} resizeMode="contain" accessibilityRole="image" accessibilityLabel="ResQ" />
+      ) : (
+        <View style={styles.brandRow}>
+          <View style={[styles.brandBadge, { backgroundColor: colors.sosBg }]}>
+            <Ionicons name="shield-checkmark" size={20} color={colors.sos} />
+          </View>
+          <Text style={[styles.brandText, { color: colors.textPrimary }]}>
+            Res<Text style={{ color: colors.sos }}>Q</Text>
+          </Text>
         </View>
-        <Text style={[styles.brandText, { color: colors.textPrimary }]}>
-          Res<Text style={{ color: colors.sos }}>Q</Text>
-        </Text>
-      </View>
+      )}
 
       <View style={styles.rightActions}>
         <Pressable
@@ -116,20 +119,37 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
           </Text>
         </Pressable>
 
-        <Pressable
-          onPress={() =>
-            Alert.alert('Thông báo', 'Không có cảnh báo khẩn cấp mới.')
-          }
-          style={[
-            styles.iconBtnRound,
-            { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
-          ]}
-        >
-          <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
-          <View style={[styles.dot, { backgroundColor: colors.sos }]} />
-        </Pressable>
+        {right}
       </View>
     </View>
+  );
+};
+
+/** Nút tròn cho chỗ `right` của header (cùng kích thước / viền với nút quay lại). */
+export const HeaderIconButton: React.FC<{
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  onPress: () => void;
+  /** Số chưa đọc THẬT (0 / không có → không hiện huy hiệu). */
+  badge?: number | null;
+}> = ({ icon, label, onPress, badge }) => {
+  const { colors } = useAppTheme();
+  const text = badgeText(badge);
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={text ? `${label}, ${text} chưa đọc` : label}
+      hitSlop={4}
+      style={[styles.iconBtnRound, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}
+    >
+      <Ionicons name={icon} size={20} color={colors.textPrimary} />
+      {text ? (
+        <View style={[styles.badge, { backgroundColor: colors.sos, borderColor: colors.bgSurface }]}>
+          <Text style={styles.badgeText} numberOfLines={1}>{text}</Text>
+        </View>
+      ) : null}
+    </Pressable>
   );
 };
 
@@ -203,6 +223,11 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.xs,
     flexShrink: 1,
   },
+  badge: {
+    position: 'absolute', top: -4, right: -4, minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 2,
+  },
+  badgeText: { fontFamily: FONTS.extraBold, fontSize: 10, color: '#FFFFFF' },
   iconBtnRound: {
     width: 44,
     height: 44,

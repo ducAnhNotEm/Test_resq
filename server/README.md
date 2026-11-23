@@ -19,26 +19,57 @@ npm start
 | Email | Vai trò |
 |---|---|
 | `khachhang@resq.vn` | Khách hàng |
-| `cuuho@resq.vn`, `cuuho2@resq.vn` | Tài xế cứu hộ |
+| `gara@resq.vn` | Gara (đổi được sang vai Khách hàng trong Cài đặt) |
 | `admin@resq.vn` | Điều phối (trang web) |
 
-Thêm tài khoản cho thành viên khác ở trang Admin → Người dùng.
+Không còn tài khoản "nhân viên cứu hộ" mẫu. DB cũ: `cuuho@` / `cuuho2@` tự bị **khóa** (không xóa — còn lịch sử đơn) ở lần khởi động đầu.
+
+Thêm tài khoản cho thành viên khác ở trang Admin → Người dùng, hoặc để khách **tự đăng ký** trong app (màn đăng nhập → "Đăng ký").
+
+## Đăng nhập, đăng ký, gói
+
+- **Đăng nhập bằng email hoặc tên tài khoản** (`POST /api/auth/login` nhận `identifier`; app cũ gửi `email` vẫn chạy). Sai tài khoản hay sai mật khẩu đều trả **cùng** một thông báo và cùng thời gian xử lý (không dò được tài khoản nào có thật). Khóa 10 phút sau 8 lần sai **theo tài khoản** (đổi qua lại email ↔ username không được thêm lượt).
+- **Khách tự đăng ký**: `POST /api/auth/register-customer` `{ name, email, password, phone? }` → có phiên ngay. Không OTP. Tối đa 10 tài khoản / giờ / IP, **chỉ đếm lần tạo thành công**. Tắt hẳn: `RESQ_PUBLIC_SIGNUP=0` (nên tắt khi đưa server demo lên Internet).
+- **Gara** đăng ký thêm **tên tài khoản** (`username`: 3–24 ký tự `a-z 0-9 . _ -`, không phân biệt hoa thường, không trùng). App cũ chưa có ô này vẫn đăng ký được (username để trống, bổ sung ở admin).
+- **Gói Free / Premium**: tổng đài đặt tay ở Admin → Người dùng (chưa có thanh toán). Hạn tính tới hết ngày giờ Việt Nam; app hiển thị theo `premiumActive` / `planDaysLeft` do **server** tính.
+- **IP sau proxy**: trên Render (biến `RENDER` có sẵn) server tự tin 1 proxy; hạ tầng khác đặt `RESQ_TRUST_PROXY_HOPS=<số proxy>`. Sai số này thì mọi người dùng chung một "IP" → một người gõ sai mật khẩu khóa đăng nhập của cả hệ thống.
 
 ## Thử với 2 điện thoại
 
 1. Laptop chạy `npm start` ở `server/` và `npx expo start` ở `resq-mobile/`. Hai điện thoại cùng Wi-Fi với laptop.
 2. App **tự dò** địa chỉ server theo IP của laptop đang chạy Expo — màn đăng nhập hiện dòng "Server nội bộ: http://…".
    Nếu server chạy trên laptop khác, đặt `EXPO_PUBLIC_API_URL=http://<IP laptop đó>:8787` trong `resq-mobile/.env`.
-3. Máy A đăng nhập `cuuho@resq.vn` → bật **Sẵn sàng nhận đơn**.
-4. Máy B đăng nhập `khachhang@resq.vn` → **Gửi yêu cầu cứu hộ** → server giao cho tài xế → máy A **Nhận đơn & dẫn đường** → máy B thấy xe di chuyển.
+3. Máy A đăng nhập `gara@resq.vn` (vai Gara). Không cần bật gì: trong giờ làm việc đã đăng ký gara **tự nhận đơn**.
+4. Máy B đăng nhập `khachhang@resq.vn` → **Gửi yêu cầu cứu hộ** → server giao cho gara → máy A **Nhận đơn & dẫn đường** → máy B thấy xe di chuyển.
 
 Không kết nối được: kiểm tra tường lửa Windows cho phép Node.js trên mạng Private (cổng 8787), và Wi-Fi không bật "client isolation" (Wi-Fi khách / quán cà phê hay chặn các máy thấy nhau).
+
+## SOS khẩn cấp — tới thẳng tổng đài (`src/sosApi.ts`)
+
+Giữ nút SOS 3 giây (hoặc phát hiện va chạm mà người dùng không phản hồi 30 giây) → app xác định vị trí (chờ tối đa ~8 giây, **không bao giờ** chặn SOS vì thiếu GPS) → gửi **tín hiệu SOS tới tổng đài**. Đây KHÔNG phải đơn sửa xe gửi gara.
+
+- Trang admin có mục **🚨 SOS khẩn cấp** đứng đầu, banner đỏ + còi trên mọi trang khi có SOS chưa tiếp nhận (realtime qua WebSocket, dự phòng hỏi lại mỗi 15 giây).
+- Tổng đài: **Tiếp nhận** → gọi nạn nhân → **Báo 115** (kịch bản đọc sẵn: tên, SĐT, địa chỉ, tọa độ thập phân + độ-phút-giây, sai số, biển số) → **Báo người thân** (danh bạ chụp lúc phát SOS, tin nhắn soạn sẵn có link bản đồ) → **Điều cứu hộ** nếu cần kéo / sửa xe (tạo đơn gara ưu tiên SOS tại vị trí này) → **Đóng** kèm kết quả. Mọi bước ghi nhật ký; nạn nhân thấy từng bước trên app + có thông báo.
+- **Chưa có cổng SMS / kết nối 115**: tổng đài gọi / nhắn từ máy mình bằng nội dung soạn sẵn rồi đánh dấu. App không giả vờ "đã tự động gửi".
+- Gửi lại khi mất mạng không tạo SOS trùng (`clientRef`); mỗi người chỉ 1 SOS đang mở. Vị trí tự cập nhật khi di chuyển (hành trình lưu ở `sos_track`).
+
+| Route | Ai |
+|---|---|
+| `POST /api/sos`, `GET /api/sos/active`, `GET /api/sos/:id`, `POST /api/sos/:id/location`, `POST /api/sos/:id/cancel` | khách |
+| `GET /api/admin/sos[?status=all]`, `GET /api/admin/sos/:id`, `POST …/:id/ack`, `…/action` (`called_user` / `reported_115` / `notified_contact` / `note`), `…/dispatch`, `…/resolve` | admin |
+
+## Gara: tự nhận đơn theo giờ làm việc, tạm ngưng, chi nhánh, lịch sử
+
+- **Trực theo giờ đăng ký**: trong giờ mở cửa (giờ có cấu trúc) gara **tự nhận đơn** — không có công tắc phải nhớ bật. Ngoài giờ: không nhận. Gara chưa khai giờ (dữ liệu cũ): bật tay như trước.
+- **Tạm ngưng có hạn** (30 phút / 1 giờ / 2 giờ / hết hôm nay): hết hạn tự nhận lại. `POST /api/store/branches/:id/pause { until: phút | 'today' | null }`.
+- **Chi nhánh**: chủ gara thêm cửa hàng khác (`/api/store/branches`), mỗi chi nhánh có địa chỉ / giờ / dịch vụ / ảnh riêng, **chờ tổng đài duyệt** như gara mới. Chủ gara nhận đơn thay chi nhánh chưa có nhân viên. Tối đa 10 cửa hàng / chủ.
+- **Lịch sử sửa chữa** `GET /api/store/history`: đơn của mọi chi nhánh — khách nào, biển số, lỗi, thời gian, đánh giá. SĐT khách của đơn đã xong chỉ hiện 3 số cuối.
 
 ## Gara đối tác và điều phối
 
 **Cửa hàng (gara) là đơn vị được điều phối, không phải điện thoại.** GPS của nhân viên chỉ trả lời câu hỏi "gara này có ai đang trực không". Khoảng cách và ETA luôn tính từ **tọa độ đã xác minh của gara**.
 
-1. **Đủ điều kiện**: gara đã được duyệt, đang mở cửa (giờ có cấu trúc), có dịch vụ đúng sự cố, còn nhân viên trực rảnh.
+1. **Đủ điều kiện**: gara đã được duyệt, đang trong giờ làm việc và không tạm ngưng, có dịch vụ đúng sự cố, còn người nhận đơn rảnh (nhân viên hoặc chủ gara).
 2. **Xếp hạng**: ETA từ gara tới khách, chia chặng nội đô / ngoại thành / quốc lộ.
 3. **Cam kết**: ETA > 45 phút hoặc xa > 40 km thì **không tự giao**. Đơn được giữ lại kèm lý do cho khách và tổng đài cùng thấy, ví dụ "Gara gần nhất còn 97 km — ~2 giờ 40 phút, ngoài vùng phủ". Tổng đài muốn giao vẫn được nhưng phải nhập lý do (ghi nhật ký `override`). Không có bán kính cứng.
 4. **Gara khách chọn**: nếu là đối tác thì chỉ giao đúng gara đó. Gara không nhận được thì đơn bị giữ, khách thấy đề xuất gara khác kèm ETA và tự bấm đồng ý. Không bao giờ âm thầm đổi gara. Gara chưa là đối tác thì app báo trước khi khách gửi.
@@ -107,6 +138,33 @@ Server lên Internet chưa đủ: khi dev, điện thoại tải **mã JS của 
 
 - Xóa sạch để làm lại từ đầu: tắt server, xóa thư mục `server/data/`.
 - Hành trình xe (track_points) tự xóa sau 30 ngày. Phiên đăng nhập giữ 30 ngày, không mất khi khởi động lại server.
+
+## Dữ liệu tài khoản (`src/accountApi.ts`)
+
+Mọi route cần đăng nhập, chỉ đọc / ghi dữ liệu của chính người gọi; ID của người khác trả **404**.
+
+| Route | Ghi chú |
+|---|---|
+| `PATCH /api/me` | `{ name?, phone?, avatarUrl? }` — không đổi được email (400 `email_change_unsupported`) |
+| `GET/POST /api/vehicles`, `PATCH/DELETE /api/vehicles/:id` | tối đa 10 xe; trùng biển 409 `plate_taken`; luôn đúng 1 xe mặc định, `users.vehicle_plate` = biển xe mặc định |
+| `GET/POST /api/emergency-contacts`, `PATCH/DELETE …/:id` | tối đa 5; trùng số 409 `phone_taken` |
+| `GET/POST /api/saved-places`, `PATCH/DELETE …/:id` | tối đa 50; `type` = `home` / `work` / `other`; vĩ độ + kinh độ đi theo cặp |
+
+Trùng biển số so theo **chữ + số** (`51G-123.45`, `51G12345`, `51g 123 45` là cùng một xe). 404 dùng mã riêng `vehicle_not_found` / `contact_not_found` / `place_not_found` — mã `not_found` dành cho "server chưa có route này".
+
+Biển số cũ (`users.vehicle_plate`) tự thành 1 xe mặc định khi khởi động / khi gọi `GET /api/vehicles` (chạy lại không nhân đôi). Xóa tài khoản → xe, danh bạ, địa điểm bị xóa theo.
+
+## Trang chủ app và thông báo
+
+| Route | Ghi chú |
+|---|---|
+| `GET /api/home/content` | giá xăng + khuyến mãi tổng đài nhập; chưa nhập → `{ gas: null, promos: [] }` (app ẩn khối) |
+| `GET/PUT /api/admin/home-content` | admin; tối đa 4 dòng giá, 5 khuyến mãi; link chỉ `https://` |
+| `GET /api/notifications` | thông báo sinh từ nhật ký đơn (30 ngày), theo **vai đang dùng**; việc chính mình làm không thông báo lại |
+| `POST /api/notifications/seen` | `{ upTo }` = thời điểm thông báo mới nhất app đã hiển thị; mốc chỉ tiến |
+
+- Giá xăng cũ hơn **8 ngày** (giá VN điều chỉnh theo kỳ 7 ngày) → app không hiện khối giá. Lưu lại khuyến mãi **không** làm mới mốc cập nhật giá.
+- Sửa ở Admin → **Trang chủ app**.
 
 ## Kiểm thử
 

@@ -133,12 +133,17 @@ export const ReSosPlansScreen: React.FC = () => {
         {/* Primary CTA */}
         <Pressable
           onPress={() => {
+            // chưa có thanh toán → KHÔNG báo "đăng ký thành công" (bản trước báo thành công dù không có gì xảy ra)
             const p = SUBSCRIPTION_PLANS.find((x) => x.id === selectedPlan);
-            Alert.alert('Đăng ký thành công', `Bạn đã chọn ${p?.name} (${isYearly ? 'Theo năm' : 'Theo tháng'}).`);
+            Alert.alert(
+              'Sắp ra mắt',
+              `Đăng ký ${p?.name ?? 'gói'} sẽ mở khi ResQ có thanh toán trong ứng dụng. Hiện tại bạn vẫn gửi yêu cầu cứu hộ và SOS bình thường — chi phí sửa chữa / kéo xe thỏa thuận trực tiếp với gara.`,
+            );
           }}
+          accessibilityHint="Thanh toán gói chưa mở"
           style={[styles.primaryCta, { backgroundColor: colors.sos }]}
         >
-          <Text style={styles.primaryCtaText}>Đăng ký gói đã chọn</Text>
+          <Text style={styles.primaryCtaText}>Đăng ký gói · Sắp ra mắt</Text>
         </Pressable>
 
         {/* Trải nghiệm giữ SOS 3 giây */}
@@ -165,7 +170,7 @@ export const ReSosPlansScreen: React.FC = () => {
         >
           <Ionicons name="alert-circle" size={20} color={colors.amber} />
           <Text style={[styles.secondaryCtaText, { color: colors.textPrimary }]}>
-            Mô phỏng Phát hiện va chạm (30 giây)
+            Quy trình va chạm · tự gửi SOS sau 30 giây
           </Text>
         </Pressable>
       </ScrollView>

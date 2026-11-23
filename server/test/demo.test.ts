@@ -84,12 +84,13 @@ function setup() {
   return { store, svc, cust, mk, order, advance: (ms: number) => { t += ms; } };
 }
 
-test('đủ điều kiện: gara đóng cửa / thiếu dịch vụ / không ai trực bị loại — có lý do; km tính từ GARA', () => {
+test('đủ điều kiện: gara đóng cửa / thiếu dịch vụ / tạm ngưng bị loại — có lý do; km tính từ GARA', () => {
   const { store, mk, order } = setup();
   mk('a@x.vn', 'Đóng cửa', north(500), { week: CLOSED });
   mk('b@x.vn', 'Không làm lốp', north(700), { services: ['battery'] });
-  const c = mk('c2@x.vn', 'Không ai trực', north(900));
-  store.setAvailability(c.id, false);
+  mk('c2@x.vn', 'Không ai trực', north(900));
+  // trực THEO GIỜ ĐĂNG KÝ: "không nhận đơn" giờ là gara tự TẠM NGƯNG (trước đây: nhân viên tắt công tắc)
+  store.setStorePause('Không ai trực', store.now() + 3600_000);
   mk('d@x.vn', 'Gara đúng', north(4000));
   const o = order();
   assert.equal(o.store?.name, 'Gara đúng');
@@ -98,7 +99,7 @@ test('đủ điều kiện: gara đóng cửa / thiếu dịch vụ / không ai 
   const why = Object.fromEntries(opts.map(x => [x.storeId, x.problems.join(',')]));
   assert.match(why['Đóng cửa'], /đóng cửa/);
   assert.match(why['Không làm lốp'], /lốp/);
-  assert.match(why['Không ai trực'], /trực/);
+  assert.match(why['Không ai trực'], /tạm ngưng/);
 });
 
 test('cam kết ETA: gara gần nhất 187 km → KHÔNG tự giao, giữ đơn + lý do; tổng đài override phải ghi lý do', () => {
@@ -127,7 +128,8 @@ test('gara KHÁCH CHỌN: chỉ giao đúng gara đó; không nhận được �
   const { store: st2, svc: svc2, cust: c2, mk: mk2, order: order2 } = setup();
   const off = mk2('x@x.vn', 'Gara khách chọn', north(3000));
   mk2('y@x.vn', 'Gara gần hơn', north(800));
-  st2.setAvailability(off.id, false);
+  st2.setStorePause('Gara khách chọn', st2.now() + 3600_000);
+  assert.ok(off);
   const o2 = order2({ requestedStoreId: 'Gara khách chọn' });
   assert.equal(o2.status, 'requested', 'không âm thầm giao gara khác');
   assert.equal(o2.hold?.code, 'requested_unavailable');

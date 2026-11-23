@@ -163,7 +163,7 @@ export const OrderTrackingScreen: React.FC<Props> = ({ navigation, route }) => {
             <Ionicons name="warning" size={24} color="#FFFFFF" style={styles.proxIcon} />
             <View style={{ flex: 1 }}>
               <Text style={styles.proxTitle}>Xe cứu hộ đang đến gần hiện trường · {formatDistanceVi(distToCustomer)}</Text>
-              <Text style={styles.proxBody}>Vui lòng bật đèn cảnh báo sự cố và đứng ở vị trí an toàn để tài xế nhận ra bạn.</Text>
+              <Text style={styles.proxBody}>Vui lòng bật đèn cảnh báo sự cố và đứng ở vị trí an toàn để nhân viên gara nhận ra bạn.</Text>
             </View>
           </View>
         ) : null}
@@ -205,10 +205,10 @@ export const OrderTrackingScreen: React.FC<Props> = ({ navigation, route }) => {
               </View>
               {order.staff.phone ? (
                 <>
-                  <Pressable accessibilityLabel="Gọi tài xế" onPress={() => { void Linking.openURL(`tel:${order.staff!.phone}`); }} style={[styles.iconBtn, { backgroundColor: '#059669' }]}>
+                  <Pressable accessibilityLabel="Gọi nhân viên gara" onPress={() => { void Linking.openURL(`tel:${order.staff!.phone}`); }} style={[styles.iconBtn, { backgroundColor: '#059669' }]}>
                     <Ionicons name="call" size={20} color="#FFFFFF" />
                   </Pressable>
-                  <Pressable accessibilityLabel="Nhắn tin tài xế" onPress={() => { void Linking.openURL(`sms:${order.staff!.phone}`); }} style={[styles.iconBtn, { backgroundColor: colors.bgSubtle }]}>
+                  <Pressable accessibilityLabel="Nhắn tin nhân viên gara" onPress={() => { void Linking.openURL(`sms:${order.staff!.phone}`); }} style={[styles.iconBtn, { backgroundColor: colors.bgSubtle }]}>
                     <Ionicons name="chatbubble-ellipses" size={20} color={colors.textPrimary} />
                   </Pressable>
                 </>
@@ -315,9 +315,9 @@ const WaitingCard = memo(function WaitingCard({ order, onOrder }: { order: Order
 const SignalBadge = memo(function SignalBadge({ snap, status, now }: { snap: TelemetrySnapshot | null; status: OrderStatus; now: number }) {
   let label: string;
   let color: string;
-  if (status === 'requested' || status === 'assigned') { label = 'Chờ tài xế nhận đơn'; color = '#94A3B8'; }
+  if (status === 'requested' || status === 'assigned') { label = 'Chờ gara nhận đơn'; color = '#94A3B8'; }
   else if (!snap) { label = 'Chờ tín hiệu GPS của xe…'; color = '#94A3B8'; }
-  else if (snap.released) { label = 'Tài xế đã dừng chia sẻ vị trí'; color = '#94A3B8'; }
+  else if (snap.released) { label = 'Gara đã dừng chia sẻ vị trí'; color = '#94A3B8'; }
   else {
     const ageS = Math.max(0, Math.round((now - snap.receivedAt) / 1000));
     if (ageS * 1000 > rescueTelemetry.config.staleAfterMs) { label = `Mất tín hiệu GPS xe · ${ageS}s`; color = '#EF4444'; }
@@ -344,7 +344,7 @@ const RateCard: React.FC<{ order: Order; onRated: (o: Order) => void }> = ({ ord
     <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle, alignItems: 'center' }]}>
       <Ionicons name="checkmark-circle" size={40} color={colors.green} />
       <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Cứu hộ hoàn tất</Text>
-      <Text style={{ color: colors.textSecondary, fontFamily: FONTS.regular }}>{order.rating ? 'Cảm ơn bạn đã đánh giá!' : 'Bạn đánh giá tài xế thế nào?'}</Text>
+      <Text style={{ color: colors.textSecondary, fontFamily: FONTS.regular }}>{order.rating ? 'Cảm ơn bạn đã đánh giá!' : 'Bạn đánh giá gara thế nào?'}</Text>
       <View style={{ flexDirection: 'row', gap: 6 }}>
         {[1, 2, 3, 4, 5].map(n => (
           <Pressable key={n} disabled={busy || !!order.rating} onPress={() => rate(n)} accessibilityLabel={`${n} sao`} hitSlop={6}>

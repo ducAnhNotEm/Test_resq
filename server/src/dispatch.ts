@@ -1,7 +1,10 @@
 // dispatch.ts: điều phối theo CỬA HÀNG (gara ReFix), không theo điện thoại.
 //
-//   1. ĐỦ ĐIỀU KIỆN phục vụ: gara đã duyệt, đang mở (giờ có cấu trúc), có dịch vụ đúng sự cố, còn nhân viên trực rảnh.
-//      Presence (GPS nhân viên) CHỈ trả lời "gara này có ai trực không" — KHÔNG tham gia tính km.
+//   1. ĐỦ ĐIỀU KIỆN phục vụ: gara đã duyệt, đang mở (giờ có cấu trúc), có dịch vụ đúng sự cố, còn người nhận đơn rảnh.
+//      TRỰC THEO GIỜ LÀM VIỆC: trong giờ mở cửa đã đăng ký, gara TỰ ĐỘNG nhận đơn — không ai phải nhớ bật công tắc.
+//      Ngoại lệ có hạn: gara "Tạm ngưng nhận đơn" tới một mốc (paused_until), hết mốc tự nhận lại.
+//      Gara CHƯA khai giờ có cấu trúc (dữ liệu cũ): dùng cách cũ — nhân viên bật "Nhận đơn" (presence còn mới).
+//      GPS nhân viên KHÔNG tham gia tính km (luôn tính từ tọa độ đã xác minh của gara).
 //   2. XẾP HẠNG: ETA từ TỌA ĐỘ ĐÃ XÁC MINH của gara tới khách (estimateEtaMin chia chặng nội đô / ngoại thành / quốc lộ).
 //   3. CAM KẾT: ETA > 45 phút hoặc xa > 40 km → KHÔNG tự giao. Giữ đơn + nói rõ lý do ("Gara gần nhất còn 187 km —
 //      ~4 giờ 10 phút, ngoài vùng phủ"); tổng đài override thì ghi log. Không có bán kính cứng: khách ở đâu cũng
@@ -11,7 +14,8 @@
 import type { LngLat } from './protocol.ts';
 import { haversine } from './protocol.ts';
 import { estimateEtaMin, openState } from './places.ts';
-import { parseWeek, type DispatchHold, type Order, type Store, type StoreRow } from './db.ts';
+import { parseWeek, type DispatchHold, type Order, type Store, type StoreRow, type UserRow } from './db.ts';
+import type { Presence } from './protocol.ts';
 
 export const DISPATCH_POLICY = {
   maxAutoEtaMin: 45,
@@ -19,6 +23,30 @@ export const DISPATCH_POLICY = {
   presenceFreshMs: 5 * 60_000,
 };
 export type DispatchPolicy = typeof DISPATCH_POLICY;
+
+export interface Duty {
+  /** Người nhận đơn của gara (nhân viên + chủ), người đang mở app (presence mới) xếp trước. */
+  members: UserRow[];
+  /** Đang trong ca: theo giờ đăng ký (schedule) hoặc theo công tắc cũ (manual — gara chưa khai giờ). */
+  mode: 'schedule' | 'manual' | 'paused' | 'closed';
+  onDutyIds: number[];
+  open: 'open' | 'closing-soon' | 'closed' | 'unknown';
+  pausedUntil: number | null;
+}
+
+/** Ai đang trực ở gara này, lúc `now`. Dùng CHUNG cho điều phối, hồ sơ gara trong app và trang admin. */
+export function dutyOf(store: Store, s: StoreRow, now: number, presences: Map<number, Presence> = new Map(store.presences().map(p => [p.userId, p])), policy: DispatchPolicy = DISPATCH_POLICY): Duty {
+  const open = openState(parseWeek(s.hours_json), now).state;
+  const fresh = (id: number) => { const p = presences.get(id); return !!p && now - p.updatedAt <= policy.presenceFreshMs ? p : null; };
+  const members = store.storeMembers(s).sort((a, b) => (fresh(b.id)?.updatedAt ?? 0) - (fresh(a.id)?.updatedAt ?? 0) || a.id - b.id);
+  const pausedUntil = s.paused_until != null && s.paused_until > now ? s.paused_until : null;
+  if (pausedUntil) return { members, mode: 'paused', onDutyIds: [], open, pausedUntil };
+  if (open === 'closed') return { members, mode: 'closed', onDutyIds: [], open, pausedUntil };
+  if (open === 'unknown') {
+    return { members, mode: 'manual', onDutyIds: members.filter(u => fresh(u.id)?.available).map(u => u.id), open, pausedUntil };
+  }
+  return { members, mode: 'schedule', onDutyIds: members.map(u => u.id), open, pausedUntil };
+}
 
 /** Dịch vụ bắt buộc theo sự cố (null: gara sửa chữa nào cũng nhận). */
 const NEED: Record<string, string | null> = { tire: 'tire', battery: 'battery', tow: 'tow', accident: 'tow' };
@@ -59,18 +87,19 @@ export function storeOptions(
     const pos: LngLat = [s.lng, s.lat];
     const distanceM = Math.round(haversine(pos, at));
     const etaMin = estimateEtaMin(distanceM, now);
-    const open = openState(parseWeek(s.hours_json), now).state;
+    const duty = dutyOf(store, s, now, presences, policy);
+    const open = duty.open;
     const services = safeList(s.services);
     const serviceOk = !need || services.includes(need) || (services.length === 0 && need !== 'tow');
-    const free = store.storeStaff(s.id).filter(u => {
-      const p = presences.get(u.id);
-      return !!p && p.available && now - p.updatedAt <= policy.presenceFreshMs && !busy.has(u.id)
-        && (opts.includeDeclined || !order.declinedBy.includes(u.id));
-    }).sort((a, b) => (presences.get(b.id)!.updatedAt - presences.get(a.id)!.updatedAt));
+    const onDuty = new Set(duty.onDutyIds);
+    const free = duty.members.filter(u => onDuty.has(u.id) && !busy.has(u.id) && (opts.includeDeclined || !order.declinedBy.includes(u.id)));
     const problems: string[] = [];
     if (open === 'closed') problems.push('Đang đóng cửa');
+    if (duty.mode === 'paused') problems.push('Gara đang tạm ngưng nhận đơn');
     if (!serviceOk) problems.push(`Không có dịch vụ ${NEED_LABEL[need!] ?? need}`);
-    if (!free.length) problems.push('Không có nhân viên đang trực');
+    if (!duty.members.length) problems.push('Gara chưa có tài khoản nhận đơn');
+    else if (duty.mode === 'manual' && !duty.onDutyIds.length) problems.push('Chưa khai giờ mở cửa và không có ai bật nhận đơn');
+    else if ((duty.mode === 'schedule' || duty.mode === 'manual') && !free.length) problems.push('Người nhận đơn của gara đang bận');
     out.push({
       storeId: s.id, name: s.name, address: s.address, pos, distanceM, etaMin, open, serviceOk,
       onDuty: free.length, staffId: free[0]?.id ?? null, eligible: problems.length === 0,
@@ -130,7 +159,7 @@ export function decide(options: StoreOption[], order: Order, storeName: (id: str
 
 /** Chỉ số cho tổng đài: gara này có cần lý do override không. */
 export function overrideNeeded(o: StoreOption, order: Order): string | null {
-  if (!o.staffId) return 'Gara không có nhân viên đang trực — không giao được';
+  if (!o.staffId) return 'Gara không có người nhận đơn rảnh — không giao được';
   if (!o.eligible) return o.problems.join(', ');
   if (!o.withinCommitment) return `Ngoài cam kết ETA (${fmtKm(o.distanceM)}, ~${fmtMin(o.etaMin)})`;
   if (order.requestedStore && order.requestedStore.id !== o.storeId) return `Khách đã chọn ${order.requestedStore.name}`;

@@ -1,5 +1,6 @@
 // api.ts: client REST tới server ResQ. Token Bearer, timeout, lỗi tiếng Việt có mã để UI xử lý.
 import { CONFIG_HELP, getApiUrl } from '../config';
+import { loginBody } from '../features/auth/validation';
 
 export class ApiError extends Error {
   status: number;
@@ -62,7 +63,94 @@ export interface User {
   roles?: Role[];
   accountRole?: string;
   store?: StoreProfile | null;
+  /** Ảnh đại diện https ('' / không có = hiện chữ cái đầu). Server cũ: không có. */
+  avatarUrl?: string;
+  /** Tên đăng nhập (gara bắt buộc, khách tùy chọn). Server cũ: không có. */
+  username?: string | null;
+  plan?: 'free' | 'premium';
+  planExpiresAt?: number | null;
+  /** Premium còn hiệu lực — server tính bằng giờ SERVER (không dùng đồng hồ điện thoại). */
+  premiumActive?: boolean;
+  planDaysLeft?: number | null;
 }
+
+/** Đăng ký khách (không OTP). Server tự đặt vai = khách, gói = free. */
+export interface CustomerForm { name: string; email: string; password: string; phone?: string }
+
+// ---- dữ liệu tài khoản (server/src/accountApi.ts) ----
+export interface Vehicle { id: string; name: string; plate: string; vin: string | null; color: string | null; isDefault: boolean; createdAt: number; updatedAt: number }
+export interface EmergencyContactDto { id: string; name: string; phone: string; relation: string; shareLocation: boolean; createdAt: number; updatedAt: number }
+export type SavedPlaceType = 'home' | 'work' | 'other';
+export interface SavedPlace { id: string; type: SavedPlaceType; title: string; address: string; latitude: number | null; longitude: number | null; createdAt: number; updatedAt: number }
+
+export type VehicleInput = { name: string; plate: string; vin?: string | null; color?: string | null; isDefault?: boolean };
+export type ContactInput = { name: string; phone: string; relation?: string; shareLocation?: boolean };
+export type SavedPlaceInput = { type?: SavedPlaceType; title: string; address: string; latitude?: number | null; longitude?: number | null };
+
+const enc = encodeURIComponent;
+export const accountApi = {
+  /** Sửa hồ sơ (không đổi được email đăng nhập). Trả về cùng dạng GET /api/me. */
+  updateMe: (p: Partial<{ name: string; phone: string; avatarUrl: string | null }>) => api<User>('PATCH', '/api/me', p),
+
+  vehicles: () => api<Vehicle[]>('GET', '/api/vehicles'),
+  addVehicle: (v: VehicleInput) => api<Vehicle>('POST', '/api/vehicles', v),
+  updateVehicle: (id: string, v: Partial<VehicleInput>) => api<Vehicle>('PATCH', `/api/vehicles/${enc(id)}`, v),
+  removeVehicle: (id: string) => api<{ ok: true }>('DELETE', `/api/vehicles/${enc(id)}`),
+
+  contacts: () => api<EmergencyContactDto[]>('GET', '/api/emergency-contacts'),
+  addContact: (c: ContactInput) => api<EmergencyContactDto>('POST', '/api/emergency-contacts', c),
+  updateContact: (id: string, c: Partial<ContactInput>) => api<EmergencyContactDto>('PATCH', `/api/emergency-contacts/${enc(id)}`, c),
+  removeContact: (id: string) => api<{ ok: true }>('DELETE', `/api/emergency-contacts/${enc(id)}`),
+
+  places: () => api<SavedPlace[]>('GET', '/api/saved-places'),
+  addPlace: (p: SavedPlaceInput) => api<SavedPlace>('POST', '/api/saved-places', p),
+  updatePlace: (id: string, p: Partial<SavedPlaceInput>) => api<SavedPlace>('PATCH', `/api/saved-places/${enc(id)}`, p),
+  removePlace: (id: string) => api<{ ok: true }>('DELETE', `/api/saved-places/${enc(id)}`),
+};
+
+// ---- Trang chủ (server/src/homeApi.ts): do tổng đài nhập, không có → app ẩn khối ----
+export interface GasItem { label: string; price: number; unit: string }
+export interface HomePromo { id: string; title: string; body: string; ctaLabel: string | null; ctaUrl: string | null }
+export interface HomeContent { gas: { updatedAt: number; items: GasItem[] } | null; promos: HomePromo[] }
+export const homeApi = {
+  content: () => api<HomeContent>('GET', '/api/home/content'),
+};
+
+// ---- thông báo (server/src/notificationApi.ts): sinh từ nhật ký đơn thật ----
+export type NotificationKind = 'dispatch' | 'progress' | 'done' | 'cancelled' | 'searching' | 'rating' | 'store' | 'sos';
+export interface AppNotification { id: string; kind: NotificationKind; title: string; body: string; orderId: string | null; at: number; read: boolean; sosId?: string | null }
+export const notificationApi = {
+  list: (limit = 30) => api<{ items: AppNotification[]; unread: number }>('GET', `/api/notifications?limit=${limit}`),
+  /** Đánh dấu đã xem tới mốc `upTo` (thời điểm thông báo mới nhất ĐÃ HIỂN THỊ), không phải "bây giờ". */
+  seen: (upTo: number) => api<{ ok: true; seenAt: number }>('POST', '/api/notifications/seen', { upTo }),
+};
+
+// ---- SOS (server/src/sosApi.ts): tới THẲNG tổng đài, không phải đơn gara ----
+export type SosStatus = 'open' | 'acknowledged' | 'resolved' | 'cancelled';
+export interface SosAlert {
+  id: string; status: SosStatus; source: 'hold' | 'crash' | 'manual';
+  location: { lat: number; lng: number; accuracyM: number | null; at: number | null } | null;
+  address: string; createdAt: number; acknowledgedAt: number | null; resolvedAt: number | null; cancelledAt: number | null;
+  resolution: string; rescueOrderId: string | null;
+  /** Các bước tổng đài đã làm (thật, có thời điểm). */
+  steps: Array<{ type: string; at: number; label: string }>;
+  created?: boolean;
+}
+export const sosApi = {
+  /** Phát SOS. `clientRef` cố định cho 1 lần bấm → gửi lại khi mất mạng không tạo SOS trùng. Vị trí có thể chưa có. */
+  create: (b: { clientRef: string; source: 'hold' | 'crash'; lat?: number; lng?: number; accuracyM?: number | null; address?: string }) =>
+    api<SosAlert>('POST', '/api/sos', b, 15_000),
+  get: (id: string) => api<SosAlert>('GET', `/api/sos/${encodeURIComponent(id)}`),
+  active: () => api<SosAlert | null>('GET', '/api/sos/active'),
+  location: (id: string, b: { lat: number; lng: number; accuracyM: number | null; address?: string }) =>
+    api<SosAlert>('POST', `/api/sos/${encodeURIComponent(id)}/location`, b),
+  cancel: (id: string) => api<SosAlert>('POST', `/api/sos/${encodeURIComponent(id)}/cancel`, { reason: 'Người dùng báo đã an toàn' }),
+};
+
+/** Đơn của chính mình (khách: đơn đã đặt), mới nhất trước. */
+export const historyApi = {
+  mine: (limit = 50) => api<{ items: Order[]; total: number }>('GET', `/api/orders/mine?limit=${limit}`),
+};
 
 // ---- gara ReFix (đối tác) ----
 export type StoreService = 'repair' | 'tire' | 'battery' | 'tow' | 'diagnostics';
@@ -79,9 +167,23 @@ export interface StoreProfile {
   /** Địa chỉ vừa sửa, CHỜ tổng đài xác minh (điều phối vẫn dùng địa chỉ cũ). */
   pending?: { address: string; pos: [number, number]; at: number } | null;
   verifiedBy?: string | null; staffCount?: number; onDuty?: number; isOwner?: boolean; demoMode?: boolean;
+  /** schedule: trong giờ đăng ký — tự nhận đơn · paused: tạm ngưng · closed: ngoài giờ · manual: chưa khai giờ (bật tay). */
+  dutyMode?: DutyMode;
+  openState?: 'open' | 'closing-soon' | 'closed' | 'unknown';
+  /** Tạm ngưng nhận đơn tới mốc này (null = đang nhận theo giờ). */
+  pausedUntil?: number | null;
+  /** Chi nhánh: id cửa hàng chính. */
+  parentStoreId?: string | null;
+  isMain?: boolean;
 }
+export type DutyMode = 'schedule' | 'paused' | 'closed' | 'manual';
+export type BranchInput = { storeName: string; phone: string; address: string; lat: number; lng: number; services: StoreService[]; week: WeekHours };
+/** Đơn trong lịch sử sửa chữa của gara (SĐT khách đã che khi đơn xong). */
+export type StoreHistory = { items: Order[]; total: number };
 export interface GarageForm {
   storeName: string; ownerName: string; email: string; password: string; phone: string;
+  /** Tên đăng nhập (chữ thường). Server mới bắt buộc khi có trường này; server cũ bỏ qua. */
+  username: string;
   address: string; lat: number; lng: number; services: StoreService[]; week: WeekHours;
   images: Array<{ data: string }>;
 }
@@ -132,7 +234,7 @@ export const isActiveStatus = (s: OrderStatus) => s !== 'completed' && s !== 'ca
 
 export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
   requested: 'Đang tìm xe cứu hộ',
-  assigned: 'Đã tìm thấy xe, chờ tài xế xác nhận',
+  assigned: 'Đã tìm thấy gara, chờ gara xác nhận',
   enroute: 'Xe cứu hộ đang đến',
   arrived: 'Xe cứu hộ đã tới',
   in_service: 'Đang hỗ trợ',
@@ -259,7 +361,10 @@ export const configApi = {
 
 type Session = { token: string; user: User };
 export const authApi = {
-  login: (email: string, password: string, as?: Role) => api<Session>('POST', '/api/auth/login', { email, password, as }, 60_000),
+  /** Email HOẶC tên tài khoản. 60 s: server trên Render free có thể đang thức dậy. */
+  login: (identifier: string, password: string, as?: Role) => api<Session>('POST', '/api/auth/login', loginBody(identifier, password, as), 60_000),
+  /** Khách tự đăng ký → có phiên ngay (vào thẳng Trang chủ). */
+  registerCustomer: (f: CustomerForm) => api<Session>('POST', '/api/auth/register-customer', f, 60_000),
   /** Đổi vai trên cùng tài khoản (không cần mật khẩu). */
   switchRole: (as: Role) => api<Session>('POST', '/api/auth/switch', { as }),
   /** Đăng ký gara: tạo tài khoản + cửa hàng (+ ảnh). Ảnh base64 → cho thời gian dài hơn. */
@@ -268,6 +373,19 @@ export const authApi = {
 
 export const storeApi = {
   me: () => api<StoreProfile>('GET', '/api/store/me'),
+  /** Cửa hàng chính + chi nhánh của chủ gara. */
+  branches: () => api<StoreProfile[]>('GET', '/api/store/branches'),
+  addBranch: (b: BranchInput) => api<StoreProfile & { autoApproved: boolean }>('POST', '/api/store/branches', b),
+  updateBranch: (id: string, p: Partial<{ storeName: string; phone: string; services: StoreService[]; week: WeekHours; address: string; lat: number; lng: number }>) =>
+    api<StoreProfile & { addressPending?: boolean }>('PATCH', `/api/store/branches/${encodeURIComponent(id)}`, p),
+  addBranchImage: (id: string, data: string) => api<StoreProfile>('POST', `/api/store/branches/${encodeURIComponent(id)}/images`, { data }, 60_000),
+  removeBranchImage: (id: string, idx: number) => api<StoreProfile>('DELETE', `/api/store/branches/${encodeURIComponent(id)}/images/${idx}`),
+  /** Tạm ngưng nhận đơn: số phút, 'today' (hết hôm nay) hoặc null (nhận lại ngay). */
+  pause: (id: string, until: number | 'today' | null) => api<StoreProfile>('POST', `/api/store/branches/${encodeURIComponent(id)}/pause`, { until }),
+  history: (p: { limit?: number; offset?: number; q?: string; storeId?: string } = {}) => {
+    const qs = new URLSearchParams(Object.entries(p).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
+    return api<StoreHistory>('GET', `/api/store/history${qs.toString() ? `?${qs}` : ''}`);
+  },
   update: (p: Partial<{ storeName: string; phone: string; email: string; services: StoreService[]; week: WeekHours; address: string; lat: number; lng: number }>) =>
     api<StoreProfile & { addressPending?: boolean }>('PATCH', '/api/store/me', p),
   addImage: (data: string) => api<StoreProfile>('POST', '/api/store/me/images', { data }, 60_000),

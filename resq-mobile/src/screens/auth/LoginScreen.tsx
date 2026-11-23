@@ -23,11 +23,10 @@ import { ServerSettingsModal } from '../../components/ServerSettingsModal';
 const SAMPLE_ACCOUNTS = [
   { label: 'Khách hàng', email: 'khachhang@resq.vn', icon: 'person-circle' as const, as: 'customer' as const },
   { label: 'Gara mẫu', email: 'gara@resq.vn', icon: 'storefront' as const, as: 'staff' as const },
-  { label: 'Tài xế cứu hộ', email: 'cuuho@resq.vn', icon: 'car-sport' as const, as: 'staff' as const },
 ];
 const ROLE_OPTIONS = [
   { k: 'customer' as const, label: 'Khách hàng', icon: 'person' as const },
-  { k: 'staff' as const, label: 'Nhân viên gara', icon: 'construct' as const },
+  { k: 'staff' as const, label: 'Gara', icon: 'storefront' as const },
 ];
 import { RootStackParamList } from '../../types';
 
@@ -46,6 +45,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
     probeServer(serverUrl, 75_000).then(r => { if (!cancelled) setWake(r.ok ? 'ok' : 'fail'); });
     return () => { cancelled = true; };
   }, [serverUrl]);
+  // email HOẶC tên tài khoản (gara đăng ký có tên tài khoản riêng)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -57,13 +57,13 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      setError('Vui lòng nhập đầy đủ Email và Mật khẩu.');
+      setError('Vui lòng nhập email (hoặc tài khoản) và mật khẩu.');
       return;
     }
     setBusy(true);
     setError(null);
     try {
-      await login(email, password, as);       // AppNavigator tự chuyển sang giao diện đúng vai trò
+      await login(email.trim(), password, as);       // AppNavigator tự chuyển sang giao diện đúng vai trò
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -72,14 +72,8 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
   };
 
   return (
-    <AuthHeroLayout>
+    <AuthHeroLayout title="Đăng nhập" subtitle="Cứu hộ 24/7 — gara đối tác gần bạn nhất">
       <View style={styles.container}>
-        <View style={styles.registerRow}>
-          <Text style={styles.registerPrompt}>Bạn có gara / tiệm sửa xe? </Text>
-          <Pressable onPress={() => navigation.navigate('GarageRegister')} style={styles.registerBtn} accessibilityRole="button">
-            <Text style={styles.registerAction}>Đăng ký gara đối tác</Text>
-          </Pressable>
-        </View>
 
         {/* vai trò trên MÁY NÀY — cùng 1 tài khoản gara: máy khách + máy nhân viên */}
         <View>
@@ -98,17 +92,21 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
         <View style={styles.formGroup}>
           <View style={styles.inputRow}>
             <View style={styles.iconCircle}>
-              <Ionicons name="mail" size={19} color="#5B050D" />
+              <Ionicons name="person" size={19} color="#5B050D" />
             </View>
             <View style={styles.pillInputBox}>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Email"
+                placeholder="Email hoặc tài khoản"
                 placeholderTextColor={AUTH_PALETTE.textPlaceholder}
                 style={styles.inputText}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="username"
+                textContentType="username"
+                accessibilityLabel="Email hoặc tài khoản"
               />
             </View>
           </View>
@@ -180,6 +178,14 @@ export const LoginScreen: React.FC<Props> = ({ navigation, route }) => {
               style={({ pressed }) => [styles.qrPart, pressed && styles.partPressed]}
             >
               <Ionicons name="qr-code-outline" size={24} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          {/* đăng ký: 1 lối vào chung, chọn loại tài khoản ở màn sau (không 2 luồng trùng nhau gây rối) */}
+          <View style={styles.registerRow}>
+            <Text style={styles.registerPrompt}>Chưa có tài khoản? </Text>
+            <Pressable onPress={() => navigation.navigate('Register')} style={styles.registerBtn} accessibilityRole="button" hitSlop={6}>
+              <Text style={styles.registerAction}>Đăng ký</Text>
             </Pressable>
           </View>
 

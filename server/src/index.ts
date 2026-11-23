@@ -39,6 +39,9 @@ const store = new Store(dbPathOf(env));
 // Gói free của Render xóa DB mỗi lần khởi động lại → tài khoản được tạo lại với đúng mật khẩu này.
 // Lưu ý: mật khẩu mặc định ghi công khai trong README — chỉ dùng cho dữ liệu thử nghiệm.
 store.seedIfEmpty(env.RESQ_SEED_PASSWORD || DEFAULT_SEED_PASSWORD);
+// hệ thống chỉ còn tài khoản GARA (không còn "nhân viên cứu hộ" mẫu): khóa cuuho@, cuuho2@ cũ — 1 lần, giữ lịch sử đơn
+const retired = store.retireSeedStaff();
+if (retired) console.log(`Đã khóa ${retired} tài khoản nhân viên cứu hộ mẫu cũ (giữ lịch sử đơn)`);
 
 let realtime: RealtimeHub | null = null;
 let demo: Demo | null = null;
@@ -64,7 +67,11 @@ console.log(store.demoMode() ? 'CHẾ ĐỘ DEMO: BẬT — xe ảo chạy từ 
 demo = new Demo({ store, orders, realtime: () => realtime, goong, places });
 const resumed = demo.resume();
 if (resumed) console.log(`Chạy lại ${resumed} xe ảo đang dở hành trình`);
-const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin'), places, placeImagesDir: join(root, 'seed', 'place-images'), demo, storeImagesDir: join(dataDir, 'store-images') });
+const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin'), places, placeImagesDir: join(root, 'seed', 'place-images'), demo, storeImagesDir: join(dataDir, 'store-images'),
+  // Render đứng sau 1 reverse proxy (biến RENDER do Render tự đặt). Khác: đặt RESQ_TRUST_PROXY_HOPS cho đúng hạ tầng.
+  trustProxyHops: Number(env.RESQ_TRUST_PROXY_HOPS ?? (env.RENDER ? 1 : 0)) || 0,
+  publicSignup: env.RESQ_PUBLIC_SIGNUP !== '0',
+});
 server.on('request', (req, res) => { void handle(req, res); });
 
 // điều phối lại đơn hết hạn nhận / đơn đang chờ; dọn hành trình cũ (quyền riêng tư)

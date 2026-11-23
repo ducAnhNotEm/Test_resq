@@ -9,6 +9,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DeviceSelectionScreen } from '../screens/auth/DeviceSelectionScreen';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { GarageRegisterScreen } from '../screens/auth/GarageRegisterScreen';
+import { RegisterScreen } from '../screens/auth/RegisterScreen';
+import { CustomerRegisterScreen } from '../screens/auth/CustomerRegisterScreen';
+import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
+import { SosAlertScreen } from '../screens/resos/SosAlertScreen';
+import { GarageHistoryScreen } from '../screens/staff/GarageHistoryScreen';
+import { GarageSettingsScreen } from '../screens/staff/GarageSettingsScreen';
+import { BranchesScreen } from '../screens/staff/BranchesScreen';
+import { BranchCreateScreen } from '../screens/staff/BranchCreateScreen';
 import { StoreProfileScreen } from '../screens/staff/StoreProfileScreen';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { ReFixIssueScreen } from '../screens/refix/ReFixIssueScreen';
@@ -23,6 +31,13 @@ import { ReMapsNavigationScreen } from '../screens/remaps/ReMapsNavigationScreen
 import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { EmergencyContactsScreen } from '../screens/settings/EmergencyContactsScreen';
 import { QBinAssistantScreen } from '../screens/settings/QBinAssistantScreen';
+import { PersonalInfoScreen } from '../screens/account/PersonalInfoScreen';
+import { VehicleManagementScreen } from '../screens/account/VehicleManagementScreen';
+import { SavedPlacesScreen } from '../screens/account/SavedPlacesScreen';
+import { ActivityHistoryScreen } from '../screens/account/ActivityHistoryScreen';
+import { AboutScreen } from '../screens/info/AboutScreen';
+import { HelpCenterScreen } from '../screens/info/HelpCenterScreen';
+import { PolicyDetailScreen, TermsScreen } from '../screens/info/TermsScreen';
 import { SosHoldModal } from '../components/SosHoldModal';
 import { StaffJobsScreen } from '../screens/staff/StaffJobsScreen';
 import { AdminNoticeScreen } from '../screens/staff/AdminNoticeScreen';
@@ -37,8 +52,9 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const StaffTab = createBottomTabNavigator<StaffTabParamList>();
 
 /**
- * NHÂN VIÊN GARA REFIX: cùng chức năng ReFix như khách (chọn sự cố → gara / phụ tùng / kéo xe gần đây, ảnh thật,
- * đường đi) để tra cứu khi đang hỗ trợ — cộng tab nhận đơn. Không có nút gửi yêu cầu cứu hộ / SOS của khách.
+ * GARA: Đơn (nhận đơn tự động theo giờ làm việc) · Lịch sử sửa chữa · Bản đồ · Cài đặt gara.
+ * Đã BỎ tab ReFix (tra cứu gara khác như app khách — không phải việc của gara). Hướng thay thế đang chờ bàn bạc:
+ * xem mục "ReFix cho gara" trong báo cáo. Không có nút gửi yêu cầu cứu hộ / SOS của khách.
  */
 const StaffTabsNavigator: React.FC = () => {
   const { colors } = useAppTheme();
@@ -58,10 +74,12 @@ const StaffTabsNavigator: React.FC = () => {
     >
       <StaffTab.Screen name="StaffJobsTab" component={StaffJobsScreen}
         options={{ title: 'Đơn ReFix', tabBarIcon: ({ color, size }) => <Ionicons name="radio" size={size} color={color} /> }} />
-      <StaffTab.Screen name="StaffReFixTab" component={ReFixIssueScreen}
-        options={{ title: 'ReFix', tabBarIcon: ({ color, size }) => <Ionicons name="build" size={size} color={color} /> }} />
+      <StaffTab.Screen name="StaffHistoryTab" component={GarageHistoryScreen}
+        options={{ title: 'Lịch sử', tabBarIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} /> }} />
       <StaffTab.Screen name="StaffMapsTab" component={ReMapsSearchScreen}
         options={{ title: 'Bản đồ', tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} /> }} />
+      <StaffTab.Screen name="StaffSettingsTab" component={GarageSettingsScreen}
+        options={{ title: 'Cài đặt', tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} /> }} />
     </StaffTab.Navigator>
   );
 };
@@ -201,6 +219,8 @@ export const AppNavigator: React.FC = () => {
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
         <Stack.Screen name="DeviceSelection" component={DeviceSelectionScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="CustomerRegister" component={CustomerRegisterScreen} />
         <Stack.Screen name="GarageRegister" component={GarageRegisterScreen} />
       </Stack.Navigator>
     );
@@ -214,6 +234,14 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen name="GarageList" component={GarageListScreen} />
         <Stack.Screen name="PlaceDetail" component={PlaceDetailScreen} />
         <Stack.Screen name="ReMapsNavigation" component={ReMapsNavigationScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="Branches" component={BranchesScreen} />
+        <Stack.Screen name="BranchCreate" component={BranchCreateScreen} />
+        <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+        <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
+        <Stack.Screen name="Terms" component={TermsScreen} />
+        <Stack.Screen name="PolicyDetail" component={PolicyDetailScreen} />
+        <Stack.Screen name="About" component={AboutScreen} />
       </Stack.Navigator>
     );
   }
@@ -244,14 +272,25 @@ const CustomerNavigator: React.FC = () => {
         <Stack.Screen name="OrderTracking" component={OrderTrackingScreen} />
         <Stack.Screen name="Rating" component={RatingScreen} />
         <Stack.Screen name="CrashDetection" component={CrashDetectionScreen} />
+        <Stack.Screen name="SosAlert" component={SosAlertScreen} options={{ gestureEnabled: false, animation: 'fade' }} />
         <Stack.Screen name="ReMapsNavigation" component={ReMapsNavigationScreen} />
         <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} />
         <Stack.Screen name="QBinAssistant" component={QBinAssistantScreen} />
+        {/* tài khoản: CHỈ stack khách hàng */}
+        <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
+        <Stack.Screen name="VehicleManagement" component={VehicleManagementScreen} />
+        <Stack.Screen name="SavedPlaces" component={SavedPlacesScreen} />
+        <Stack.Screen name="ActivityHistory" component={ActivityHistoryScreen} />
+        <Stack.Screen name="About" component={AboutScreen} />
+        <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
+        <Stack.Screen name="Terms" component={TermsScreen} />
+        <Stack.Screen name="PolicyDetail" component={PolicyDetailScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
       </Stack.Navigator>
 
       {/* Giữ SOS: tạo đơn cứu hộ ƯU TIÊN bằng GPS thật */}
       <SosHoldModal
-        onCompleteSos={() => navigation.navigate('RescueRequest', { issueId: 'tow', sos: true })}
+        onCompleteSos={() => navigation.navigate('SosAlert', { source: 'hold' })}
         onSimulateCrash={() => navigation.navigate('CrashDetection', { autoDispatched: false })}
       />
     </>

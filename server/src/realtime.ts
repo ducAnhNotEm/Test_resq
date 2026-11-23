@@ -116,6 +116,13 @@ export class RealtimeHub {
     this.fanout(orderId, { type: 'telemetry', msg }, null);
   }
 
+  /** SOS mới / đổi trạng thái: tới MỌI bản điều hành đang mở (báo động ngay) + các máy của người gửi. */
+  publishSos(sos: unknown, userId: number): void {
+    const msg: ServerMsg = { type: 'sos', sos };
+    for (const c of this.clients) if (c.ops) this.send(c, msg);
+    this.byUser.get(userId)?.forEach(c => { if (!c.ops) this.send(c, msg); });
+  }
+
   /** Trạng thái sẵn sàng của nhân viên đổi từ phía server (vd. "Đặt lại demo"): báo admin + chính máy nhân viên. */
   pushPresence(p: Presence): void {
     const msg: ServerMsg = { type: 'presence', presence: p };
@@ -191,7 +198,7 @@ export class RealtimeHub {
 
   private onTelemetry(c: Client, m: TelemetryMessage): void {
     const u = c.user!;
-    if (u.role !== 'staff' && u.role !== 'garage') { this.error(c, 'forbidden', 'Chỉ tài xế hoặc gara được phát vị trí'); return; }
+    if (u.role !== 'staff' && u.role !== 'garage') { this.error(c, 'forbidden', 'Chỉ nhân viên gara được phát vị trí'); return; }
     if (!m || typeof m !== 'object') { this.error(c, 'bad_message', 'Telemetry không hợp lệ'); return; }
     const orderId = m.type === 'frame' ? m.frame?.orderId : m.orderId;
     const o = typeof orderId === 'string' ? this.store.order(orderId) : undefined;
@@ -245,7 +252,7 @@ export class RealtimeHub {
 
   private onPresence(c: Client, m: Extract<ClientMsg, { type: 'presence' }>): void {
     const u = c.user!;
-    if (u.role !== 'staff' && u.role !== 'garage') { this.error(c, 'forbidden', 'Chỉ tài xế hoặc gara cập nhật trạng thái sẵn sàng'); return; }
+    if (u.role !== 'staff' && u.role !== 'garage') { this.error(c, 'forbidden', 'Chỉ nhân viên gara cập nhật trạng thái sẵn sàng'); return; }
     if (!validLngLat(m.pos)) { this.error(c, 'bad_presence', 'Vị trí không hợp lệ'); return; }
     const acc = typeof m.accuracyM === 'number' && Number.isFinite(m.accuracyM) ? m.accuracyM : null;
     const hd = typeof m.heading === 'number' && Number.isFinite(m.heading) ? m.heading : null;

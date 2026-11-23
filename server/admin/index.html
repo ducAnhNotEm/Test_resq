@@ -13,7 +13,7 @@
   <section id="login" class="login" hidden>
     <form id="loginForm" class="login-card">
       <div class="brand"><span class="brand-mark">R</span> ResQ <small>Điều phối</small></div>
-      <label>Email<input name="email" type="email" autocomplete="username" required value="admin@resq.vn" /></label>
+      <label>Email hoặc tài khoản<input name="email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value="admin@resq.vn" /></label>
       <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required /></label>
       <p id="loginError" class="error" role="alert"></p>
       <button class="btn primary" type="submit">Đăng nhập</button>
@@ -26,11 +26,13 @@
   <div id="app" class="shell" hidden>
     <aside class="nav">
       <div class="brand"><span class="brand-mark">R</span> ResQ</div>
+      <a href="#/sos" data-route="sos" class="nav-sos">🚨 SOS khẩn cấp <span id="sosBadge" class="nav-badge" hidden></span></a>
       <a href="#/overview" data-route="overview">Tổng quan</a>
       <a href="#/ops" data-route="ops">Bản đồ điều hành</a>
       <a href="#/orders" data-route="orders">Đơn cứu hộ</a>
       <a href="#/stores" data-route="stores">Gara đối tác <span id="storeBadge" class="nav-badge" hidden></span></a>
       <a href="#/users" data-route="users">Người dùng</a>
+      <a href="#/home" data-route="home">Trang chủ app</a>
       <div class="nav-foot">
         <label class="demo-toggle" title="Xe ảo chạy từ gara được giao theo tuyến Goong thật + gara mới tự duyệt. Tắt = GPS thật, gara mới chờ duyệt.">
           <input type="checkbox" id="demoMode"> <span>Chế độ demo (xe ảo)</span>
@@ -41,7 +43,7 @@
         <button id="logoutBtn" class="btn ghost small">Đăng xuất</button>
       </div>
     </aside>
-    <main id="view" class="view"></main>
+    <main class="view-wrap"><a id="sosBanner" class="sos-banner" href="#/sos" hidden></a><div id="view" class="view"></div></main>
   </div>
 
   <!-- Ngăn kéo chi tiết đơn -->

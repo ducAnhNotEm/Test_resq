@@ -16,6 +16,7 @@ import { HoursEditor, ImageStrip, LocationField, ServiceChips, type LocationValu
 import { Section } from '../auth/GarageRegisterScreen';
 import { draftToWeek, hoursSummary, weekToDraft, type HoursDraft } from '../../features/refix/storeForm';
 import { mediaUrl, storeApi, type StoreProfile, type StoreService } from '../../services/api';
+import { DutyCard } from '../../components/DutyCard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'StoreProfile'>;
 
@@ -25,7 +26,9 @@ const STATUS: Record<string, { text: string; tone: 'green' | 'amber' | 'red' }> 
   suspended: { text: 'Tạm khóa — liên hệ tổng đài 1900 6868', tone: 'red' },
 };
 
-export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
+export const StoreProfileScreen: React.FC<Props> = ({ navigation, route }) => {
+  // storeId: một chi nhánh cụ thể (chủ gara) → API chi nhánh; không có → cửa hàng gắn với tài khoản (/api/store/me)
+  const branchId = route.params?.storeId ?? null;
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { refreshMe } = useAuth();
@@ -43,13 +46,24 @@ export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
     setServices((s.services ?? []) as StoreService[]); setHours(weekToDraft(s.week));
     setLoc({ address: s.address, pos: s.pos, source: 'saved' });
   }, []);
-  useEffect(() => { storeApi.me().then(apply).catch(e => setErr((e as Error).message)); }, [apply]);
+  useEffect(() => {
+    const load = branchId
+      ? storeApi.branches().then(list => { const s = list.find(x => x.id === branchId); if (!s) throw new Error('Không tìm thấy chi nhánh'); return s; })
+      : storeApi.me();
+    load.then(apply).catch(e => setErr((e as Error).message));
+  }, [apply, branchId]);
+  // cùng một màn cho cửa hàng chính và chi nhánh: chỉ khác đường API
+  const api = {
+    update: (b: Parameters<typeof storeApi.update>[0]) => (branchId ? storeApi.updateBranch(branchId, b) : storeApi.update(b)),
+    addImage: (d: string) => (branchId ? storeApi.addBranchImage(branchId, d) : storeApi.addImage(d)),
+    removeImage: (i: number) => (branchId ? storeApi.removeBranchImage(branchId, i) : storeApi.removeImage(i)),
+  };
 
   const run = async (key: string, fn: () => Promise<StoreProfile & { addressPending?: boolean }>, ok?: string) => {
     setBusy(key);
     try {
       const r = await fn();
-      apply(r);
+      apply({ ...p, ...r } as StoreProfile);
       void refreshMe();
       if (r.addressPending) Alert.alert('Đã gửi xác minh địa chỉ', 'Tổng đài sẽ kiểm tra địa chỉ mới. Trong lúc chờ, đơn vẫn được tính theo địa chỉ cũ.');
       else if (ok) Alert.alert(ok);
@@ -60,7 +74,7 @@ export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
   if (!p) {
     return (
       <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-        <ScreenHeader title="Hồ sơ gara" onBack={() => navigation.goBack()} />
+        <ScreenHeader title={branchId ? 'Chi nhánh' : 'Hồ sơ cửa hàng'} onBack={() => navigation.goBack()} />
         <View style={styles.center}>{err ? <Text style={{ color: colors.sos, fontFamily: FONTS.semiBold }}>{err}</Text> : <ActivityIndicator color={colors.blue} />}</View>
       </View>
     );
@@ -74,16 +88,18 @@ export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <ScreenHeader title="Hồ sơ gara" onBack={() => navigation.goBack()} />
+      <ScreenHeader title={p.isMain === false ? 'Chi nhánh' : 'Hồ sơ cửa hàng'} onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 40 + insets.bottom }]} keyboardShouldPersistTaps="handled">
         <View style={[styles.banner, { backgroundColor: toneBg }]}>
           <Ionicons name={st.tone === 'green' ? 'checkmark-circle' : 'time'} size={20} color={toneFg} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.bannerText, { color: toneFg }]}>{st.text}</Text>
             {p.verifiedBy === 'demo-auto' ? <Text style={[styles.meta, { color: toneFg }]}>Tự duyệt (chế độ demo)</Text> : null}
-            <Text style={[styles.meta, { color: toneFg }]}>{p.onDuty ?? 0}/{p.staffCount ?? 0} nhân viên đang trực</Text>
+            <Text style={[styles.meta, { color: toneFg }]}>{p.staffCount ?? 0} người nhận đơn (nhân viên + chủ gara)</Text>
           </View>
         </View>
+
+        {p.status === 'active' ? <DutyCard store={p} onChanged={s => setP({ ...p, ...s })} compact /> : null}
 
         <Section title="Thông tin cửa hàng" icon="business">
           <Text style={[styles.label, { color: colors.textSecondary }]}>Tên cửa hàng</Text>
@@ -98,7 +114,7 @@ export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
             <Btn label="Lưu thông tin" busy={busy === 'info'} onPress={() => {
               const week = draftToWeek(hours);
               if (typeof week === 'string') { Alert.alert(week); return; }
-              void run('info', () => storeApi.update({ storeName: name.trim(), phone: phone.trim(), services, week }), 'Đã lưu');
+              void run('info', () => api.update({ storeName: name.trim(), phone: phone.trim(), services, week }), 'Đã lưu');
             }} />
           ) : null}
         </Section>
@@ -112,16 +128,16 @@ export const StoreProfileScreen: React.FC<Props> = ({ navigation }) => {
           {owner ? <LocationField value={loc} onChange={setLoc} /> : <Text style={[styles.meta, { color: colors.textPrimary }]}>{p.address}</Text>}
           {owner && addressChanged ? (
             <Btn label={p.status === 'pending' ? 'Lưu địa chỉ' : 'Gửi xác minh địa chỉ mới'} busy={busy === 'addr'}
-              onPress={() => void run('addr', () => storeApi.update({ address: loc.address.trim(), lat: loc.pos![1], lng: loc.pos![0] }))} />
+              onPress={() => void run('addr', () => api.update({ address: loc.address.trim(), lat: loc.pos![1], lng: loc.pos![0] }))} />
           ) : null}
         </Section>
 
         <Section title="Ảnh cửa hàng" icon="images" sub="Ảnh ghi rõ nguồn: “Ảnh cửa hàng” (bạn tải lên) hoặc “Google Maps”.">
           <ImageStrip
             images={(p.images ?? []).map(i => ({ uri: mediaUrl(i.url), source: i.source }))}
-            max={8} busy={busy === 'img'}
-            onAdd={owner ? b => void run('img', () => storeApi.addImage(b)) : undefined}
-            onRemove={owner ? i => Alert.alert('Xóa ảnh này?', '', [{ text: 'Xóa', style: 'destructive', onPress: () => void run('img', () => storeApi.removeImage(i)) }, { text: 'Hủy', style: 'cancel' }]) : undefined}
+            max={5} busy={busy === 'img'}
+            onAdd={owner ? b => void run('img', () => api.addImage(b)) : undefined}
+            onRemove={owner ? i => Alert.alert('Xóa ảnh này?', '', [{ text: 'Xóa', style: 'destructive', onPress: () => void run('img', () => api.removeImage(i)) }, { text: 'Hủy', style: 'cancel' }]) : undefined}
           />
         </Section>
         {!owner ? <Text style={[styles.meta, { color: colors.textSecondary, textAlign: 'center' }]}>Chỉ chủ gara sửa được hồ sơ.</Text> : null}

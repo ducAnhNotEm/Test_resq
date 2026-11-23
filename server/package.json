@@ -8,16 +8,16 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning src/index.ts",
-    "dev": "node --disable-warning=ExperimentalWarning --watch src/index.ts",
-    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.ts",
+    "start": "node --disable-warning=ExperimentalWarning --experimental-strip-types src/index.ts",
+    "dev": "node --disable-warning=ExperimentalWarning --experimental-strip-types --watch src/index.ts",
+    "test": "node --disable-warning=ExperimentalWarning --experimental-strip-types --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "online": "node --disable-warning=ExperimentalWarning scripts/online.ts",
-    "rotate-passwords": "node --disable-warning=ExperimentalWarning scripts/rotate-passwords.ts",
-    "set-password": "node --disable-warning=ExperimentalWarning scripts/set-password.ts",
-    "crawl": "node --disable-warning=ExperimentalWarning scripts/apify-crawl.ts",
-    "build-places": "node --disable-warning=ExperimentalWarning scripts/build-places.ts",
-    "plan-enrich": "node --disable-warning=ExperimentalWarning scripts/plan-enrich.ts"
+    "online": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/online.ts",
+    "rotate-passwords": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/rotate-passwords.ts",
+    "set-password": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/set-password.ts",
+    "crawl": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/apify-crawl.ts",
+    "build-places": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/build-places.ts",
+    "plan-enrich": "node --disable-warning=ExperimentalWarning --experimental-strip-types scripts/plan-enrich.ts"
   },
   "dependencies": {
     "ws": "^8.18.0"

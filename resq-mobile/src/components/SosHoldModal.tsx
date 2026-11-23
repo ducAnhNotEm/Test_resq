@@ -138,11 +138,11 @@ export const SosHoldModal: React.FC<SosHoldModalProps> = ({
             </Pressable>
           </View>
 
-          <Text style={styles.heading}>Nhấn giữ 3 giây để gọi cứu hộ</Text>
+          <Text style={styles.heading}>Giữ 3 giây để phát tín hiệu SOS</Text>
           <Text style={styles.desc}>
-            Thả sớm sẽ tự động hủy. Khi hoàn tất, ResQ gửi yêu cầu cứu hộ khẩn cấp kèm vị trí GPS{' '}
-            <Text style={styles.bold}>{place?.shortLabel ?? 'hiện tại'}</Text> của bạn tới tổng đài.
-            Có người bị thương: gọi 115 ngay.
+            Thả sớm sẽ tự động hủy. Khi hoàn tất, ResQ xác định vị trí{' '}
+            <Text style={styles.bold}>{place?.shortLabel ?? 'hiện tại'}</Text> và gửi tín hiệu SOS THẲNG tới tổng đài —
+            tổng đài gọi lại cho bạn, báo 115 và người thân đã đăng ký. Có người bị thương: gọi 115 ngay.
           </Text>
         </View>
 
@@ -155,7 +155,7 @@ export const SosHoldModal: React.FC<SosHoldModalProps> = ({
             style={styles.secondaryBtn}
           >
             <Ionicons name="alert-circle" size={20} color="#FBBF24" />
-            <Text style={styles.secondaryText}>Mô phỏng phát hiện va chạm tự động</Text>
+            <Text style={styles.secondaryText}>Quy trình khi va chạm (tự gửi SOS sau 30 giây)</Text>
           </Pressable>
 
           <Pressable

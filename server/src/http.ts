@@ -5,11 +5,16 @@ import { extname, join, normalize } from 'node:path';
 import type { Role, OrderStatus } from './protocol.ts';
 import { ACTIVE_STATUSES, validLngLat } from './protocol.ts';
 import { rolesOf, toPublicUser, toStoreInfo, type Store } from './db.ts';
-import { actingRole, registerStoreRoutes, sessionFor, storeDto } from './storeApi.ts';
-import { EMAIL_RE, bad, num, str } from './validate.ts';
+import { actingRole, meDto, registerStoreRoutes, sessionFor, storeDto } from './storeApi.ts';
+import { registerAccountRoutes } from './accountApi.ts';
+import { EMAIL_RE, PHONE_RE, bad, num, str, uniqueConflict, usernameField } from './validate.ts';
 import type { Demo } from './demo.ts';
 import { ApiError, type OrderService, type Principal } from './orders.ts';
-import { AttemptLimiter, verifyPassword, type TokenSigner } from './auth.ts';
+import { AttemptLimiter, hashPassword, verifyPassword, type TokenSigner } from './auth.ts';
+import { registerHomeRoutes } from './homeApi.ts';
+import { registerNotificationRoutes } from './notificationApi.ts';
+import { registerSosRoutes } from './sosApi.ts';
+import { randomBytes } from 'node:crypto';
 import type { GoongClient } from './goong.ts';
 import type { RealtimeHub } from './realtime.ts';
 import { computeAlerts, computeStats, refineCandidates } from './stats.ts';
@@ -30,6 +35,13 @@ export interface AppDeps {
   demo?: Demo | null;
   /** Thư mục ảnh do gara tải lên (/media/stores/…). */
   storeImagesDir?: string;
+  /**
+   * Số proxy tin cậy đứng trước server (Render = 1). 0: chỉ tin header khi request đến từ loopback (Cloudflare Tunnel).
+   * Sai số này → mọi người dùng chung 1 "IP" → 1 người nhập sai mật khẩu khóa đăng nhập của cả hệ thống.
+   */
+  trustProxyHops?: number;
+  /** false: tắt tự đăng ký tài khoản khách (vd. khi đưa server demo lên Internet). Mặc định bật. */
+  publicSignup?: boolean;
 }
 
 interface Ctx {
@@ -51,6 +63,11 @@ export function createApp(deps: AppDeps) {
   const { store, orders, signer, goong } = deps;
   const routes: Route[] = [];
   const loginLimiter = new AttemptLimiter();
+  // đăng ký khách: chỉ ĐẾM LẦN TẠO THÀNH CÔNG (gõ sai form / email trùng không bị tính) — 10 tài khoản / giờ / IP
+  const signupLimiter = new AttemptLimiter(10, 60 * 60_000);
+  const ipOf = (req: IncomingMessage) => clientIp(req, deps.trustProxyHops ?? 0);
+  // Băm giả cho tài khoản KHÔNG tồn tại: thời gian trả lời như nhau → không dò được email / username nào có thật.
+  const DUMMY_HASH = hashPassword(randomBytes(16).toString('hex'));
 
   const add = (method: string, path: string, roles: Role[] | null, handler: Handler) => {
     const keys: string[] = [];
@@ -61,22 +78,48 @@ export function createApp(deps: AppDeps) {
   const ANY: Role[] = ['customer', 'staff', 'admin', 'garage'];
 
   // ================= AUTH =================
+  // Đăng nhập bằng EMAIL hoặc TÊN TÀI KHOẢN (username). Nhận cả `identifier` (app mới) lẫn `email` (app cũ).
   add('POST', '/api/auth/login', PUBLIC, ({ body, req }) => {
-    const email = str(body.email, 'email', { required: true, max: 200 })!.toLowerCase();
+    const raw = str(body.identifier, 'tài khoản', { max: 200 }) ?? str(body.email, 'email', { max: 200 });
+    if (!raw) throw bad('Thiếu email hoặc tài khoản');
     const password = str(body.password, 'mật khẩu', { required: true, max: 200 })!;
-    const ip = clientIp(req);
-    if (loginLimiter.blocked(`e:${email}`) || loginLimiter.blocked(`ip:${ip}`)) {
+    const ident = raw.toLowerCase();
+    const ip = ipOf(req);
+    const u = ident.includes('@') ? store.userByEmail(ident) : store.userByUsername(ident);
+    // khóa theo TÀI KHOẢN (không theo chuỗi gõ vào): đổi qua lại email ↔ username không được thêm lượt thử
+    const key = u ? `u:${u.id}` : `id:${ident}`;
+    if (loginLimiter.blocked(key) || loginLimiter.blocked(`ip:${ip}`)) {
       throw new ApiError(429, 'too_many_attempts', 'Đăng nhập sai quá nhiều lần, thử lại sau 10 phút');
     }
-    const u = store.userByEmail(email);
-    if (!u || !verifyPassword(password, u.password_hash)) {
-      loginLimiter.fail(`e:${email}`); loginLimiter.fail(`ip:${ip}`);
-      throw new ApiError(401, 'invalid_credentials', 'Email hoặc mật khẩu không đúng');
+    const ok = verifyPassword(password, u?.password_hash ?? DUMMY_HASH);
+    if (!u || !ok) {
+      loginLimiter.fail(key); loginLimiter.fail(`ip:${ip}`);
+      throw new ApiError(401, 'invalid_credentials', 'Email/tài khoản hoặc mật khẩu không đúng');
     }
     if (!u.active) throw new ApiError(403, 'account_disabled', 'Tài khoản đã bị khóa, liên hệ tổng đài');
-    loginLimiter.reset(`e:${email}`);
+    loginLimiter.reset(key);
     // vai đang dùng: 1 tài khoản gara đăng nhập 2 máy — máy "Khách hàng", máy "Nhân viên gara"
     return sessionFor(store, signer, u, actingRole(u, body.as));
+  });
+
+  // Khách tự tạo tài khoản (không OTP, không xác minh email) → vào thẳng Trang chủ.
+  add('POST', '/api/auth/register-customer', PUBLIC, ({ body, req }) => {
+    if (deps.publicSignup === false) throw new ApiError(403, 'signup_disabled', 'Máy chủ này chưa mở đăng ký — liên hệ tổng đài để được cấp tài khoản');
+    const ip = ipOf(req);
+    if (signupLimiter.blocked(`ip:${ip}`)) throw new ApiError(429, 'too_many_registrations', 'Đã tạo quá nhiều tài khoản từ mạng này, thử lại sau 1 giờ');
+    const name = str(body.name, 'họ tên', { required: true, min: 2, max: 120 })!;
+    const email = str(body.email, 'email', { required: true, max: 200 })!.toLowerCase();
+    if (!EMAIL_RE.test(email)) throw bad('Email không đúng định dạng');
+    const password = str(body.password, 'mật khẩu', { required: true, min: 8, max: 200 })!;
+    const phone = str(body.phone, 'số điện thoại', { max: 20 }) ?? '';
+    if (phone && !PHONE_RE.test(phone)) throw bad('Số điện thoại không hợp lệ');
+    const taken = () => new ApiError(409, 'email_taken', 'Email này đã có tài khoản — hãy đăng nhập');
+    if (store.userByEmail(email)) throw taken();
+    let u;
+    try { u = store.createUser({ email, password, role: 'customer', name, phone }); }
+    catch (e) { if (uniqueConflict(e) === 'email') throw taken(); throw e; }
+    signupLimiter.fail(`ip:${ip}`);
+    return sessionFor(store, signer, u, 'customer');
   });
   add('POST', '/api/auth/switch', ANY, ({ body, user }) => {
     const u = store.userById(user.id)!;
@@ -85,11 +128,7 @@ export function createApp(deps: AppDeps) {
 
   // kèm gara ReFix của nhân viên (tiêu đề app: "ĐỐI TÁC REFIX · GARA <tên>")
   const storeOf = (id: string | null) => { const s = id ? store.storeById(id) : undefined; return s ? toStoreInfo(s) : null; };
-  add('GET', '/api/me', ANY, ({ user }) => {
-    const u = store.userById(user.id)!;
-    const st = u.store_id ? store.storeById(u.store_id) : undefined;
-    return { ...toPublicUser(u), role: user.role, accountRole: u.role, roles: rolesOf(u), store: st ? storeDto(store, st) : null };
-  });
+  add('GET', '/api/me', ANY, ({ user }) => meDto(store, store.userById(user.id)!, user.role));
   // công khai: key bản đồ Goong là key PHÍA TRÌNH DUYỆT (đã lộ trong trang admin) — màn đăng ký gara cần bản đồ trước khi đăng nhập
   add('GET', '/api/config', PUBLIC, () => ({ goongMapKey: deps.mapKey, geocoding: goong.enabled, demoMode: store.demoMode() }));
 
@@ -185,20 +224,44 @@ export function createApp(deps: AppDeps) {
     if (!u) throw new ApiError(404, 'user_not_found', 'Không tìm thấy người dùng');
     return { ...toPublicUser(u), recentOrders: store.listOrders({ ...(u.role === 'staff' ? { staffId: u.id } : { customerId: u.id }), limit: 10 }).items };
   });
+  // Gói: 'free' | 'premium'. Hạn = epoch ms (admin chọn NGÀY → app web gửi 23:59:59 giờ VN của ngày đó) hoặc null.
+  const planFields = (body: Record<string, unknown>) => {
+    let plan: 'free' | 'premium' | undefined;
+    if (body.plan !== undefined) {
+      if (body.plan !== 'free' && body.plan !== 'premium') throw bad('Gói không hợp lệ (free / premium)', 'invalid_plan');
+      plan = body.plan;
+    }
+    let planExpiresAt: number | null | undefined;
+    if (body.planExpiresAt === null || body.planExpiresAt === '') planExpiresAt = null;
+    else if (body.planExpiresAt !== undefined) planExpiresAt = num(body.planExpiresAt, 'ngày hết hạn', { min: 0, max: 8.64e15 })!;
+    return { plan, planExpiresAt };
+  };
+  const usernameTaken = () => new ApiError(409, 'username_taken', 'Tên tài khoản đã có người dùng');
+  const conflict = (e: unknown): never => {
+    const c = uniqueConflict(e);
+    if (c === 'email') throw new ApiError(409, 'email_taken', 'Email đã được dùng');
+    if (c === 'username') throw usernameTaken();
+    throw e;
+  };
   add('POST', '/api/admin/users', ['admin'], ({ body }) => {
     const email = str(body.email, 'email', { required: true, max: 200 })!;
     if (!EMAIL_RE.test(email)) throw bad('Email không hợp lệ');
     if (store.userByEmail(email)) throw new ApiError(409, 'email_taken', 'Email đã được dùng');
     const role = body.role as Role;
     if (!ROLES.has(role)) throw bad('Vai trò không hợp lệ');
-    return toPublicUser(store.createUser({
-      email, role,
-      password: str(body.password, 'mật khẩu', { required: true, min: 8, max: 200 })!,
-      name: str(body.name, 'họ tên', { required: true, max: 120 })!,
-      phone: str(body.phone, 'số điện thoại', { max: 20 }) ?? '',
-      vehiclePlate: str(body.vehiclePlate, 'biển số', { max: 20 }) ?? '',
-      unit: str(body.unit, 'đơn vị', { max: 120 }) ?? '',
-    }));
+    const username = usernameField(body.username);
+    if (username && store.userByUsername(username)) throw usernameTaken();
+    const { plan, planExpiresAt } = planFields(body);
+    try {
+      return toPublicUser(store.createUser({
+        email, role, username, plan, planExpiresAt,
+        password: str(body.password, 'mật khẩu', { required: true, min: 8, max: 200 })!,
+        name: str(body.name, 'họ tên', { required: true, max: 120 })!,
+        phone: str(body.phone, 'số điện thoại', { max: 20 }) ?? '',
+        vehiclePlate: str(body.vehiclePlate, 'biển số', { max: 20 }) ?? '',
+        unit: str(body.unit, 'đơn vị', { max: 120 }) ?? '',
+      }), store.now());
+    } catch (e) { return conflict(e); }
   });
   add('PATCH', '/api/admin/users/:id', ['admin'], ({ params, body, user }) => {
     const id = Number(params.id);
@@ -209,15 +272,19 @@ export function createApp(deps: AppDeps) {
     const role = body.role as Role | undefined;
     if (role !== undefined && !ROLES.has(role)) throw bad('Vai trò không hợp lệ');
     if (id === user.id && (body.active === false || (role && role !== 'admin'))) throw bad('Không thể tự khóa hoặc tự hạ quyền chính mình');
-    return toPublicUser(store.updateUser(id, {
-      email, role,
+    const username = usernameField(body.username);
+    if (username) { const other = store.userByUsername(username); if (other && other.id !== id) throw usernameTaken(); }
+    const { plan, planExpiresAt } = planFields(body);
+    const patch = {
+      email, role, username, plan, planExpiresAt,
       password: str(body.password, 'mật khẩu', { min: 8, max: 200 }),
       name: str(body.name, 'họ tên', { max: 120 }),
       phone: typeof body.phone === 'string' ? body.phone.trim().slice(0, 20) : undefined,
       vehiclePlate: typeof body.vehiclePlate === 'string' ? body.vehiclePlate.trim().slice(0, 20) : undefined,
       unit: typeof body.unit === 'string' ? body.unit.trim().slice(0, 120) : undefined,
       active: typeof body.active === 'boolean' ? body.active : undefined,
-    })!);
+    };
+    try { return toPublicUser(store.updateUser(id, patch)!, store.now()); } catch (e) { return conflict(e); }
   });
   add('DELETE', '/api/admin/users/:id', ['admin'], ({ params, user }) => {
     const id = Number(params.id);
@@ -293,8 +360,12 @@ export function createApp(deps: AppDeps) {
     orders.unassign(params.id, user, str(body.reason, 'lý do', { max: 300 }) ?? ''));
 
   registerStoreRoutes(add, {
-    store, orders, signer, goong, places: deps.places, storeImagesDir: deps.storeImagesDir, ipOf: clientIp,
+    store, orders, signer, goong, places: deps.places, storeImagesDir: deps.storeImagesDir, ipOf,
   });
+  registerAccountRoutes(add, { store });
+  registerHomeRoutes(add, { store });
+  registerNotificationRoutes(add, { store });
+  registerSosRoutes(add, { store, orders, publish: (sos, userId) => deps.realtime?.publishSos(sos, userId) });
 
   // ================= DEMO =================
   add('POST', '/api/admin/demo/reset', ['admin'], ({ user }) => {
@@ -442,7 +513,7 @@ export function createApp(deps: AppDeps) {
     // API dùng token Bearer (không cookie) → mở CORS an toàn cho Expo web / công cụ
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
     try {
@@ -464,7 +535,7 @@ export function createApp(deps: AppDeps) {
       }
       // đăng ký gara / tải ảnh cửa hàng: cho phép body lớn hơn (ảnh base64)
       const big = url.pathname === '/api/auth/register-garage' || url.pathname === '/api/store/me/images';
-      const body = req.method === 'POST' || req.method === 'PATCH' ? await readJson(req, big ? 8 * 1024 * 1024 : undefined) : {};
+      const body = req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' ? await readJson(req, big ? 8 * 1024 * 1024 : undefined) : {};
       const out = await route.handler({ req, params, query: url.searchParams, body, user });
       json(res, 200, out ?? null);
     } catch (e) {
@@ -482,9 +553,19 @@ const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
  * IP thật của người dùng. Qua Cloudflare Tunnel mọi request đến từ cloudflared trên CHÍNH máy này (127.0.0.1)
  * → nếu dùng remoteAddress, giới hạn đăng nhập sai sẽ khóa cả nhóm cùng lúc. Chỉ tin header khi request
  * đến từ loopback (tunnel cục bộ); request từ LAN / Internet trực tiếp không tự khai IP được.
+ *
+ * Sau reverse proxy (Render): remoteAddress là IP proxy, CHUNG cho mọi người dùng. `trustProxyHops` = số proxy tin
+ * cậy → lấy phần tử thứ N TÍNH TỪ PHẢI của X-Forwarded-For (phần tử do proxy của mình ghi, client không giả được;
+ * phần tử bên trái do client tự khai). Không có header → quay về remoteAddress (không bao giờ tệ hơn).
  */
-export function clientIp(req: IncomingMessage): string {
+export function clientIp(req: IncomingMessage, trustProxyHops = 0): string {
   const remote = req.socket.remoteAddress ?? '?';
+  if (trustProxyHops > 0) {
+    const xff = req.headers['x-forwarded-for'];
+    const parts = typeof xff === 'string' ? xff.split(',').map(s => s.trim()).filter(Boolean) : [];
+    const ip = parts[parts.length - trustProxyHops];
+    return ip || remote;
+  }
   if (!LOOPBACK.has(remote)) return remote;
   const cf = req.headers['cf-connecting-ip'];
   if (typeof cf === 'string' && cf) return cf.trim();

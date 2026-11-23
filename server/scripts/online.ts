@@ -102,7 +102,7 @@ if (await isResq(local)) {
   console.error('  Tắt chương trình đó, hoặc dùng cổng khác (PowerShell):  $env:PORT=8788; npm run online\n');
   process.exit(1);
 } else {
-  const c = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', join(ROOT, 'src', 'index.ts')], {
+  const c = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', '--experimental-strip-types', join(ROOT, 'src', 'index.ts')], {
     stdio: 'inherit',
     env: { ...process.env, PORT: String(port) },
   });

@@ -200,3 +200,36 @@ tbody tr:last-child td { border-bottom: 0; }
 .thumbs img { width: 72px; height: 54px; object-fit: cover; border-radius: 6px; display: block; }
 .thumbs figcaption { font-size: 10px; color: var(--muted, #64748b); }
 .pending-addr { background: var(--info-bg); padding: 8px 10px; border-radius: 8px; margin-top: 6px; }
+
+/* ---- gói Premium + trang "Trang chủ app" ---- */
+.chip.plan-premium { background: var(--warning-bg); color: var(--warning); }
+.chip.role-garage { background: var(--info-bg); color: var(--link); }
+.home-form { display: grid; gap: 14px; max-width: 860px; }
+.home-form h2 { margin: 0 0 8px; font-size: 16px; }
+.home-form table input { width: 100%; }
+.home-form .promo { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; display: grid; gap: 8px; }
+
+/* ---- SOS khẩn cấp ---- */
+.view-wrap { min-width: 0; display: flex; flex-direction: column; }
+.sos-banner { display: block; padding: 10px 24px; background: var(--critical); color: #fff; font-weight: 600; text-decoration: none; animation: sosPulse 1.2s ease-in-out infinite; }
+.sos-banner[hidden] { display: none; }
+@keyframes sosPulse { 50% { opacity: 0.75; } }
+@media (prefers-reduced-motion: reduce) { .sos-banner { animation: none; } }
+.nav a.nav-sos { color: var(--critical); font-weight: 700; }
+.sos-layout { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(360px, 1.2fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .sos-layout { grid-template-columns: 1fr; } }
+.sos-layout tr[data-id] { cursor: pointer; }
+.sos-layout tr.selected { background: var(--surface-2); }
+.sos-row-open td:first-child { box-shadow: inset 4px 0 0 var(--critical); }
+.sos-detail h2 { margin: 0 0 4px; font-size: 18px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sos-detail h3 { margin: 0 0 6px; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+.sos-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+.btn.big { font-size: 16px; padding: 12px 20px; }
+.sos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .sos-grid { grid-template-columns: 1fr; } }
+.sos-block { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 12px; }
+.sos-block textarea { width: 100%; font: 12px/1.5 ui-monospace, monospace; }
+.sos-block .actions { margin-top: 6px; align-items: center; }
+.sos-block .actions input { flex: 1; min-width: 180px; }
+.sos-contacts { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.sos-contacts li { display: grid; gap: 4px; }

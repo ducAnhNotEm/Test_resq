@@ -94,7 +94,7 @@ test('chiều ngược lại: gara thấy đơn đang chờ quanh mình; khách 
     body: JSON.stringify({ lat: off(1200)[1], lng: off(1200)[0], issue: 'tire', injured: false }),
   });
   assert.equal(o.status, 200);
-  const staff = await token('cuuho@resq.vn');
+  const staff = await token('gara@resq.vn');
   const r = await get('/api/places/lop-gan/orders', staff);
   assert.equal(r.status, 200);
   assert.equal(r.body.items.length, 1);

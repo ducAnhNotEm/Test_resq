@@ -272,7 +272,7 @@ export class OrderService {
 
   cancel(id: string, who: Principal, reason: string): Order {
     const o = this.view(id, who);
-    if (who.role === 'staff' || who.role === 'garage') throw new ApiError(403, 'forbidden', 'Tài xế/Gara không hủy đơn; hãy dùng "Từ chối" hoặc liên hệ điều phối');
+    if (who.role === 'staff' || who.role === 'garage') throw new ApiError(403, 'forbidden', 'Gara không hủy đơn; hãy dùng "Từ chối" hoặc liên hệ điều phối');
     this.transition(o, 'cancelled', who.role);
     this.store.tx(() => {
       this.store.setOrderStatus(id, 'cancelled', { cancelReason: reason });

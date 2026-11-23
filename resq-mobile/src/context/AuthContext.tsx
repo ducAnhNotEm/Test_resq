@@ -1,9 +1,10 @@
 // AuthContext: phiên đăng nhập + vai trò + địa chỉ server. Lưu AsyncStorage để mỗi điện thoại giữ đúng
 // vai trò và đúng server sau khi tắt/mở app. Token được kiểm tra lại với server khi mở app.
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Alert, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api, ApiError, authApi, configApi, setApiToken, setUnauthorizedHandler, type GarageForm, type Role, type User } from '../services/api';
+import { api, ApiError, authApi, configApi, setApiToken, setUnauthorizedHandler, type CustomerForm, type GarageForm, type Role, type User } from '../services/api';
+import { loginErrorMessage } from '../features/auth/validation';
 import { realtime } from '../features/realtime/realtime';
 import {
   ENV_MAP_KEY, getApiSource, getApiUrl, loadSavedApiUrl, parseServerLink, probeServer, setApiUrl, subscribeApiUrl,
@@ -20,8 +21,10 @@ interface AuthValue {
   mapKey: string;
   serverUrl: string;
   serverSource: ApiSource;
-  /** as: vai muốn dùng trên máy này (tài khoản gara: 'staff' hoặc 'customer'). */
-  login: (email: string, password: string, as?: Role) => Promise<User>;
+  /** identifier: email HOẶC tên tài khoản. as: vai muốn dùng trên máy này (tài khoản gara: 'staff' hoặc 'customer'). */
+  login: (identifier: string, password: string, as?: Role) => Promise<User>;
+  /** Khách tự đăng ký → vào thẳng Trang chủ. */
+  registerCustomer: (f: CustomerForm) => Promise<User>;
   /** Đăng ký gara đối tác → vào thẳng vai nhân viên gara. */
   registerGarage: (f: GarageForm) => Promise<{ user: User; autoApproved: boolean }>;
   /** Đổi vai trên cùng tài khoản (không cần nhập lại mật khẩu). */
@@ -38,6 +41,8 @@ const AuthContext = createContext<AuthValue | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
+  const sessionRef = useRef<Session | null>(null);
+  sessionRef.current = session;
   const [status, setStatus] = useState<AuthValue['status']>('loading');
   const [mapKey, setMapKey] = useState(ENV_MAP_KEY);
   const [demoMode, setDemoMode] = useState(false);
@@ -47,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = useCallback(async () => {
     realtime.stop();
     setApiToken(null);
+    sessionRef.current = null;
     setSession(null);
     setStatus('signedOut');
     await AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
@@ -54,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const activate = useCallback((s: Session) => {
     setApiToken(s.token);
+    sessionRef.current = s;
     setSession(s);
     setStatus('signedIn');
     realtime.start(s.token, () => { void logout(); });
@@ -132,9 +139,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     activate(r);
   }, [activate]);
 
-  const login = useCallback(async (email: string, password: string, as?: Role) => {
-    // 60 s: server trên Render free có thể đang thức dậy
-    const r = await authApi.login(email.trim(), password, as);
+  const login = useCallback(async (identifier: string, password: string, as?: Role) => {
+    let r;
+    try { r = await authApi.login(identifier, password, as); }
+    catch (e) {
+      const err = e as ApiError;
+      throw new ApiError(err.status ?? 0, err.code ?? 'error', loginErrorMessage(identifier, err.status ?? 0, err.message));
+    }
+    await save(r);
+    return r.user;
+  }, [save]);
+
+  const registerCustomer = useCallback(async (f: CustomerForm) => {
+    const r = await authApi.registerCustomer(f);
     await save(r);
     return r.user;
   }, [save]);
@@ -151,17 +168,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await save(r);
   }, [save]);
 
+  /**
+   * Tải lại hồ sơ. Hàm ỔN ĐỊNH (không đổi mỗi lần session đổi): màn gọi nó khi focus sẽ không tự kích hoạt lại
+   * chính nó thành vòng lặp. Kết quả về sau khi đã đăng xuất / đổi vai / đổi tài khoản → bỏ (không "hồi sinh"
+   * phiên cũ vào bộ nhớ máy).
+   */
   const refreshMe = useCallback(async () => {
-    if (!session) return;
+    const token = sessionRef.current?.token;
+    if (!token) return;
     const me = await api<User>('GET', '/api/me');
-    const next = { token: session.token, user: me };
+    if (sessionRef.current?.token !== token) return;
+    const next = { token, user: me };
     setSession(next);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
-  }, [session]);
+  }, []);
 
   const value = useMemo<AuthValue>(
-    () => ({ status, user: session?.user ?? null, mapKey, serverUrl, serverSource, login, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode }),
-    [status, session, mapKey, serverUrl, serverSource, login, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode],
+    () => ({ status, user: session?.user ?? null, mapKey, serverUrl, serverSource, login, registerCustomer, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode }),
+    [status, session, mapKey, serverUrl, serverSource, login, registerCustomer, logout, changeServer, registerGarage, switchRole, refreshMe, demoMode],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

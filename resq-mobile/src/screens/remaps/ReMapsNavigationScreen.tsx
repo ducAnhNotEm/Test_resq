@@ -124,7 +124,7 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
   const lost = !!rescueOrderId && !!order && (order.status === 'cancelled' || order.status === 'requested');
   useEffect(() => {
     if (!lostEdge.update(lost) || !order) return;
-    Alert.alert(order.status === 'cancelled' ? 'Đơn đã bị hủy' : 'Đơn đã được chuyển cho tài xế khác',
+    Alert.alert(order.status === 'cancelled' ? 'Đơn đã bị hủy' : 'Đơn đã được chuyển cho gara khác',
       order.cancelReason ?? 'Liên hệ tổng đài nếu cần.', [{ text: 'Quay lại', onPress: () => navigation.goBack() }]);
   }, [lost, order, lostEdge, navigation]);
 

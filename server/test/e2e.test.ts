@@ -22,7 +22,10 @@ before(async () => {
   store.seedIfEmpty(PW, () => {});
   // cửa hàng là đơn vị điều phối: nhân viên mẫu thuộc 1 gara cách khách ~1,4 km
   store.upsertStore({ id: 'g-e2e', name: 'Gara E2E', pos: [105.8100, 21.0150], services: ['repair', 'tire'], status: 'active' });
-  store.setUserStore(store.userByEmail('cuuho@resq.vn')!.id, 'g-e2e');
+  // tài khoản nhân viên gara của test (hệ thống không còn tài khoản mẫu "nhân viên cứu hộ")
+  const nv = store.createUser({ email: 'nv-e2e@test.vn', password: PW, role: 'staff', name: 'Nhân viên E2E', phone: '0912345678', vehiclePlate: '29C-123.45' });
+  store.setUserStore(nv.id, 'g-e2e');
+  store.setStoreStatus('store-refix-demo', 'suspended');        // gara mẫu (24/7) không tham gia test này
   let rt: RealtimeHub | null = null;
   const orders = new OrderService(store, (o, n) => rt?.publishOrder(o, n));
   const signer = new TokenSigner('t'.repeat(40));
@@ -69,7 +72,7 @@ async function phone(token: string) {
 }
 
 test('REST: sai mật khẩu 401, thiếu token 401, sai vai trò 403', async () => {
-  assert.equal((await api('POST', '/api/auth/login', undefined, { email: 'cuuho@resq.vn', password: 'sai' })).status, 401);
+  assert.equal((await api('POST', '/api/auth/login', undefined, { email: 'nv-e2e@test.vn', password: 'sai' })).status, 401);
   assert.equal((await api('GET', '/api/me')).status, 401);
   const c = await login('khachhang@resq.vn');
   assert.equal((await api('GET', '/api/admin/users', c.token)).status, 403);
@@ -78,7 +81,7 @@ test('REST: sai mật khẩu 401, thiếu token 401, sai vai trò 403', async ()
 
 test('2 thiết bị: khách đặt cứu hộ → tài xế nhận → GPS tài xế tới máy khách realtime; người lạ bị chặn', async () => {
   const cust = await login('khachhang@resq.vn');
-  const staff = await login('cuuho@resq.vn');
+  const staff = await login('nv-e2e@test.vn');
   const admin = await login('admin@resq.vn');
 
   // tài xế bật "sẵn sàng" và gửi vị trí qua WebSocket

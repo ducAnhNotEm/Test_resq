@@ -11,6 +11,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { LocationGate } from '../../components/LocationGate';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useAccountData } from '../../context/AccountDataContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
 import { useLocation } from '../../features/location/LocationProvider';
@@ -36,6 +37,7 @@ type Injured = 'no' | 'yes' | 'unknown';
 export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
   const { colors } = useAppTheme();
   const { user, mapKey } = useAuth();
+  const { vehicles } = useAccountData();
   const sos = !!route.params?.sos;
   const placeName = route.params?.placeName ?? null;   // đơn vị khách chọn từ danh sách gara
   const placeId = route.params?.placeId ?? null;
@@ -249,6 +251,22 @@ export const RescueRequestScreen: React.FC<Props> = ({ navigation, route }) => {
           <Text style={[styles.label, { color: colors.textSecondary }]}>Biển số xe</Text>
           <TextInput value={plate} onChangeText={setPlate} autoCapitalize="characters" maxLength={20}
             style={[styles.input, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle, color: colors.textPrimary }]} />
+          {/* nhiều xe: chọn nhanh xe đang gặp sự cố (chỉ điền biển số, không đổi gì khác) */}
+          {vehicles.length > 1 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {vehicles.map(v => {
+                const on = v.plate === plate.trim().toUpperCase().replace(/\s+/g, '');
+                return (
+                  <Pressable key={v.id} onPress={() => setPlate(v.plate)} accessibilityRole="button" accessibilityState={{ selected: on }}
+                    accessibilityLabel={`Chọn xe ${v.name}, biển số ${v.plate}`}
+                    style={[styles.vehChip, { backgroundColor: on ? colors.blue : colors.bgCard, borderColor: on ? colors.blue : colors.borderSubtle }]}>
+                    <Ionicons name="car-sport" size={14} color={on ? '#FFFFFF' : colors.textSecondary} />
+                    <Text style={[styles.vehChipText, { color: on ? '#FFFFFF' : colors.textPrimary }]} numberOfLines={1}>{v.name} · {v.plate}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          ) : null}
         </View>
 
         <View style={{ gap: 6 }}>
@@ -306,4 +324,6 @@ const styles = StyleSheet.create({
   submit: { minHeight: 54, borderRadius: METRICS.radiusBtn, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   submitText: { fontFamily: FONTS.bold, fontSize: TYPOGRAPHY.base, color: '#FFFFFF' },
   foot: { fontFamily: FONTS.regular, fontSize: 12, textAlign: 'center' },
+  vehChip: { minHeight: 36, borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  vehChipText: { fontFamily: FONTS.bold, fontSize: 12 },
 });

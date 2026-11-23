@@ -31,10 +31,10 @@ export function computeAlerts(active: Order[], lastTelemetryAt: (orderId: string
       out.push({ level: 'critical', orderId: o.id, code: 'sos_waiting', message: `SOS ${o.id} chưa có xe nhận${o.injured ? ' · CÓ NGƯỜI BỊ THƯƠNG' : ''}`, since: o.createdAt });
     }
     if (o.status === 'requested' && now - o.createdAt > SLA.unassignedMs) {
-      out.push({ level: 'critical', orderId: o.id, code: 'unassigned', message: `${o.id} chưa có tài xế sau ${Math.round((now - o.createdAt) / 60_000)} phút`, since: o.createdAt });
+      out.push({ level: 'critical', orderId: o.id, code: 'unassigned', message: `${o.id} chưa có gara nhận sau ${Math.round((now - o.createdAt) / 60_000)} phút`, since: o.createdAt });
     }
     if (o.status === 'assigned' && o.times.assigned && now - o.times.assigned > SLA.offerMs) {
-      out.push({ level: 'warning', orderId: o.id, code: 'offer_pending', message: `${o.staff?.name ?? 'Tài xế'} chưa nhận ${o.id} sau ${Math.round((now - o.times.assigned) / 1000)} giây`, since: o.times.assigned });
+      out.push({ level: 'warning', orderId: o.id, code: 'offer_pending', message: `${o.staff?.name ?? 'Gara'} chưa nhận ${o.id} sau ${Math.round((now - o.times.assigned) / 1000)} giây`, since: o.times.assigned });
     }
     if (o.status === 'enroute') {
       const last = lastTelemetryAt(o.id) ?? o.times.enroute ?? o.updatedAt;

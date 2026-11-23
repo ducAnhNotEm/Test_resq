@@ -76,6 +76,8 @@ export type ServerMsg =
   | { type: 'telemetry'; msg: TelemetryMessage }
   | { type: 'order'; order: unknown }
   | { type: 'presence'; presence: Presence }
+  /** Tín hiệu SOS mới / đổi trạng thái: bản điều hành + máy người gửi. */
+  | { type: 'sos'; sos: unknown }
   | { type: 'error'; code: string; message: string };
 
 // ---- Kiểm tra dữ liệu từ client (không tin bất cứ thứ gì đi qua mạng) ----

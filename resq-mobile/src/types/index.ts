@@ -67,8 +67,9 @@ export interface NearbyPlace {
   coords?: [number, number];
 }
 
+/** Người liên hệ khẩn cấp — lưu trên tài khoản (server), id dạng UUID. */
 export interface EmergencyContact {
-  id: number;
+  id: string;
   name: string;
   phone: string;
   relation: string;
@@ -116,10 +117,18 @@ export type RootStackParamList = {
   OrderTracking: { orderId?: string } | undefined;
   Rating: { orderId?: string };
   CrashDetection: { autoDispatched?: boolean } | undefined;
+  /** SOS tới tổng đài: source = cách phát (giữ nút / va chạm); sosId = mở lại một SOS đã có (chỉ theo dõi). */
+  SosAlert: { source?: 'hold' | 'crash'; sosId?: string } | undefined;
   /** Đăng ký gara đối tác (chưa đăng nhập). */
   GarageRegister: undefined;
+  /** Chọn loại tài khoản: người dùng hoặc gara. */
+  Register: undefined;
+  CustomerRegister: undefined;
   /** Hồ sơ gara (nhân viên / chủ gara). */
-  StoreProfile: undefined;
+  /** Hồ sơ cửa hàng. storeId = chi nhánh cụ thể (chủ gara); không có = cửa hàng của tài khoản. */
+  StoreProfile: { storeId?: string } | undefined;
+  Branches: undefined;
+  BranchCreate: undefined;
   ReMapsNavigation: {
     destinationName?: string;
     destCoords?: [number, number];
@@ -134,13 +143,25 @@ export type RootStackParamList = {
   AdminNotice: undefined;
   EmergencyContacts: undefined;
   QBinAssistant: undefined;
+  // ---- tài khoản khách hàng (chỉ có trong stack khách) ----
+  PersonalInfo: undefined;
+  VehicleManagement: { openAdd?: boolean } | undefined;
+  SavedPlaces: undefined;
+  ActivityHistory: undefined;
+  About: undefined;
+  HelpCenter: undefined;
+  Terms: undefined;
+  PolicyDetail: { policyId: string };
+  /** Thông báo thật (từ nhật ký đơn) — có ở cả stack khách và stack gara. */
+  Notifications: undefined;
 };
 
 /** Tab của nhân viên gara ReFix. */
 export type StaffTabParamList = {
   StaffJobsTab: undefined;
-  StaffReFixTab: undefined;
+  StaffHistoryTab: undefined;
   StaffMapsTab: undefined;
+  StaffSettingsTab: undefined;
 };
 
 export type MainTabParamList = {
