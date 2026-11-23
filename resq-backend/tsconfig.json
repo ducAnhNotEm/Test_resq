@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "types": ["node"] // <-- Bắt buộc phải có dòng này
+  },
+  "include": [
+    "src/**/*", 
+    "prisma/contract.d.ts", 
+    "prisma.config.ts" // <-- Thêm dòng này để VS Code quét file config
+  ],
+  "exclude": ["node_modules"]
+}

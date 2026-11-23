@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "ResQ",
+    "slug": "resq-mobile",
+    "plugins": [
+      "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "color": "#E11D48"
+        }
+      ],
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7ab0eb32-1d7c-49ee-95d9-fa4afb6315cd"
+      }
+    },
+    "owner": "hieutx",
+    "android": {
+      "package": "com.hieutx.resqmobile"
+    }
+  }
+}

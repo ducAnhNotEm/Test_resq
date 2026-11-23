@@ -1,0 +1,79 @@
+// use prisma-8
+
+model User {
+  id         String   @id @onCreate(uuid())
+  phoneNumber String? @unique
+  email      String?  @unique
+  fullName   String?
+  avatarUrl  String?
+  googleId   String?  @unique
+  facebookId String?  @unique
+  isVerified Boolean  @default(false)
+  pushToken  String?  @unique
+  role       String   @default("USER")
+  sessionVersion Int   @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @onCreate(now()) @onUpdate(now())
+
+  vehicles          Vehicle[]
+  emergencyContacts EmergencyContact[]
+  savedPlaces       SavedPlace[]
+}
+
+model OtpCode {
+  id          String   @id @onCreate(uuid()) // Sửa từ @default(uuid()) thành @onCreate(uuid())
+  phoneNumber String
+  code        String
+  attempts    Int      @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+}
+
+model Vehicle {
+  id        String   @id @onCreate(uuid())
+  userId    String
+  name      String
+  plate     String
+  vin       String?
+  color     String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, plate])
+  @@index([userId])
+}
+
+model EmergencyContact {
+  id            String   @id @onCreate(uuid())
+  userId        String
+  name          String
+  phone         String
+  relation      String   @default("Người thân")
+  shareLocation Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @onCreate(now()) @onUpdate(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, phone])
+  @@index([userId])
+}
+
+model SavedPlace {
+  id        String   @id @onCreate(uuid())
+  userId    String
+  type      String   @default("other")
+  title     String
+  address   String
+  latitude  Float?
+  longitude Float?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @onCreate(now()) @onUpdate(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
