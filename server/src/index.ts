@@ -3,7 +3,7 @@
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { networkInterfaces } from 'node:os';
 import { DATA_DIR, DEFAULT_SEED_PASSWORD, ROOT, dbPathOf, loadEnv } from './env.ts';
 import { Store } from './db.ts';
@@ -12,7 +12,8 @@ import { TokenSigner } from './auth.ts';
 import { GoongClient } from './goong.ts';
 import { RealtimeHub } from './realtime.ts';
 import { createApp } from './http.ts';
-import { API_VERSION, BuildInfo, killPortHint, remoteBuild } from './build.ts';
+import { API_VERSION, BuildInfo, killPortHint, remoteBuild, storageOf } from './build.ts';
+import { BACKUP_EVERY_MS, runBackup } from './backup.ts';
 import { PlaceStore } from './placeStore.ts';
 import { Demo } from './demo.ts';
 import { ensureSeedStores, syncPartners } from './refix.ts';
@@ -24,8 +25,13 @@ const port = Number(env.PORT ?? 8787);
 const goongApiKey = env.GOONG_API_KEY || env.EXPO_PUBLIC_GOONG_API_KEY || '';
 const goongMapKey = env.GOONG_MAP_KEY || env.EXPO_PUBLIC_GOONG_MAP_KEY || '';
 
-const dataDir = DATA_DIR;
+// Ảnh gara + khóa phiên nằm CÙNG thư mục với database: gắn ổ đĩa lưu trữ (vd. Render Disk ở /var/data, đặt
+// RESQ_DB_PATH=/var/data/resq.db) là giữ được TẤT CẢ — không còn cảnh DB còn mà ảnh mất, hay mọi người bị đăng xuất.
+const dataDir = env.RESQ_DATA_DIR ? resolve(env.RESQ_DATA_DIR) : (env.RESQ_DB_PATH ? dirname(dbPathOf(env)) : DATA_DIR);
 mkdirSync(dataDir, { recursive: true });
+const storage = storageOf(env);
+console.log(`Dữ liệu: ${dbPathOf(env)} — ${storage.label}`);
+if (!storage.persistent) console.warn('⚠ LƯU TRỮ TẠM THỜI: tài khoản đăng ký, gara, SOS sẽ MẤT khi server ngủ / deploy lại. Xem README → "Lưu trữ lâu dài".');
 
 // Secret ký token: tự tạo lần đầu, lưu trong data/ → khởi động lại server không làm cả nhóm bị đăng xuất.
 const secretFile = join(dataDir, 'secret.key');
@@ -81,6 +87,7 @@ if (resumed) console.log(`Chạy lại ${resumed} xe ảo đang dở hành trìn
 const handle = createApp({ store, orders, signer, goong, realtime, mapKey: goongMapKey, adminDir: join(root, 'admin'), places, placeImagesDir: join(root, 'seed', 'place-images'), demo, storeImagesDir: join(dataDir, 'store-images'),
   // Render đứng sau 1 reverse proxy (biến RENDER do Render tự đặt). Khác: đặt RESQ_TRUST_PROXY_HOPS cho đúng hạ tầng.
   build,
+  storage,
   trustProxyHops: Number(env.RESQ_TRUST_PROXY_HOPS ?? (env.RENDER ? 1 : 0)) || 0,
   publicSignup: env.RESQ_PUBLIC_SIGNUP !== '0',
 });
@@ -89,6 +96,14 @@ server.on('request', (req, res) => { void handle(req, res); });
 // điều phối lại đơn hết hạn nhận / đơn đang chờ; dọn hành trình cũ (quyền riêng tư)
 const sweep = setInterval(() => { try { orders.sweep(); } catch (e) { console.error('[sweep]', e); } }, 10_000);
 const purge = setInterval(() => store.purgeTracks(30 * 24 * 3600_000), 6 * 3600_000);
+// sao lưu database: lúc khởi động + mỗi 6 giờ, giữ 7 ngày (data/backups). Lưu trữ tạm (Render free) thì vô nghĩa → bỏ.
+const backupDir = join(dataDir, 'backups');
+const doBackup = () => {
+  try { const f = runBackup(store, backupDir); console.log(`Đã sao lưu dữ liệu: ${f}`); }
+  catch (e) { console.error('[backup] không sao lưu được:', (e as Error).message); }
+};
+const backupTimer = storage.persistent ? setInterval(doBackup, BACKUP_EVERY_MS) : null;
+if (storage.persistent) setTimeout(doBackup, 5_000).unref();
 
 server.on('error', async (e: NodeJS.ErrnoException) => {
   if (e.code === 'EADDRINUSE') {
@@ -119,7 +134,7 @@ server.listen(port, '0.0.0.0', () => {
 });
 
 const shutdown = () => {
-  clearInterval(sweep); clearInterval(purge);
+  clearInterval(sweep); clearInterval(purge); if (backupTimer) clearInterval(backupTimer);
   demo?.close();
   realtime?.close();
   server.close(() => { store.db.close(); process.exit(0); });

@@ -23,6 +23,8 @@ function detectFromExpoHost(): string {
 }
 
 const envUrl = trimSlash((process.env.EXPO_PUBLIC_API_URL ?? '').trim());
+/** Máy chủ CHUNG của nhóm (vd. Render) — hiện thành nút chọn nhanh trong "Đổi máy chủ". */
+export const SHARED_SERVER_URL = trimSlash((process.env.EXPO_PUBLIC_SHARED_SERVER_URL ?? '').trim());
 const autoUrl = detectFromExpoHost();
 
 export type ApiSource = 'saved' | 'env' | 'auto' | 'none';
@@ -78,8 +80,8 @@ export async function probeServer(url: string, timeoutMs = 8000): Promise<{ ok: 
   const t = setTimeout(() => ac.abort(), timeoutMs);
   try {
     const r = await fetch(`${url}/api/health`, { signal: ac.signal });
-    const j = await r.json().catch(() => null) as { service?: string; apiVersion?: number; features?: string[]; stale?: boolean } | null;
-    if (r.ok && j?.service === 'resq') return { ok: true, info: { apiVersion: j.apiVersion ?? 0, features: j.features ?? [], stale: !!j.stale } };
+    const j = await r.json().catch(() => null) as { service?: string; apiVersion?: number; features?: string[]; stale?: boolean; storage?: ServerInfo['storage'] } | null;
+    if (r.ok && j?.service === 'resq') return { ok: true, info: { apiVersion: j.apiVersion ?? 0, features: j.features ?? [], stale: !!j.stale, storage: j.storage ?? null } };
     return { ok: false, message: `Địa chỉ phản hồi nhưng không phải server ResQ (HTTP ${r.status}).` };
   } catch (e) {
     return { ok: false, message: (e as Error).name === 'AbortError' ? 'Quá thời gian chờ — server có đang bật không?' : 'Không kết nối được tới địa chỉ này.' };

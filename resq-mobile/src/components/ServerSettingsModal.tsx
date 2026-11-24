@@ -2,21 +2,23 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { FONTS, METRICS, TYPOGRAPHY } from '../theme/tokens';
-import { normalizeServerUrl, probeServer } from '../config';
+import { SHARED_SERVER_URL, normalizeServerUrl, probeServer } from '../config';
+import { serverHost, serverLine } from '../features/server/compat';
 import { useAuth } from '../context/AuthContext';
 
 interface Props { visible: boolean; onClose: () => void }
 
 export const ServerSettingsModal: React.FC<Props> = ({ visible, onClose }) => {
-  const { serverUrl, serverSource, changeServer } = useAuth();
+  const { serverUrl, serverSource, changeServer, serverInfo } = useAuth();
+  const line = serverLine(serverInfo);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => { if (visible) { setInput(serverSource === 'saved' ? serverUrl : ''); setMsg(null); } }, [visible, serverUrl, serverSource]);
 
-  const save = async () => {
-    const url = normalizeServerUrl(input);
+  const save = async (raw?: string) => {
+    const url = normalizeServerUrl(raw ?? input);
     if (!url) { setMsg({ ok: false, text: 'Địa chỉ không hợp lệ. Ví dụ: https://abc-xyz.trycloudflare.com' }); return; }
     setBusy(true);
     setMsg(null);
@@ -38,6 +40,13 @@ export const ServerSettingsModal: React.FC<Props> = ({ visible, onClose }) => {
             Đang dùng: <Text style={styles.bold}>{serverUrl || '(chưa có)'}</Text>
             {serverSource === 'auto' ? ' · tự dò cùng Wi-Fi' : serverSource === 'env' ? ' · từ .env' : serverSource === 'saved' ? ' · đã lưu' : ''}
           </Text>
+          {serverUrl ? <Text style={[styles.body, line.temporary && { color: '#B45309', fontFamily: FONTS.bold }]}>{line.text}</Text> : null}
+          <Text style={styles.body}>Tài khoản, đăng ký, SOS lưu RIÊNG ở từng máy chủ: trang admin phải mở đúng máy chủ app đang dùng thì mới thấy dữ liệu. Đổi máy chủ sẽ đăng xuất.</Text>
+          {SHARED_SERVER_URL && SHARED_SERVER_URL !== serverUrl ? (
+            <Pressable disabled={busy} onPress={() => void save(SHARED_SERVER_URL)} style={[styles.btn, styles.primary, { alignSelf: 'stretch', alignItems: 'center' }]} accessibilityRole="button">
+              <Text style={styles.primaryText}>Dùng máy chủ chung: {serverHost(SHARED_SERVER_URL)}</Text>
+            </Pressable>
+          ) : null}
           <Text style={styles.body}>Ở xa (khác Wi-Fi): dán địa chỉ mà máy chạy `npm run online` in ra, hoặc quét mã QR bằng camera.</Text>
           <TextInput
             value={input}
@@ -56,7 +65,7 @@ export const ServerSettingsModal: React.FC<Props> = ({ visible, onClose }) => {
             ) : null}
             <View style={{ flex: 1 }} />
             <Pressable onPress={onClose} style={[styles.btn, styles.ghost]}><Text style={styles.ghostText}>Đóng</Text></Pressable>
-            <Pressable disabled={busy || !input.trim()} onPress={save} style={[styles.btn, styles.primary, (busy || !input.trim()) && { opacity: 0.5 }]}>
+            <Pressable disabled={busy || !input.trim()} onPress={() => void save()} style={[styles.btn, styles.primary, (busy || !input.trim()) && { opacity: 0.5 }]}>
               {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.primaryText}>Kiểm tra & lưu</Text>}
             </Pressable>
           </View>

@@ -58,6 +58,20 @@ export async function remoteBuild(url: string): Promise<{ resq: boolean; apiVers
   } catch { return null; }
 }
 
+export interface StorageInfo { persistent: boolean; kind: 'local' | 'render-ephemeral' | 'persistent-disk'; label: string; server: string }
+
+/**
+ * Dữ liệu trên server này có SỐNG SÓT qua khởi động lại không. Render (biến RENDER có sẵn) gói free: ổ đĩa TẠM —
+ * server ngủ sau ~15 phút / deploy lại là mất sạch DB. Gắn Render Disk rồi đặt RESQ_STORAGE=persistent.
+ * Admin + app hiện rõ điều này (trước đây người dùng tưởng đăng ký / SOS "không lên admin" — thực ra đã mất).
+ */
+export function storageOf(env: Record<string, string | undefined>): StorageInfo {
+  const server = env.RESQ_SERVER_NAME || (env.RENDER ? 'Render' : 'Máy chủ nội bộ (laptop)');
+  if (env.RESQ_STORAGE === 'persistent') return { persistent: true, kind: 'persistent-disk', label: 'lưu trữ lâu dài', server };
+  if (env.RENDER) return { persistent: false, kind: 'render-ephemeral', label: 'lưu trữ TẠM THỜI — mất khi server ngủ / deploy lại', server };
+  return { persistent: true, kind: 'local', label: 'lưu trên máy chạy server', server };
+}
+
 /** Lệnh tắt tiến trình đang giữ cổng — in ra cho người chạy server copy (Windows / macOS / Linux). */
 export const killPortHint = (port: number) => (process.platform === 'win32'
   ? `PowerShell:  Stop-Process -Id (Get-NetTCPConnection -LocalPort ${port} -State Listen).OwningProcess`

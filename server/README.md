@@ -65,6 +65,23 @@ Giữ nút SOS 3 giây (hoặc phát hiện va chạm mà người dùng không 
 - **Chi nhánh**: chủ gara thêm cửa hàng khác (`/api/store/branches`), mỗi chi nhánh có địa chỉ / giờ / dịch vụ / ảnh riêng, **chờ tổng đài duyệt** như gara mới. Chủ gara nhận đơn thay chi nhánh chưa có nhân viên. Tối đa 10 cửa hàng / chủ.
 - **Lịch sử sửa chữa** `GET /api/store/history`: đơn của mọi chi nhánh — khách nào, biển số, lỗi, thời gian, đánh giá. SĐT khách của đơn đã xong chỉ hiện 3 số cuối.
 
+## App gửi tới máy chủ nào? Dữ liệu có được giữ không?
+
+- **Mỗi máy chủ một database riêng.** App trỏ tới laptop (`npm run online` / cùng Wi-Fi) thì đăng ký, SOS nằm ở admin của
+  **laptop**; trỏ tới Render thì nằm ở admin **Render**. Xem app đang dùng máy nào: Cài đặt → **Máy chủ**. Trang admin
+  ghi "Máy chủ: …" ở thanh bên.
+- **Render gói free = lưu trữ TẠM THỜI**: server ngủ sau ~15 phút không dùng hoặc deploy lại là **mất sạch** tài khoản
+  đăng ký, gara, SOS (chỉ còn tài khoản mẫu). Admin và app hiện cảnh báo "lưu trữ TẠM THỜI".
+- **Lưu trữ lâu dài** (để quản lý tài khoản trên admin): Render `plan: starter` + Render Disk mount `/var/data`, đặt
+  `RESQ_DB_PATH=/var/data/resq.db` và `RESQ_STORAGE=persistent` (khối mẫu có sẵn trong `render.yaml`). Ảnh gara + khóa
+  phiên tự lưu cạnh DB. Hoặc chạy server trên một máy luôn bật (laptop / VPS) với Cloudflare Tunnel có tên.
+- **Chạy trên laptop (cách nhóm đang dùng)**: dữ liệu nằm ở `server/data/resq.db`, **tự sao lưu** lúc khởi động + mỗi 6 giờ
+  vào `server/data/backups/` (giữ 7 ngày). Khôi phục: tắt server, chép một file backup thành `server/data/resq.db`.
+  Laptop phải luôn bật và không ngủ (Windows: Cài đặt → Nguồn → "Không bao giờ" khi cắm sạc). Mở admin bằng **địa chỉ
+  tunnel `npm run online` in ra** + `/admin` (hoặc `http://localhost:8787/admin` trên chính laptop) — không phải Render.
+- Địa chỉ trycloudflare chỉ đổi khi chạy lại `npm run online` (sửa code KHÔNG làm đổi). Muốn cố định hẳn: Cloudflare Tunnel có tên (xem dưới).
+- App: đặt `EXPO_PUBLIC_SHARED_SERVER_URL` trong `resq-mobile/.env` → nút "Dùng máy chủ chung" trong Đổi máy chủ.
+
 ## Cập nhật code xong: server PHẢI chạy bản mới
 
 Node **không tự nạp lại code**. Server bật từ trước vẫn chạy bản cũ → mọi tính năng mới trả 404 → app báo lỗi (đã xảy ra

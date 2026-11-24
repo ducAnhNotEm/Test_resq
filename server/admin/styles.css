@@ -233,3 +233,6 @@ tbody tr:last-child td { border-bottom: 0; }
 .sos-block .actions input { flex: 1; min-width: 180px; }
 .sos-contacts { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
 .sos-contacts li { display: grid; gap: 4px; }
+
+.storage-banner { padding: 10px 24px; background: var(--warning-bg); color: var(--warning); border-bottom: 1px solid var(--border); font-size: 13px; }
+.storage-banner[hidden] { display: none; }

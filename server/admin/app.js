@@ -75,7 +75,15 @@ async function boot() {
     refreshStoreBadge();
     refreshSosBadge();
     // server chạy mã cũ (đã sửa code mà chưa khởi động lại) → nói rõ, thay vì để các tính năng mới lỗi 404 khó hiểu
-    fetch('/api/health').then(r => r.json()).then(h => { if (h.stale) toast('⚠ Mã server đã đổi nhưng server CHƯA khởi động lại — tính năng mới có thể lỗi. Tắt rồi chạy lại server.', true); }).catch(() => {});
+    fetch('/api/health').then(r => r.json()).then(h => {
+      if (h.stale) toast('⚠ Mã server đã đổi nhưng server CHƯA khởi động lại — tính năng mới có thể lỗi. Tắt rồi chạy lại server.', true);
+      // ĐANG XEM MÁY CHỦ NÀO: app gửi tới laptop mà mở admin Render (hoặc ngược lại) = "không thấy SOS / đăng ký"
+      const st = h.storage;
+      $('#serverInfo').textContent = `Máy chủ: ${location.host}${st ? ` · ${st.server}` : ''}`;
+      const bar = $('#storageBanner');
+      bar.hidden = !st || st.persistent;
+      if (st && !st.persistent) bar.innerHTML = `⚠ <b>Dữ liệu trên máy chủ này là TẠM THỜI</b> (${esc(st.server)} gói free): tài khoản đăng ký, gara, SOS <b>bị xóa khi server ngủ (~15 phút không dùng) hoặc deploy lại</b>. App phải trỏ đúng địa chỉ <b>${esc(location.origin)}</b> thì dữ liệu mới hiện ở đây.`;
+    }).catch(() => {});
     clearInterval(state.sosTimer);
     state.sosTimer = setInterval(refreshSosBadge, 15_000);      // dự phòng khi mất realtime
     connectWs();

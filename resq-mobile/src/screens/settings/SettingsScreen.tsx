@@ -11,6 +11,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { SettingsRow, SettingsSection } from '../../components/ui/Settings';
+import { ServerSettingsRow } from '../../components/ServerSettingsRow';
 import { Avatar, PrimaryButton } from '../../components/ui/Controls';
 import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -128,6 +129,7 @@ export const SettingsScreen: React.FC = () => {
         </SettingsSection>
 
         <SettingsSection title="Cài đặt chung">
+          <ServerSettingsRow />
           <SettingsRow
             icon={isDark ? 'moon' : 'sunny'}
             tone="amber"

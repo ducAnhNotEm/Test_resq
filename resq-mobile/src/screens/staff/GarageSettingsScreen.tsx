@@ -10,6 +10,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SettingsRow, SettingsSection } from '../../components/ui/Settings';
+import { ServerSettingsRow } from '../../components/ServerSettingsRow';
 import { Avatar, PrimaryButton } from '../../components/ui/Controls';
 import { DutyCard } from '../../components/DutyCard';
 import { useAppTheme } from '../../context/ThemeContext';
@@ -108,6 +109,7 @@ export const GarageSettingsScreen: React.FC = () => {
         </SettingsSection>
 
         <SettingsSection title="Cài đặt chung">
+          <ServerSettingsRow />
           <SettingsRow icon={isDark ? 'moon' : 'sunny'} tone="amber" title="Chế độ tối" toggle={{ value: isDark, onChange: v => setThemeMode(v ? 'dark' : 'light') }} />
         </SettingsSection>
 

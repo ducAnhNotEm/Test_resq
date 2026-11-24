@@ -118,3 +118,14 @@ test('tương thích server: bản cũ / chưa khởi động lại được nh�
   assert.match(serverIssueText('outdated')!.text, /npm run online/);
   assert.equal(serverIssueText(null), null);
 });
+
+test('máy chủ: hiện rõ đang dùng máy nào + cảnh báo lưu trữ tạm thời', async () => {
+  const { serverHost, serverLine } = await import('../src/features/server/compat.ts');
+  assert.equal(serverHost('https://resq-server-gd0f.onrender.com/'), 'resq-server-gd0f.onrender.com');
+  assert.equal(serverHost('http://192.168.1.81:8787'), '192.168.1.81:8787');
+  const tmp = serverLine({ apiVersion: 4, features: [], stale: false, storage: { persistent: false, kind: 'render-ephemeral', label: 'lưu trữ TẠM THỜI', server: 'Render' } });
+  assert.equal(tmp.temporary, true);
+  assert.match(tmp.text, /Render · lưu trữ TẠM THỜI/);
+  assert.equal(serverLine({ apiVersion: 4, features: [], stale: false, storage: { persistent: true, kind: 'local', label: 'lưu trên máy chạy server', server: 'Máy chủ nội bộ (laptop)' } }).temporary, false);
+  assert.equal(serverLine(null).text, 'Chưa kết nối được');
+});

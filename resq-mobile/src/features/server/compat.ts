@@ -4,7 +4,8 @@
 
 /** Bản API app này cần — khớp server/src/build.ts (API_VERSION). */
 export const REQUIRED_API_VERSION = 4;
-export interface ServerInfo { apiVersion: number; features: string[]; stale: boolean }
+export interface ServerStorage { persistent: boolean; kind: string; label: string; server: string }
+export interface ServerInfo { apiVersion: number; features: string[]; stale: boolean; storage?: ServerStorage | null }
 
 /** 'outdated': server bản cũ (thiếu tính năng) · 'stale': mã server đã đổi nhưng chưa khởi động lại · null: ổn / chưa biết. */
 export type ServerIssue = 'outdated' | 'stale' | null;
@@ -14,6 +15,16 @@ export const serverIssueOf = (i: ServerInfo | null): ServerIssue =>
 
 /** Server có tính năng này chưa (server rất cũ không khai `features` → coi như CHƯA có). */
 export const hasFeature = (i: ServerInfo | null, f: string): boolean | null => (i ? i.features.includes(f) : null);
+
+/** "resq-server-gd0f.onrender.com" — tên ngắn của địa chỉ server để người dùng nhận ra đang dùng máy nào. */
+export const serverHost = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+
+/** Dòng mô tả máy chủ: "Render · lưu trữ TẠM THỜI…" / "Máy chủ nội bộ (laptop) · lưu trên máy chạy server". */
+export function serverLine(i: ServerInfo | null): { text: string; temporary: boolean } {
+  const s = i?.storage;
+  if (!s) return { text: i ? 'Máy chủ ResQ' : 'Chưa kết nối được', temporary: false };
+  return { text: `${s.server} · ${s.label}`, temporary: !s.persistent };
+}
 
 export function serverIssueText(issue: ServerIssue): { title: string; text: string } | null {
   if (issue === 'outdated') return {

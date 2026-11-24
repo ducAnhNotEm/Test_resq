@@ -25,3 +25,15 @@ services:
       # Khóa ký phiên đăng nhập — Render tự sinh, giữ nguyên qua các lần deploy
       - key: RESQ_JWT_SECRET
         generateValue: true
+    # ⚠ GÓI FREE: ổ đĩa TẠM — server ngủ (~15 phút không dùng) hoặc deploy lại là MẤT SẠCH tài khoản đăng ký, gara,
+    # SOS. Muốn lưu lâu dài để quản lý trên admin: đổi `plan: starter` và BỎ dấu # ở khối dưới (Render Disk), rồi
+    # deploy lại. Server tự để DB + ảnh + khóa phiên trong /var/data; admin hết cảnh báo "lưu trữ TẠM THỜI".
+    # disk:
+    #   name: resq-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    # (thêm 2 biến dưới vào envVars ở trên)
+    #   - key: RESQ_DB_PATH
+    #     value: /var/data/resq.db
+    #   - key: RESQ_STORAGE
+    #     value: persistent
