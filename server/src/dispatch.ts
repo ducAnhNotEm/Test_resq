@@ -14,7 +14,7 @@
 import type { LngLat } from './protocol.ts';
 import { haversine } from './protocol.ts';
 import { estimateEtaMin, openState } from './places.ts';
-import { parseWeek, type DispatchHold, type Order, type Store, type StoreRow, type UserRow } from './db.ts';
+import { parseWeek, storeDisplayRating, type DispatchHold, type Order, type Store, type StorePlan, type StoreRow, type UserRow } from './db.ts';
 import type { Presence } from './protocol.ts';
 
 export const DISPATCH_POLICY = {
@@ -68,6 +68,7 @@ export interface StoreOption {
   requested: boolean;           // khách chọn gara này
   problems: string[];           // vì sao không đủ điều kiện (tiếng Việt, hiện cho tổng đài)
   rating: number | null;
+  plan: StorePlan;
 }
 
 export const fmtKm = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(m < 100_000 ? 1 : 0).replace('.', ',')} km`);
@@ -100,13 +101,16 @@ export function storeOptions(
     if (!duty.members.length) problems.push('Gara chưa có tài khoản nhận đơn');
     else if (duty.mode === 'manual' && !duty.onDutyIds.length) problems.push('Chưa khai giờ mở cửa và không có ai bật nhận đơn');
     else if ((duty.mode === 'schedule' || duty.mode === 'manual') && !free.length) problems.push('Người nhận đơn của gara đang bận');
+    const display = storeDisplayRating(s);
     out.push({
       storeId: s.id, name: s.name, address: s.address, pos, distanceM, etaMin, open, serviceOk,
       onDuty: free.length, staffId: free[0]?.id ?? null, eligible: problems.length === 0,
       withinCommitment: etaMin <= policy.maxAutoEtaMin && distanceM <= policy.maxAutoDistM,
-      requested: order.requestedStore?.id === s.id, problems, rating: s.reviews_count > 0 ? s.rating : null,
+      requested: order.requestedStore?.id === s.id, problems, rating: display.rating, plan: s.plan ?? 'free',
     });
   }
+  // CẤP BẬC ĐỐI TÁC KHÔNG THAM GIA ĐIỀU PHỐI: đơn cứu hộ luôn giao cho nơi tới NHANH NHẤT đủ điều kiện.
+  // (Trả phí để được giao đơn cứu hộ trước = khách chờ lâu hơn khi gặp nạn — rủi ro an toàn + pháp lý.)
   return out.sort((a, b) => Number(b.eligible) - Number(a.eligible) || a.etaMin - b.etaMin || (b.rating ?? 0) - (a.rating ?? 0));
 }
 

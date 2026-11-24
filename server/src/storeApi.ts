@@ -13,13 +13,14 @@ import { randomBytes } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import type { LngLat, Role } from './protocol.ts';
 import { validLngLat } from './protocol.ts';
-import { rolesOf, toPublicUser, toStoreInfo, type Store, type StoreImage, type StoreRow, type StoreStatus, type UserRow } from './db.ts';
+import { rolesOf, toPublicUser, toStoreInfo, type Store, type StoreImage, type StorePlan, type StoreRow, type StoreStatus, type UserRow } from './db.ts';
 import { ApiError, type OrderService, type Principal } from './orders.ts';
 import { AttemptLimiter, type TokenSigner } from './auth.ts';
 import type { GoongClient } from './goong.ts';
 import type { PlaceStore } from './placeStore.ts';
 import { hoursText, syncPartners, validWeek } from './refix.ts';
 import { DISPATCH_POLICY, dutyOf, fmtKm, fmtMin, overrideNeeded } from './dispatch.ts';
+import { STORE_PLANS, disputeReview, handlePlanRequest, listDisputes, listPlanRequests, planSummary, requestStorePlan, resolveDispute, setStorePlan, setStorePlanLock, storeTierView } from './storePlans.ts';
 import { EMAIL_RE, PHONE_RE, bad, num, str, uniqueConflict, usernameField } from './validate.ts';
 
 export const STORE_SERVICES = ['repair', 'tire', 'battery', 'tow', 'diagnostics'] as const;
@@ -105,6 +106,10 @@ const services = (v: unknown): string[] => {
   const out = [...new Set(v.map(String).filter(x => (STORE_SERVICES as readonly string[]).includes(x)))];
   if (!out.length) throw bad('Chọn ít nhất 1 dịch vụ');
   return out;
+};
+const planField = (v: unknown): StorePlan => {
+  if (typeof v !== 'string' || !(STORE_PLANS as readonly string[]).includes(v)) throw bad('Gói cửa hàng không hợp lệ (free / silver / gold / pre)', 'invalid_plan');
+  return v as StorePlan;
 };
 const position = (lat: unknown, lng: unknown): LngLat => {
   const p: LngLat = [num(lng, 'kinh độ', { required: true })!, num(lat, 'vĩ độ', { required: true })!];
@@ -248,6 +253,23 @@ export function registerStoreRoutes(add: AddRoute, d: StoreApiDeps): void {
     return storeDto(store, store.storeById(s.id)!);
   });
 
+  // ================= CẤP BẬC ĐỐI TÁC (Free / Bạc / Vàng / Pre) — xem storePlans.ts =================
+  // Nhân viên xem được (biết vì sao gara bị cảnh báo); chỉ CHỦ gửi yêu cầu mua gói / kháng nghị đánh giá.
+  add('GET', '/api/store/plan', ['staff'], ({ user }) => {
+    const s = myStore(user);
+    return { ...storeTierView(store, s.id), isOwner: s.owner_user_id === user.id };
+  });
+  add('POST', '/api/store/plan/request', ['staff'], ({ user, body }) => {
+    const s = myStore(user, true);
+    requestStorePlan(store, s.id, planField(body.plan), body.months, typeof body.note === 'string' ? body.note : '');
+    return { ...storeTierView(store, s.id), isOwner: true };
+  });
+  add('POST', '/api/store/reviews/:id/dispute', ['staff'], ({ user, params, body }) => {
+    const s = myStore(user, true);
+    disputeReview(store, s.id, params.id, str(body.reason, 'lý do', { required: true, max: 500 })!);
+    return { ...storeTierView(store, s.id), isOwner: true };
+  });
+
   // ================= CHI NHÁNH (chủ gara) =================
   // Mỗi chi nhánh là MỘT cửa hàng riêng (địa chỉ, tọa độ, giờ, dịch vụ, ảnh) → điều phối tính km từ đúng chi nhánh.
   // Chi nhánh mới / đổi địa chỉ: CHỜ tổng đài duyệt như gara mới (không ai "mọc" chi nhánh cạnh khách để thắng đơn).
@@ -369,6 +391,7 @@ export function registerStoreRoutes(add: AddRoute, d: StoreApiDeps): void {
       ...storeDto(store, s), active: !!s.active, createdAt: s.created_at,
       ownerEmail: owner?.email ?? null, ownerName: owner?.name ?? null,
       parentName: s.parent_store_id ? (store.storeById(s.parent_store_id)?.name ?? null) : null, ownerUsername: owner?.username || null, ownerPhone: owner?.phone || null,
+      planInfo: planSummary(store, s),
     };
   }));
   add('POST', '/api/admin/stores/:id/approve', ['admin'], ({ params, user }) => {
@@ -391,6 +414,36 @@ export function registerStoreRoutes(add: AddRoute, d: StoreApiDeps): void {
     store.setStoreStatus(params.id, st);
     changed();
     return storeDto(store, store.storeById(params.id)!);
+  });
+
+  // ---- CẤP BẬC: tổng đài kích hoạt gói đã mua / tạm dừng tự động / duyệt yêu cầu / xử lý kháng nghị ----
+  add('GET', '/api/admin/store-plans', ['admin'], () => ({ requests: listPlanRequests(store), disputes: listDisputes(store, 'all') }));
+  add('GET', '/api/admin/stores/:id/plan', ['admin'], ({ params }) => {
+    if (!store.storeById(params.id)) throw new ApiError(404, 'store_not_found', 'Không tìm thấy gara');
+    return storeTierView(store, params.id);
+  });
+  add('POST', '/api/admin/stores/:id/plan', ['admin'], ({ params, body, user }) => {
+    if (!store.storeById(params.id)) throw new ApiError(404, 'store_not_found', 'Không tìm thấy gara');
+    if (body.plan !== undefined) {
+      setStorePlan(store, params.id, planField(body.plan), { source: 'admin', actor: user.name || 'admin', months: body.months, reason: typeof body.note === 'string' ? body.note : undefined });
+    }
+    if (typeof body.locked === 'boolean') setStorePlanLock(store, params.id, body.locked, user.name || 'admin');
+    changed();
+    return storeTierView(store, params.id);
+  });
+  add('POST', '/api/admin/store-plans/requests/:id', ['admin'], ({ params, body, user }) => {
+    const action = body.action;
+    if (action !== 'approve' && action !== 'reject') throw bad('Hành động không hợp lệ');
+    const r = handlePlanRequest(store, params.id, action, user.name || 'admin', typeof body.note === 'string' ? body.note : '', body.months);
+    changed();
+    return r;
+  });
+  add('POST', '/api/admin/store-reviews/:id/dispute', ['admin'], ({ params, body, user }) => {
+    const action = body.action;
+    if (action !== 'accept' && action !== 'reject') throw bad('Hành động không hợp lệ');
+    const r = resolveDispute(store, params.id, action, user.name || 'admin', typeof body.note === 'string' ? body.note : '');
+    changed();
+    return r;
   });
 
   add('GET', '/api/admin/settings', ['admin'], () => ({ demoMode: store.demoMode(), policy: DISPATCH_POLICY }));

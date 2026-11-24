@@ -82,11 +82,61 @@ CREATE TABLE IF NOT EXISTS stores (
   hours TEXT NOT NULL DEFAULT '',
   rating REAL NOT NULL DEFAULT 5.0,
   reviews_count INTEGER NOT NULL DEFAULT 0,
+  /** Điểm Google (nguồn ngoài) — tách khỏi đánh giá THẬT trên ResQ để không trộn hai nguồn. */
+  seed_rating REAL NOT NULL DEFAULT 5.0,
+  seed_reviews_count INTEGER NOT NULL DEFAULT 0,
+  /** Đánh giá đã xác thực từ đơn hoàn thành trên ResQ. */
+  app_rating REAL NOT NULL DEFAULT 0,
+  app_reviews_count INTEGER NOT NULL DEFAULT 0,
+  /** Gói cửa hàng: free / silver / gold / pre. Tách hẳn users.plan (Premium của khách). */
+  plan TEXT NOT NULL DEFAULT 'free',
+  plan_source TEXT NOT NULL DEFAULT 'admin',
+  plan_since INTEGER,
+  plan_locked INTEGER NOT NULL DEFAULT 0,
+  plan_below_since INTEGER,
   services TEXT NOT NULL DEFAULT '[]',
   active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
+-- ĐÁNH GIÁ ĐÃ XÁC THỰC: mỗi đơn hoàn thành chỉ 1 đánh giá, gắn đúng gara đã phục vụ.
+CREATE TABLE IF NOT EXISTS store_reviews (
+  id TEXT PRIMARY KEY,
+  store_id TEXT NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  stars INTEGER NOT NULL CHECK (stars BETWEEN 1 AND 5),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_store_reviews_store ON store_reviews(store_id, created_at);
+-- YÊU CẦU GÓI: không có cổng thanh toán trong app → gara gửi yêu cầu, tổng đài xác nhận/kích hoạt.
+CREATE TABLE IF NOT EXISTS store_plan_requests (
+  id TEXT PRIMARY KEY,
+  store_id TEXT NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  requested_plan TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  note TEXT NOT NULL DEFAULT '',
+  admin_note TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  handled_at INTEGER,
+  handled_by TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_plan_requests_status ON store_plan_requests(status, created_at);
+CREATE INDEX IF NOT EXISTS idx_plan_requests_store ON store_plan_requests(store_id, created_at);
+-- NHẬT KÝ THĂNG / GIẢM HẠNG: gara nhìn được vì sao gói đổi, tổng đài đối soát được.
+CREATE TABLE IF NOT EXISTS store_plan_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  store_id TEXT NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+  at INTEGER NOT NULL,
+  from_plan TEXT,
+  to_plan TEXT NOT NULL,
+  source TEXT NOT NULL,
+  actor TEXT NOT NULL DEFAULT 'system',
+  reason TEXT NOT NULL DEFAULT '',
+  stats TEXT NOT NULL DEFAULT '{}'
+);
+CREATE INDEX IF NOT EXISTS idx_plan_events_store ON store_plan_events(store_id, at);
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -235,6 +285,8 @@ export const toPublicUser = (u: UserRow, now: number = Date.now()): PublicUser =
  * gần khách để thắng đơn"). place_id: liên kết địa điểm thật trong dữ liệu Google Maps.
  */
 export type StoreStatus = 'pending' | 'active' | 'suspended';
+export type StorePlan = 'free' | 'silver' | 'gold' | 'pre';
+export type StorePlanSource = 'admin' | 'purchase' | 'earned' | 'policy';
 export type ImageSource = 'store' | 'google';
 export interface StoreImage { url: string; source: ImageSource }
 export type WeekHours = Record<number, Array<[number, number]>>;    // 0 = Chủ nhật … 6 = Thứ bảy; phút trong ngày
@@ -242,6 +294,10 @@ export interface StoreRow {
   id: string; name: string; address: string; phone: string; lat: number; lng: number;
   place_id: string | null; email: string; image: string; hours: string; rating: number;
   reviews_count: number; services: string; active: number; created_at: number; updated_at: number;
+  seed_rating: number; seed_reviews_count: number; app_rating: number; app_reviews_count: number;
+  plan: StorePlan; plan_source: StorePlanSource; plan_since: number | null;
+  plan_locked: number; plan_below_since: number | null; plan_until: number | null;
+  earned_plan: StorePlan | null; earned_until: number | null; benefits_suspended_at: number | null;
   owner_user_id: number | null; status: StoreStatus; hours_json: string; images: string;
   pending_address: string | null; pending_lat: number | null; pending_lng: number | null; pending_at: number | null;
   verified_at: number | null; verified_by: string | null;
@@ -253,6 +309,11 @@ export interface StoreRow {
 export interface StoreInfo {
   id: string; name: string; address: string; phone: string; pos: LngLat; placeId: string | null;
   email?: string; hours?: string; rating?: number | null; reviewsCount?: number; services?: string[];
+  /** Đánh giá ResQ đã xác thực (tách khỏi điểm Google). */
+  appRating?: number | null; appReviewsCount?: number;
+  /** Gói ĐÃ MUA + nguồn gói. tier = cấp đang hiệu lực (gói đã mua hoặc hạng thưởng, lấy cao hơn). */
+  plan?: StorePlan; planSource?: StorePlanSource; planSince?: number | null; planLocked?: boolean;
+  tier?: StorePlan; benefitsSuspended?: boolean;
   status?: StoreStatus;
   /** Giờ mở cửa CÓ CẤU TRÚC (tham gia điều kiện điều phối). null = chưa khai báo. */
   week?: WeekHours | null;
@@ -269,12 +330,41 @@ export const parseWeek = (s: string | null | undefined): WeekHours | null => {
   const v = safeJson(s) as WeekHours;
   return v && typeof v === 'object' && Object.keys(v).length ? v : null;
 };
+/** Điểm hiển thị = trộn điểm Google (nguồn ngoài) với đánh giá thật trên ResQ theo số lượt. */
+export function storeDisplayRating(s: Pick<StoreRow, 'seed_rating' | 'seed_reviews_count' | 'app_rating' | 'app_reviews_count'>): { rating: number | null; reviewsCount: number } {
+  const seedN = Math.max(0, s.seed_reviews_count ?? 0);
+  const appN = Math.max(0, s.app_reviews_count ?? 0);
+  const total = seedN + appN;
+  if (!total) return { rating: null, reviewsCount: 0 };
+  const seedSum = (s.seed_rating ?? 0) * seedN;
+  const appSum = (s.app_rating ?? 0) * appN;
+  return { rating: Math.round(((seedSum + appSum) / total) * 10) / 10, reviewsCount: total };
+}
+const PLAN_RANK: Record<StorePlan, number> = { free: 0, silver: 1, gold: 2, pre: 3 };
+const asPlan = (p: unknown): StorePlan => (p === 'silver' || p === 'gold' || p === 'pre' ? p : 'free');
+/**
+ * Cấp đang hiệu lực = max(gói đã mua còn hạn, hạng thưởng còn hạn). `boost` = cấp dùng cho huy hiệu + ưu tiên hiển thị:
+ * đang bị TẠM NGƯNG QUYỀN LỢI (chất lượng dưới ngưỡng quá ân hạn) → 'free'. Hàm thuần — dùng chung server.
+ */
+export function storeTier(s: Partial<Pick<StoreRow, 'plan' | 'plan_until' | 'earned_plan' | 'earned_until' | 'benefits_suspended_at'>>, now: number = Date.now()):
+  { paid: StorePlan; earned: StorePlan | null; tier: StorePlan; suspended: boolean; boost: StorePlan } {
+  const paid = s.plan_until != null && s.plan_until <= now ? 'free' : asPlan(s.plan);
+  const earned = s.earned_plan && s.earned_until != null && s.earned_until > now ? asPlan(s.earned_plan) : null;
+  const tier = earned && PLAN_RANK[earned] > PLAN_RANK[paid] ? earned : paid;
+  const suspended = s.benefits_suspended_at != null;
+  return { paid, earned, tier, suspended, boost: suspended ? 'free' : tier };
+}
 export const toStoreInfo = (s: StoreRow): StoreInfo => {
   const images = (safeJson(s.images || '[]') as StoreImage[]);
+  const display = storeDisplayRating(s);
   return {
     id: s.id, name: s.name, address: s.address, phone: s.phone, pos: [s.lng, s.lat], placeId: s.place_id,
     email: s.email || undefined, hours: s.hours || undefined,
-    rating: s.reviews_count > 0 ? s.rating : null, reviewsCount: s.reviews_count || 0,
+    rating: display.rating, reviewsCount: display.reviewsCount,
+    appRating: s.app_reviews_count > 0 ? Math.round(s.app_rating * 10) / 10 : null,
+    appReviewsCount: s.app_reviews_count || 0,
+    plan: s.plan ?? 'free', planSource: s.plan_source ?? 'admin', planSince: s.plan_since ?? null, planLocked: !!s.plan_locked,
+    tier: storeTier(s).tier, benefitsSuspended: s.benefits_suspended_at != null,
     services: s.services ? (safeJson(s.services) as string[]) : [],
     status: s.status ?? 'active', week: parseWeek(s.hours_json), images: Array.isArray(images) ? images : [],
     pending: s.pending_address != null && s.pending_lat != null && s.pending_lng != null
@@ -452,6 +542,38 @@ export class Store {
     add('stores', st, 'verified_by', 'TEXT');
     add('stores', st, 'paused_until', 'INTEGER');
     add('stores', st, 'parent_store_id', 'TEXT');
+    // Điểm Google (nguồn ngoài) tách khỏi đánh giá THẬT trên ResQ. Thêm ĐỦ cột trước rồi mới chép dữ liệu.
+    add('stores', st, 'seed_rating', 'REAL NOT NULL DEFAULT 5.0');
+    add('stores', st, 'seed_reviews_count', 'INTEGER NOT NULL DEFAULT 0');
+    add('stores', st, 'app_rating', 'REAL NOT NULL DEFAULT 0');
+    add('stores', st, 'app_reviews_count', 'INTEGER NOT NULL DEFAULT 0');
+    // Chép điểm cũ sang nguồn ngoài ĐÚNG 1 LẦN, theo cờ trong settings (không theo "cột vừa thêm": một lần chạy lỗi
+    // giữa chừng sẽ để lại cột đã thêm nhưng chưa chép → điểm Google mất vĩnh viễn).
+    if (this.setting('mig_store_seed_rating') !== '1') {
+      this.db.exec(`UPDATE stores SET seed_rating = rating, seed_reviews_count = reviews_count
+        WHERE seed_reviews_count = 0 AND reviews_count > 0`);
+      this.setSetting('mig_store_seed_rating', '1');
+    }
+    // CẤP BẬC ĐỐI TÁC: plan = gói ĐÃ MUA (tổng đài kích hoạt) — không bao giờ tự hạ vì đánh giá.
+    add('stores', st, 'plan', "TEXT NOT NULL DEFAULT 'free'");
+    add('stores', st, 'plan_source', "TEXT NOT NULL DEFAULT 'admin'");
+    add('stores', st, 'plan_since', 'INTEGER');
+    add('stores', st, 'plan_until', 'INTEGER');                 // hết hạn gói đã mua (null = không thời hạn)
+    add('stores', st, 'plan_locked', 'INTEGER NOT NULL DEFAULT 0'); // tổng đài tạm dừng tự động (thưởng / tạm ngưng)
+    add('stores', st, 'plan_below_since', 'INTEGER');           // chất lượng dưới ngưỡng từ lúc nào (đếm ân hạn)
+    add('stores', st, 'earned_plan', 'TEXT');                   // hạng THƯỞNG nhờ đánh giá tốt (tạm thời)
+    add('stores', st, 'earned_until', 'INTEGER');
+    add('stores', st, 'benefits_suspended_at', 'INTEGER');      // tạm ngưng quyền lợi (không ưu tiên, không huy hiệu)
+    const rv = colsOf('store_reviews');
+    add('store_reviews', rv, 'counted', 'INTEGER NOT NULL DEFAULT 1');
+    add('store_reviews', rv, 'exclude_reason', "TEXT NOT NULL DEFAULT ''");
+    add('store_reviews', rv, 'dispute_status', "TEXT NOT NULL DEFAULT ''");
+    add('store_reviews', rv, 'dispute_reason', "TEXT NOT NULL DEFAULT ''");
+    add('store_reviews', rv, 'disputed_at', 'INTEGER');
+    add('store_reviews', rv, 'dispute_handled_at', 'INTEGER');
+    add('store_reviews', rv, 'dispute_handled_by', 'TEXT');
+    add('store_reviews', rv, 'dispute_admin_note', "TEXT NOT NULL DEFAULT ''");
+    add('store_plan_requests', colsOf('store_plan_requests'), 'months', 'INTEGER');
     const o2 = colsOf('orders');
     add('orders', o2, 'requested_store_id', 'TEXT');
     add('orders', o2, 'dispatch_hold', 'TEXT');
@@ -502,7 +624,9 @@ export class Store {
     this.db.exec(`CREATE INDEX IF NOT EXISTS idx_orders_store ON orders(store_id, created_at);
       CREATE INDEX IF NOT EXISTS idx_users_store ON users(store_id);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username COLLATE NOCASE) WHERE username IS NOT NULL AND username <> '';
-      CREATE INDEX IF NOT EXISTS idx_events_at ON order_events(at);`);
+      CREATE INDEX IF NOT EXISTS idx_events_at ON order_events(at);
+      CREATE INDEX IF NOT EXISTS idx_store_reviews_user ON store_reviews(store_id, user_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_store_reviews_dispute ON store_reviews(dispute_status, disputed_at);`);
 
     this.backfillVehicles();
   }
@@ -790,8 +914,9 @@ export class Store {
     const rating = typeof s.rating === 'number' ? s.rating : 5.0;
     const reviewsCount = s.reviewsCount ?? 0;
     const services = JSON.stringify(s.services ?? []);
-    this.db.prepare(`INSERT INTO stores (id, name, address, phone, lat, lng, place_id, email, image, hours, rating, reviews_count, services, active, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    this.db.prepare(`INSERT INTO stores (id, name, address, phone, lat, lng, place_id, email, image, hours, rating, reviews_count,
+        seed_rating, seed_reviews_count, app_rating, app_reviews_count, services, active, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, 1, ?, ?)
       ON CONFLICT(id) DO UPDATE SET name = excluded.name, address = excluded.address, phone = excluded.phone,
         lat = excluded.lat, lng = excluded.lng, place_id = excluded.place_id,
         email = CASE WHEN excluded.email != '' THEN excluded.email ELSE stores.email END,
@@ -799,9 +924,12 @@ export class Store {
         hours = CASE WHEN excluded.hours != '' THEN excluded.hours ELSE stores.hours END,
         rating = excluded.rating,
         reviews_count = excluded.reviews_count,
+        seed_rating = excluded.seed_rating,
+        seed_reviews_count = excluded.seed_reviews_count,
         services = CASE WHEN excluded.services != '[]' THEN excluded.services ELSE stores.services END,
         updated_at = excluded.updated_at`)
-      .run(s.id, s.name, s.address ?? '', s.phone ?? '', s.pos[1], s.pos[0], s.placeId ?? null, email, image, hours, rating, reviewsCount, services, t, t);
+      .run(s.id, s.name, s.address ?? '', s.phone ?? '', s.pos[1], s.pos[0], s.placeId ?? null, email, image, hours, rating, reviewsCount,
+        rating, reviewsCount, services, t, t);
     const extra: string[] = [];
     const args: Array<string | number | null> = [];
     if (s.week !== undefined) { extra.push('hours_json = ?'); args.push(s.week ? JSON.stringify(s.week) : ''); }

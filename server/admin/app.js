@@ -619,12 +619,15 @@ async function showStoreOptions(o) {
 function pageStores(view) {
   view.innerHTML = `
     <div class="page-head"><div><h1>Gara đối tác</h1><div class="muted small">Gara là đơn vị được điều phối. Địa chỉ do gara tự sửa phải được duyệt trước khi dùng để tính khoảng cách.</div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Gara</th><th>Trạng thái</th><th>Địa chỉ (dùng để điều phối)</th><th>Dịch vụ · giờ mở cửa</th><th>Ảnh</th><th>Nhận đơn</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>`;
+    <div id="tierQueue"></div>
+    <div class="table-wrap"><table><thead><tr><th>Gara</th><th>Trạng thái</th><th>Cấp bậc</th><th>Địa chỉ (dùng để điều phối)</th><th>Dịch vụ · giờ mở cửa</th><th>Ảnh</th><th>Nhận đơn</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>`;
   const load = guard(async () => {
-    const list = await api('GET', '/api/admin/stores');
+    const [list, tiers] = await Promise.all([api('GET', '/api/admin/stores'), api('GET', '/api/admin/store-plans').catch(() => null)]);
+    renderTierQueue(tiers, load);
     $('#rows').innerHTML = list.length ? list.map(x => `<tr data-id="${esc(x.id)}">
       <td><b>${esc(x.name)}</b>${x.parentName ? `<div class="muted small">Chi nhánh của ${esc(x.parentName)}</div>` : ''}<div class="muted small">${esc(x.phone || '')}${x.email ? ' · ' + esc(x.email) : ''}</div>${x.ownerEmail ? `<div class="muted small">Chủ: ${esc(x.ownerName || '')}${x.ownerUsername ? ` · @${esc(x.ownerUsername)}` : ''}${x.ownerPhone ? ` · ${esc(x.ownerPhone)}` : ''} · ${esc(x.ownerEmail)}</div>` : ''}</td>
       <td><span class="chip ${x.status === 'active' ? 'completed' : 'off'}">${esc(STORE_STATUS[x.status] ?? x.status)}</span>${x.verifiedBy ? `<div class="muted small">duyệt: ${esc(x.verifiedBy === 'demo-auto' ? 'tự duyệt (chế độ demo)' : x.verifiedBy)}</div>` : ''}</td>
+      <td class="small">${tierCell(x.planInfo)}<div><button class="btn small" data-act="tier">Cấp bậc…</button></div></td>
       <td class="small">${esc(x.address)}<div class="muted mono">${x.pos[1].toFixed(5)}, ${x.pos[0].toFixed(5)}</div>
         ${x.pending ? `<div class="pending-addr"><b>Chờ xác minh:</b> ${esc(x.pending.address)}<div class="muted mono">${x.pending.pos[1].toFixed(5)}, ${x.pending.pos[0].toFixed(5)} · cách địa chỉ cũ ${fmtDist(distM(x.pos, x.pending.pos))}</div>
           <button class="btn small primary" data-act="approve">Duyệt địa chỉ mới</button> <button class="btn small" data-act="reject">Từ chối</button></div>` : ''}</td>
@@ -632,10 +635,11 @@ function pageStores(view) {
       <td><div class="thumbs">${(x.images || []).slice(0, 3).map(i => `<figure><img src="${esc(i.url)}" alt=""><figcaption>${esc(i.source === 'store' ? 'cửa hàng' : 'Google')}</figcaption></figure>`).join('') || '<span class="muted small">—</span>'}</div></td>
       <td class="small">${DUTY[x.dutyMode] ?? ''}${x.dutyMode === 'paused' && x.pausedUntil ? ` tới ${fmtTime(x.pausedUntil)}` : ''}<div class="muted">${x.staffCount} người nhận đơn</div></td>
       <td style="white-space:nowrap">${x.status === 'pending' ? '<button class="btn small primary" data-act="approve">Duyệt gara</button> ' : ''}${x.status === 'suspended' ? '<button class="btn small" data-act="activate">Mở lại</button>' : '<button class="btn small" data-act="suspend">Tạm khóa</button>'}</td></tr>`).join('')
-      : '<tr><td colspan="7" class="empty">Chưa có gara nào.</td></tr>';
+      : '<tr><td colspan="8" class="empty">Chưa có gara nào.</td></tr>';
     $('#rows').querySelectorAll('button[data-act]').forEach(b => b.onclick = guard(async () => {
       const id = b.closest('tr').dataset.id;
       const act = b.dataset.act;
+      if (act === 'tier') { tierModal(list.find(y => y.id === id), load); return; }
       if (act === 'approve') await api('POST', `/api/admin/stores/${encodeURIComponent(id)}/approve`);
       if (act === 'reject') await api('POST', `/api/admin/stores/${encodeURIComponent(id)}/reject-address`);
       if (act === 'suspend') { if (!confirm('Tạm khóa gara này? Gara sẽ không nhận đơn mới.')) return; await api('POST', `/api/admin/stores/${encodeURIComponent(id)}/status`, { status: 'suspended' }); }
@@ -647,6 +651,79 @@ function pageStores(view) {
   const t = setInterval(load, 15_000);
   return () => clearInterval(t);
 }
+// ---- CẤP BẬC ĐỐI TÁC (server/src/storePlans.ts): gói ĐÃ MUA do tổng đài kích hoạt; hạng THƯỞNG + tạm ngưng tự động ----
+const TIER_LABEL = { free: 'Free', silver: 'Bạc', gold: 'Vàng', pre: 'Pre' };
+const QUALITY = { good: ['completed', 'Chất lượng tốt'], warning: ['assigned', 'Cảnh báo sớm'], at_risk: ['sos', 'Dưới ngưỡng (ân hạn)'], suspended: ['sos', 'Tạm ngưng quyền lợi'] };
+const tierChip = (p) => `<span class="chip tier-${esc(p)}">${esc(TIER_LABEL[p] ?? p)}</span>`;
+function tierCell(pi) {
+  if (!pi) return '<span class="muted">—</span>';
+  const q = QUALITY[pi.quality] ?? QUALITY.good;
+  return `${tierChip(pi.tier)}${pi.earned && pi.earned === pi.tier ? ` <span class="muted">thưởng tới ${fmtVnDate(pi.earnedUntil)}</span>` : ''}
+    <div class="muted">Đã mua: ${esc(TIER_LABEL[pi.plan])}${pi.planUntil ? ` tới ${fmtVnDate(pi.planUntil)}` : ''}${pi.planLocked ? ' · 🔒 dừng tự động' : ''}</div>
+    <div><span class="chip ${q[0]}">${q[1]}</span> <span class="muted">${pi.recentLow}/${pi.recentTotal} lượt 1–2★ · 60 ngày</span></div>
+    ${pi.appReviewsCount ? `<div class="muted">ResQ ★${pi.appRating} (${pi.appReviewsCount})</div>` : ''}
+    ${pi.pendingRequest ? `<div class="pending-addr">Yêu cầu gói ${esc(TIER_LABEL[pi.pendingRequest.plan])}</div>` : ''}`;
+}
+function renderTierQueue(t, reload) {
+  const box = $('#tierQueue');
+  if (!box) return;
+  const reqs = (t?.requests || []).filter(r => r.status === 'pending');
+  const dis = (t?.disputes || []).filter(d => d.status === 'pending');
+  if (!reqs.length && !dis.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `<div class="card tier-queue">
+    ${reqs.length ? `<h3>Yêu cầu gói đang chờ (${reqs.length})</h3><div class="muted small">Gọi gara xác nhận thanh toán rồi mới kích hoạt. Gói đã mua không tự hạ vì đánh giá.</div>
+      ${reqs.map(r => `<div class="tq-row" data-req="${esc(r.id)}"><div><b>${esc(r.storeName)}</b>: ${tierChip(r.currentPlan)} → ${tierChip(r.requestedPlan)} · ${r.months ?? 1} tháng
+        <div class="muted small">${fmtTime(r.createdAt)}${r.note ? ` · “${esc(r.note)}”` : ''}</div></div>
+        <div><button class="btn small primary" data-do="approve">Đã thu tiền · kích hoạt</button> <button class="btn small" data-do="reject">Từ chối</button></div></div>`).join('')}` : ''}
+    ${dis.length ? `<h3>Kháng nghị đánh giá (${dis.length})</h3><div class="muted small">Chấp nhận → đánh giá không còn tính vào điểm / cấp bậc. Kiểm tra đơn trước khi quyết.</div>
+      ${dis.map(d => `<div class="tq-row" data-dis="${esc(d.id)}"><div><b>${esc(d.storeName)}</b> · ${'★'.repeat(d.stars)} · đơn <span class="mono">${esc(d.orderId)}</span>
+        <div class="small">Lý do của gara: “${esc(d.reason)}”</div><div class="muted small">khách đánh giá ${fmtTime(d.reviewedAt)} · kháng nghị ${fmtTime(d.disputedAt)}</div></div>
+        <div><button class="btn small" data-do="open">Xem đơn</button> <button class="btn small primary" data-do="accept">Chấp nhận</button> <button class="btn small" data-do="reject">Bác bỏ</button></div></div>`).join('')}` : ''}
+  </div>`;
+  box.querySelectorAll('[data-req] button').forEach(b => b.onclick = guard(async () => {
+    const id = b.closest('[data-req]').dataset.req;
+    const r = reqs.find(x => x.id === id);
+    if (b.dataset.do === 'approve' && !confirm(`Kích hoạt gói ${TIER_LABEL[r.requestedPlan]} ${r.months ?? 1} tháng cho ${r.storeName}? Chỉ bấm khi đã xác nhận thanh toán.`)) return;
+    let note = '';
+    if (b.dataset.do === 'reject') { note = prompt('Lý do từ chối (gara sẽ thấy):'); if (note === null) return; }
+    await api('POST', `/api/admin/store-plans/requests/${encodeURIComponent(id)}`, { action: b.dataset.do, note });
+    toast(b.dataset.do === 'approve' ? 'Đã kích hoạt gói' : 'Đã từ chối yêu cầu'); reload();
+  }));
+  box.querySelectorAll('[data-dis] button').forEach(b => b.onclick = guard(async () => {
+    const id = b.closest('[data-dis]').dataset.dis;
+    if (b.dataset.do === 'open') { openOrder(dis.find(x => x.id === id).orderId); return; }
+    const note = prompt(b.dataset.do === 'accept' ? 'Ghi chú (gara sẽ thấy):' : 'Lý do bác bỏ (gara sẽ thấy):');
+    if (note === null) return;
+    await api('POST', `/api/admin/store-reviews/${encodeURIComponent(id)}/dispute`, { action: b.dataset.do, note });
+    toast(b.dataset.do === 'accept' ? 'Đã loại đánh giá khỏi điểm' : 'Đã bác bỏ kháng nghị'); reload();
+  }));
+}
+function tierModal(x, reload) {
+  const pi = x.planInfo || {};
+  const dlg = $('#modal');
+  dlg.innerHTML = `<form method="dialog" id="f"><h2>Cấp bậc · ${esc(x.name)}</h2>
+    <p class="muted small">Đặt <b>gói đã mua</b> (sau khi thu tiền). Hạng thưởng và tạm ngưng quyền lợi do hệ thống tự xét theo đánh giá thật. Cấp bậc KHÔNG ảnh hưởng điều phối đơn cứu hộ.</p>
+    <div class="row2"><label>Gói đã mua<select name="plan">${Object.entries(TIER_LABEL).map(([k, v]) => `<option value="${k}" ${k === pi.plan ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label>Thời hạn (khi đổi gói)<select name="months"><option value="">Không thời hạn</option>${[1, 3, 6, 12].map(m => `<option value="${m}">${m} tháng</option>`).join('')}</select></label></div>
+    <label class="check"><input type="checkbox" name="locked" ${pi.planLocked ? 'checked' : ''}> Tạm dừng xét tự động (thưởng / tạm ngưng) cho gara này</label>
+    <label>Ghi chú (gara thấy trong nhật ký)<input name="note" maxlength="300"></label>
+    <div class="muted small">Hiện tại: ${tierCell(pi)}</div>
+    <p class="error" id="ferr"></p>
+    <div class="actions"><button class="btn primary" value="ok">Lưu</button><button class="btn" value="cancel" formnovalidate>Hủy</button></div></form>`;
+  dlg.showModal();
+  $('#f', dlg).onsubmit = async (e) => {
+    if (e.submitter?.value !== 'ok') return;
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const body = { locked: f.get('locked') === 'on' };
+    if (f.get('plan') !== pi.plan || f.get('months')) {
+      body.plan = f.get('plan'); body.months = f.get('months') ? Number(f.get('months')) : null; body.note = f.get('note') || '';
+    }
+    try { await api('POST', `/api/admin/stores/${encodeURIComponent(x.id)}/plan`, body); dlg.close(); toast('Đã cập nhật cấp bậc'); reload(); }
+    catch (err) { $('#ferr', dlg).textContent = err.message; }
+  };
+}
+
 const distM = (a, b) => { const R = 6371008.8, r = d => d * Math.PI / 180; const x = Math.sin(r(b[1] - a[1]) / 2) ** 2 + Math.cos(r(a[1])) * Math.cos(r(b[1])) * Math.sin(r(b[0] - a[0]) / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(x)); };
 
 function editOrderModal(o) {
@@ -832,29 +909,149 @@ const smsHref = (phone, body) => `sms:${encodeURIComponent(phone.replace(/\s/g, 
 
 // Còi báo + banner trên MỌI trang khi có SOS chưa tiếp nhận (không phụ thuộc đang mở trang nào)
 let sosOpenCount = 0;
-function beep() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.35, 0.7].forEach(t => {
-      const o = ctx.createOscillator(); const g = ctx.createGain();
-      o.type = 'square'; o.frequency.value = 880; g.gain.value = 0.08;
-      o.connect(g); g.connect(ctx.destination); o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.2);
-    });
-  } catch { /* trình duyệt chặn âm thanh khi chưa tương tác — banner vẫn hiện */ }
+// ---- CÒI BÁO ĐỘNG SOS (còi xe cứu hỏa) ----
+// Phát LẶP LIÊN TỤC file còi `/admin/sounds/sos-siren.mp3` khi còn SOS CHƯA TIẾP NHẬN; tự tắt khi tất cả đã được tiếp
+// nhận. "Tắt chuông" chỉ tắt cho các SOS đang có — SOS MỚI đến là kêu lại. Trình duyệt chặn âm thanh khi trang chưa
+// được bấm lần nào → hiện nút "Bật âm thanh". File không tải được → DỰ PHÒNG còi tự tạo (quét 650 ↔ 1450 Hz).
+const SIREN_FILE = '/admin/sounds/sos-siren.mp3';
+const alarm = {
+  ctx: null, master: null, timer: null, muted: new Set(), openIds: [], titleTimer: null, baseTitle: document.title, notified: new Set(),
+  audio: null, fileFailed: false, blocked: true, ringing: false,
+};
+
+function sirenAudio() {
+  if (alarm.audio || alarm.fileFailed || typeof Audio === 'undefined') return alarm.audio;
+  const a = new Audio(SIREN_FILE);
+  a.loop = true; a.preload = 'auto'; a.volume = 1;
+  a.addEventListener('error', () => {                     // mất file / định dạng lạ → còi tự tạo, không im lặng
+    alarm.fileFailed = true; alarm.audio = null;
+    if (alarm.ringing) startSynth();
+  });
+  alarm.audio = a;
+  return a;
 }
+
+// ---- dự phòng: còi tự tạo bằng Web Audio ----
+function alarmCtx() {
+  if (!alarm.ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    const ctx = new AC();
+    const comp = ctx.createDynamicsCompressor();           // nén → âm lượng cảm nhận TO mà không vỡ tiếng
+    comp.threshold.value = -18; comp.knee.value = 6; comp.ratio.value = 8; comp.attack.value = 0.003; comp.release.value = 0.2;
+    const master = ctx.createGain();
+    master.gain.value = 0.9;
+    master.connect(comp); comp.connect(ctx.destination);
+    alarm.ctx = ctx; alarm.master = master;
+  }
+  return alarm.ctx;
+}
+function sirenCycle() {
+  const ctx = alarmCtx();
+  if (!ctx || ctx.state !== 'running') return;
+  const t0 = ctx.currentTime + 0.02;
+  for (const [type, detune, vol] of [['sawtooth', 0, 0.55], ['square', 7, 0.35]]) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type; o.detune.value = detune;
+    for (let i = 0; i < 2; i++) {
+      const s = t0 + i * 1.2;
+      o.frequency.setValueAtTime(650, s);
+      o.frequency.linearRampToValueAtTime(1450, s + 0.6);
+      o.frequency.linearRampToValueAtTime(650, s + 1.2);
+    }
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(vol, t0 + 0.03);
+    g.gain.setValueAtTime(vol, t0 + 2.35);
+    g.gain.linearRampToValueAtTime(0, t0 + 2.4);
+    o.connect(g); g.connect(alarm.master);
+    o.start(t0); o.stop(t0 + 2.42);
+  }
+}
+function startSynth() {
+  if (alarm.timer) return;
+  sirenCycle();
+  alarm.timer = setInterval(sirenCycle, 2600);
+}
+
+/** Âm thanh đang bị trình duyệt chặn (chưa có lần bấm nào trên trang)? */
+const audioBlocked = () => (alarm.audio && !alarm.fileFailed ? alarm.blocked : (!alarm.ctx || alarm.ctx.state !== 'running'));
+
+function playSiren() {
+  const a = sirenAudio();
+  if (!a) { startSynth(); return; }
+  a.play().then(() => { alarm.blocked = false; }).catch(() => { alarm.blocked = true; refreshSosBadge(); });
+}
+
+function startAlarm() {
+  if (alarm.ringing) return;
+  alarm.ringing = true;
+  playSiren();
+  // tab đang ẩn: tiêu đề nhấp nháy để thấy từ thanh tab
+  alarm.titleTimer = setInterval(() => { document.title = document.title.startsWith('🚨') ? alarm.baseTitle : '🚨 SOS — CẦN TIẾP NHẬN'; }, 900);
+}
+function stopAlarm() {
+  alarm.ringing = false;
+  if (alarm.audio) { alarm.audio.pause(); alarm.audio.currentTime = 0; }
+  clearInterval(alarm.timer); alarm.timer = null;
+  clearInterval(alarm.titleTimer); alarm.titleTimer = null;
+  document.title = alarm.baseTitle;
+}
+
+/** Gọi mỗi khi danh sách SOS chưa tiếp nhận đổi. */
+function syncAlarm(open) {
+  alarm.openIds = open.map(x => x.id);
+  for (const id of [...alarm.muted]) if (!alarm.openIds.includes(id)) alarm.muted.delete(id);   // SOS đã xử lý: bỏ khỏi danh sách tắt chuông
+  const ringing = open.filter(x => !alarm.muted.has(x.id));
+  // thông báo trên màn hình máy tính (1 lần / SOS) khi trình duyệt cho phép
+  for (const s of ringing) {
+    if (alarm.notified.has(s.id)) continue;
+    alarm.notified.add(s.id);
+    try { if ('Notification' in window && Notification.permission === 'granted') new Notification('🚨 SOS khẩn cấp', { body: `${s.user?.name ?? 'Người dùng'} cần trợ giúp — mở trang điều phối để tiếp nhận`, requireInteraction: true, tag: s.id }); } catch { /* bỏ qua */ }
+  }
+  if (ringing.length) startAlarm(); else stopAlarm();
+  return ringing.length;
+}
+
+// Lần bấm đầu tiên trên trang: mở khóa âm thanh + xin quyền thông báo (trình duyệt yêu cầu có thao tác của người dùng).
+// Đang có SOS → phát còi ngay; chưa có → "mồi" im lặng để SOS đến sau phát được ngay không cần bấm.
+document.addEventListener('pointerdown', () => {
+  const a = sirenAudio();
+  if (a && alarm.blocked) {
+    if (alarm.ringing) a.play().then(() => { alarm.blocked = false; refreshSosBadge(); }).catch(() => {});
+    else {
+      a.muted = true;
+      a.play().then(() => { if (!alarm.ringing) { a.pause(); a.currentTime = 0; } a.muted = false; alarm.blocked = false; })
+        .catch(() => { a.muted = false; });
+    }
+  }
+  const ctx = alarmCtx();
+  if (ctx && ctx.state !== 'running') ctx.resume().then(() => { if (alarm.ringing && (!alarm.audio || alarm.fileFailed)) sirenCycle(); }).catch(() => {});
+  try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch { /* bỏ qua */ }
+}, { capture: true });
+
 async function refreshSosBadge() {
   try {
     const list = await api('GET', '/api/admin/sos');
     const open = list.filter(x => x.status === 'open');
     sosOpenCount = open.length;
     $('#sosBadge').hidden = !list.length; $('#sosBadge').textContent = list.length;
+    const ringing = syncAlarm(open);
     const bar = $('#sosBanner');
     bar.hidden = !open.length;
-    if (open.length) bar.innerHTML = `🚨 <b>${open.length} tín hiệu SOS CHƯA TIẾP NHẬN</b> — ${open.map(x => esc(x.user?.name ?? x.id)).join(', ')} · <u>Mở ngay</u>`;
+    if (open.length) {
+      bar.innerHTML = `🚨 <b>${open.length} tín hiệu SOS CHƯA TIẾP NHẬN</b> — ${open.map(x => esc(x.user?.name ?? x.id)).join(', ')} · <a href="#/sos">Mở ngay</a>
+        <span class="sos-banner-actions">
+          ${audioBlocked() ? '<button type="button" class="btn small" data-alarm="unlock">🔊 Bật âm thanh báo động</button>' : ''}
+          ${ringing ? '<button type="button" class="btn small" data-alarm="mute">🔕 Tắt chuông</button>' : '<button type="button" class="btn small" data-alarm="unmute">🔔 Bật lại chuông</button>'}
+        </span>`;
+    }
   } catch { /* bỏ qua */ }
 }
+const sosToasted = new Set();
 function onSosMessage(s) {
-  if (s.status === 'open' && !s.acknowledgedAt) { beep(); toast(`🚨 SOS từ ${s.user?.name ?? 'người dùng'} — cần tiếp nhận ngay`, true); }
+  // chỉ báo 1 lần / SOS mới (cập nhật vị trí của SOS đang mở không làm báo lại); còi do syncAlarm điều khiển
+  if (s.status === 'open' && !s.acknowledgedAt && !sosToasted.has(s.id)) { sosToasted.add(s.id); toast(`🚨 SOS từ ${s.user?.name ?? 'người dùng'} — cần tiếp nhận ngay`, true); }
   refreshSosBadge();
   emit('sos');
 }
@@ -966,3 +1163,52 @@ function pageSos(view) {
 }
 
 boot();
+
+// nút trên banner SOS: bật âm thanh (trình duyệt chặn khi chưa bấm) / tắt chuông cho các SOS hiện có / bật lại
+$('#sosBanner').addEventListener('click', (e) => {
+  const act = e.target?.dataset?.alarm;
+  if (!act) return;
+  e.preventDefault();
+  if (act === 'mute') { alarm.openIds.forEach(id => alarm.muted.add(id)); stopAlarm(); }
+  if (act === 'unmute') alarm.muted.clear();
+  if (act === 'unlock') alarmCtx()?.resume().catch(() => {});
+  setTimeout(refreshSosBadge, 50);
+});
+
+// ---- Nghe thử còi: kiểm tra loa / âm lượng bất kỳ lúc nào, không cần SOS thật ----
+let sirenTestTimer = null;
+$('#sirenTestBtn').addEventListener('click', () => {
+  const btn = $('#sirenTestBtn');
+  const stopTest = () => {
+    clearTimeout(sirenTestTimer); sirenTestTimer = null;
+    btn.textContent = '🔊 Nghe thử còi SOS';
+    if (!alarm.ringing) { if (alarm.audio) { alarm.audio.pause(); alarm.audio.currentTime = 0; } clearInterval(alarm.timer); alarm.timer = null; }
+  };
+  if (sirenTestTimer) { stopTest(); return; }
+  if (alarm.ringing) { toast('Còi đang kêu vì có SOS chưa tiếp nhận'); return; }
+  const a = sirenAudio();
+  btn.textContent = '⏹ Dừng thử';
+  if (a) {
+    a.currentTime = 0;
+    a.play().then(() => { alarm.blocked = false; toast('Đang phát thử còi SOS (file sos-siren.mp3) — 5 giây'); })
+      .catch(e => { toast(`Trình duyệt chặn âm thanh: ${e.message}`, true); stopTest(); });
+  } else {
+    alarmCtx()?.resume().then(() => { startSynth(); toast('Không tải được file còi — đang phát còi dự phòng', true); }).catch(() => {});
+  }
+  sirenTestTimer = setTimeout(stopTest, 5000);
+});
+
+// ---- Trang admin có BẢN MỚI (vừa cập nhật code) → nhắc tải lại; tab mở từ trước không còn chạy code cũ âm thầm ----
+const ADMIN_VERSION = document.querySelector('meta[name="resq-admin-version"]')?.content ?? '';
+async function checkAdminVersion() {
+  try {
+    const { version } = await (await fetch('/admin/__version', { cache: 'no-store' })).json();
+    const bar = $('#updateBanner');
+    const stale = ADMIN_VERSION && version && version !== ADMIN_VERSION;
+    bar.hidden = !stale;
+    if (stale) bar.innerHTML = '🔄 <b>Trang điều phối vừa được cập nhật</b> (còi SOS, giao diện…). Tải lại để dùng bản mới. <button type="button" class="btn small primary" id="reloadAdminBtn">Tải lại ngay</button>';
+    const b = $('#reloadAdminBtn'); if (b) b.onclick = () => location.reload();
+  } catch { /* mất mạng: bỏ qua */ }
+}
+setInterval(checkAdminVersion, 60_000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkAdminVersion(); });

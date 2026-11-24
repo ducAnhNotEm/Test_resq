@@ -17,6 +17,7 @@ import { PlaceStore } from '../src/placeStore.ts';
 import { Demo } from '../src/demo.ts';
 import { ensureSeedStores, hoursText, syncPartners, validWeek } from '../src/refix.ts';
 import { decide, storeOptions } from '../src/dispatch.ts';
+import { setStorePlan } from '../src/storePlans.ts';
 import { decodePolyline, planDrive, stateAt, DRIVE_CONFIG } from '../src/virtualDrive.ts';
 import { haversine, type LngLat, type ServerMsg, type TelemetryFrame } from '../src/protocol.ts';
 import type { Place } from '../src/places.ts';
@@ -327,4 +328,12 @@ test('chế độ demo tắt: gara mới CHỜ DUYỆT, chưa nhận đơn; đơ
   assert.equal(r.data.autoApproved, false);
   assert.equal((await api('GET', '/api/config')).data.demoMode, false, 'app đọc được trạng thái demo (công khai)');
   await api('POST', '/api/admin/settings', admin.token, { demoMode: true });
+});
+
+test('cấp bậc đối tác KHÔNG tham gia điều phối: gara Pre xa hơn vẫn thua gara Free tới nhanh hơn', () => {
+  const { store, mk, order } = setup();
+  mk('near@x.vn', 'Gần Free', north(800));
+  mk('pre@x.vn', 'Xa Pre', north(2000));
+  setStorePlan(store, 'Xa Pre', 'pre');
+  assert.equal(order().store?.name, 'Gần Free');
 });

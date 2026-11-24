@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { PlanBadge } from '../../components/PlanBadge';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { useAppTheme } from '../../context/ThemeContext';
@@ -74,6 +75,7 @@ export const PlaceDetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
         <View style={styles.body}>
           <Text style={[styles.name, { color: colors.textPrimary }]}>{p.name}</Text>
+          <PlanBadge plan={p.plan} size="md" />
           <View style={styles.metaRow}>
             {p.rating != null && p.reviewsCount > 0 ? <Text style={[styles.meta, { color: colors.textPrimary }]}>★ {p.rating.toFixed(1)} · {p.reviewsCount} đánh giá</Text> : <Text style={[styles.meta, { color: colors.textSecondary }]}>Chưa có đánh giá</Text>}
             <Text style={[styles.meta, { color: open.color, fontFamily: FONTS.bold }]}>{open.text}</Text>

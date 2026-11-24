@@ -14,7 +14,7 @@
 </head>
 <body>
   <!-- Đăng nhập -->
-  <section id="login" class="login" hidden>
+  <section id="login" class="login">
     <form id="loginForm" class="login-card">
       <div class="brand"><img src="resq-logo.png" alt="ResQ" class="brand-logo" /> <small>Điều phối</small></div>
       <label>Email hoặc tài khoản<input name="email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value="admin@resq.vn" /></label>
@@ -41,6 +41,7 @@
         <label class="demo-toggle" title="Xe ảo chạy từ gara được giao theo tuyến Goong thật + gara mới tự duyệt. Tắt = GPS thật, gara mới chờ duyệt.">
           <input type="checkbox" id="demoMode"> <span>Chế độ demo (xe ảo)</span>
         </label>
+        <button id="sirenTestBtn" class="btn ghost small" title="Phát thử còi báo động SOS 5 giây — kiểm tra loa / âm lượng">🔊 Nghe thử còi SOS</button>
         <button id="demoResetBtn" class="btn demo-reset" title="Hủy đơn đang mở của tài khoản mẫu, dừng xe ảo, bật lại nhận đơn cho nhân viên">🔄 Đặt lại demo</button>
         <div id="wsState" class="ws-state" title="Kết nối realtime"><i></i><span>Đang kết nối…</span></div>
         <div id="meName" class="muted small"></div>
@@ -48,7 +49,7 @@
         <button id="logoutBtn" class="btn ghost small">Đăng xuất</button>
       </div>
     </aside>
-    <main class="view-wrap"><div id="storageBanner" class="storage-banner" hidden></div><a id="sosBanner" class="sos-banner" href="#/sos" hidden></a><div id="view" class="view"></div></main>
+    <main class="view-wrap"><div id="updateBanner" class="update-banner" hidden></div><div id="storageBanner" class="storage-banner" hidden></div><div id="sosBanner" class="sos-banner" role="alert" hidden></div><div id="view" class="view"></div></main>
   </div>
 
   <!-- Ngăn kéo chi tiết đơn -->

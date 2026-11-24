@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '../context/ThemeContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../theme/tokens';
 import { CATEGORY_LABEL, mediaUrl, type PlaceOpen, type RankedPlaceDto } from '../services/api';
+import { PlanBadge, planAccent } from './PlanBadge';
 
 export const openLabel = (o: PlaceOpen): { text: string; color: string } => {
   if (o.state === 'open') return { text: o.minutesLeft && o.minutesLeft >= 1440 ? 'Mở 24 giờ' : 'Đang mở cửa', color: '#059669' };
@@ -31,12 +32,13 @@ export const PlaceCard = memo(function PlaceCard({ item, rank, onPress, onDirect
   const { colors } = useAppTheme();
   const open = openLabel(item.open);
   const cover = item.images[0];
+  const accent = planAccent(item.plan);
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${item.name}, ${fmtDistance(item.distanceM)}, ${open.text}`}
-      style={[styles.card, { backgroundColor: colors.bgCard, borderColor: highlighted ? colors.blue : colors.borderSubtle }]}
+      style={[styles.card, { backgroundColor: colors.bgCard, borderColor: highlighted ? colors.blue : accent ?? colors.borderSubtle }, accent && !highlighted ? { borderWidth: 1.5 } : null]}
     >
       <View style={styles.row}>
         <View style={[styles.thumb, { backgroundColor: colors.bgSubtle }]}>
@@ -53,6 +55,12 @@ export const PlaceCard = memo(function PlaceCard({ item, rank, onPress, onDirect
 
         <View style={{ flex: 1, gap: 3 }}>
           <Text numberOfLines={2} style={[styles.name, { color: colors.textPrimary }]}>{item.name}</Text>
+          {item.plan && item.plan !== 'free' ? (
+            <View style={styles.metaRow}>
+              <PlanBadge plan={item.plan} />
+              {(item.planBoost ?? 0) > 0 ? <Text style={[styles.meta, { color: colors.textSecondary }]}>Ưu tiên hiển thị</Text> : null}
+            </View>
+          ) : null}
           {item.partner ? (
             <Text style={[styles.meta, { color: item.partner.onDuty ? colors.greenText : colors.textSecondary, fontFamily: FONTS.bold }]}>
               ✓ Đối tác ReFix · {item.partner.onDuty ? 'đang có người trực' : 'chưa có người trực'}
@@ -69,9 +77,9 @@ export const PlaceCard = memo(function PlaceCard({ item, rank, onPress, onDirect
         </View>
       </View>
 
-      {item.reasons.length > 1 ? (
+      {item.reasons.filter(r => !r.endsWith('ưu tiên hiển thị')).length > 1 ? (
         <View style={styles.reasons}>
-          {item.reasons.slice(1, 4).map(r => (
+          {item.reasons.slice(1).filter(r => !r.endsWith('ưu tiên hiển thị')).slice(0, 3).map(r => (
             <View key={r} style={[styles.reason, { backgroundColor: colors.bgSubtle }]}><Text style={[styles.reasonText, { color: colors.textPrimary }]}>{r}</Text></View>
           ))}
         </View>

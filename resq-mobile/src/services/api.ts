@@ -178,8 +178,38 @@ export interface StoreProfile {
   /** Chi nhánh: id cửa hàng chính. */
   parentStoreId?: string | null;
   isMain?: boolean;
+  /** Cấp đối tác đang hiệu lực + có đang bị tạm ngưng quyền lợi (server cũ không gửi). */
+  tier?: StorePlan; benefitsSuspended?: boolean;
 }
 export type DutyMode = 'schedule' | 'paused' | 'closed' | 'manual';
+
+// ======================= CẤP BẬC ĐỐI TÁC (Free / Bạc / Vàng / Pre) =======================
+export type StorePlan = 'free' | 'silver' | 'gold' | 'pre';
+export type QualityStatus = 'good' | 'warning' | 'at_risk' | 'suspended';
+export interface StoreTierReview {
+  id: string; orderCode: string; stars: number; at: number; counted: boolean; note: string;
+  dispute: { status: 'pending' | 'accepted' | 'rejected'; reason: string; adminNote: string } | null;
+  canDispute: boolean;
+}
+export interface StoreTierView {
+  storeId: string; storeName: string; isOwner: boolean;
+  paid: { plan: StorePlan; label: string; since: number | null; until: number | null };
+  earned: { plan: StorePlan; label: string; until: number | null } | null;
+  tier: StorePlan; tierLabel: string; suspended: boolean; locked: boolean;
+  quality: {
+    status: QualityStatus; message: string; windowDays: number; total: number; low: number; lowRate: number;
+    lowMax: number; warnLow: number; lowRateMax: number; rateSample: number; graceEndsAt: number | null; suspendedAt: number | null;
+  };
+  promotion: {
+    target: StorePlan; targetLabel: string; five: number; fiveNeed: number; customers: number; customersNeed: number;
+    lowRate: number; lowRateMax: number; ready: boolean; windowDays: number; rewardDays: number; blocked: boolean;
+  } | null;
+  rating: { avg: number | null; total: number; excluded: number };
+  reviews: StoreTierReview[];
+  pendingRequest: { id: string; plan: StorePlan; months: number | null; createdAt: number; note: string } | null;
+  history: Array<{ at: number; from: StorePlan | null; to: StorePlan; source: string; reason: string }>;
+  plans: Array<{ plan: StorePlan; label: string; rank: number; tagline: string; benefits: string[] }>;
+}
 export type BranchInput = { storeName: string; phone: string; address: string; lat: number; lng: number; services: StoreService[]; week: WeekHours };
 /** Đơn trong lịch sử sửa chữa của gara (SĐT khách đã che khi đơn xong). */
 export type StoreHistory = { items: Order[]; total: number };
@@ -325,6 +355,8 @@ export interface PlaceDto {
   updatedAt: number;
   /** Đối tác ReFix: nhận đơn qua app. null = chỉ là địa điểm trên Google Maps (gọi trực tiếp). */
   partner?: { storeId: string; onDuty: boolean; imageSource: 'store' | 'google' } | null;
+  /** Cấp đối tác đang hiệu lực (đã trừ khi bị tạm ngưng quyền lợi). Server cũ không gửi → coi như free. */
+  plan?: StorePlan;
 }
 
 export interface RankedPlaceDto extends PlaceDto {
@@ -332,6 +364,8 @@ export interface RankedPlaceDto extends PlaceDto {
   etaMin: number;
   etaSource: 'estimate' | 'goong';
   score: number;
+  /** > 0: được ưu tiên hiển thị nhờ cấp đối tác (chỉ khi ngang thời gian tới với nơi nhanh nhất). */
+  planBoost?: number;
   reasons: string[];
 }
 
@@ -402,4 +436,8 @@ export const storeApi = {
     api<StoreProfile & { addressPending?: boolean }>('PATCH', '/api/store/me', p),
   addImage: (data: string) => api<StoreProfile>('POST', '/api/store/me/images', { data }, 60_000),
   removeImage: (idx: number) => api<StoreProfile>('DELETE', `/api/store/me/images/${idx}`),
+  /** Cấp bậc đối tác + chất lượng + đánh giá gần đây. */
+  tier: () => api<StoreTierView>('GET', '/api/store/plan'),
+  requestPlan: (plan: StorePlan, months: number, note = '') => api<StoreTierView>('POST', '/api/store/plan/request', { plan, months, note }),
+  disputeReview: (reviewId: string, reason: string) => api<StoreTierView>('POST', `/api/store/reviews/${encodeURIComponent(reviewId)}/dispute`, { reason }),
 };

@@ -16,6 +16,7 @@ import { SosAlertScreen } from '../screens/resos/SosAlertScreen';
 import { GarageHistoryScreen } from '../screens/staff/GarageHistoryScreen';
 import { GarageSettingsScreen } from '../screens/staff/GarageSettingsScreen';
 import { BranchesScreen } from '../screens/staff/BranchesScreen';
+import { StorePlanScreen } from '../screens/staff/StorePlanScreen';
 import { BranchCreateScreen } from '../screens/staff/BranchCreateScreen';
 import { StoreHoursScreen, StoreInfoScreen, StoreLocationScreen, StorePhotosScreen } from '../screens/staff/StoreEditScreens';
 import { StoreProfileScreen } from '../screens/staff/StoreProfileScreen';
@@ -241,6 +242,7 @@ export const AppNavigator: React.FC = () => {
         <Stack.Screen name="StoreLocation" component={StoreLocationScreen} />
         <Stack.Screen name="StoreHours" component={StoreHoursScreen} />
         <Stack.Screen name="Branches" component={BranchesScreen} />
+        <Stack.Screen name="StorePlan" component={StorePlanScreen} />
         <Stack.Screen name="BranchCreate" component={BranchCreateScreen} />
         <Stack.Screen name="PersonalInfo" component={PersonalInfoScreen} />
         <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />

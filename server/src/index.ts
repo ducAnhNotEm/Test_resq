@@ -18,6 +18,7 @@ import { PlaceStore } from './placeStore.ts';
 import { Demo } from './demo.ts';
 import { ensureSeedStores, syncPartners } from './refix.ts';
 import { SEED_EMAILS } from './db.ts';
+import { sweepStoreTiers } from './storePlans.ts';
 
 const root = ROOT;
 const env = loadEnv();
@@ -96,6 +97,11 @@ server.on('request', (req, res) => { void handle(req, res); });
 // điều phối lại đơn hết hạn nhận / đơn đang chờ; dọn hành trình cũ (quyền riêng tư)
 const sweep = setInterval(() => { try { orders.sweep(); } catch (e) { console.error('[sweep]', e); } }, 10_000);
 const purge = setInterval(() => store.purgeTracks(30 * 24 * 3600_000), 6 * 3600_000);
+// cấp bậc đối tác: chốt hết hạn gói / hạng thưởng, tạm ngưng sau ân hạn dù không ai mở app (mỗi giờ)
+const planSweep = setInterval(() => {
+  try { const n = sweepStoreTiers(store); if (n) { syncPartners(store, places); console.log(`[store-tiers] cập nhật ${n} gara`); } }
+  catch (e) { console.error('[store-tiers]', e); }
+}, 3600_000);
 // sao lưu database: lúc khởi động + mỗi 6 giờ, giữ 7 ngày (data/backups). Lưu trữ tạm (Render free) thì vô nghĩa → bỏ.
 const backupDir = join(dataDir, 'backups');
 const doBackup = () => {
@@ -134,7 +140,7 @@ server.listen(port, '0.0.0.0', () => {
 });
 
 const shutdown = () => {
-  clearInterval(sweep); clearInterval(purge); if (backupTimer) clearInterval(backupTimer);
+  clearInterval(sweep); clearInterval(purge); clearInterval(planSweep); if (backupTimer) clearInterval(backupTimer);
   demo?.close();
   realtime?.close();
   server.close(() => { store.db.close(); process.exit(0); });

@@ -23,6 +23,7 @@ import { ServerIssueBanner } from '../../components/ServerIssueBanner';
 import { BrandLogo } from '../../components/BrandLogo';
 
 const HOTLINE = '19006868';
+const TIER_LABEL = { free: 'Free', silver: 'Bạc', gold: 'Vàng', pre: 'Pre' } as const;
 const APP_VERSION = Constants.expoConfig?.version ?? '';
 const STATUS: Record<string, { label: string; tone: 'green' | 'amber' | 'red' }> = {
   active: { label: 'Đã duyệt', tone: 'green' }, pending: { label: 'Chờ duyệt', tone: 'amber' }, suspended: { label: 'Tạm khóa', tone: 'red' },
@@ -103,6 +104,14 @@ export const GarageSettingsScreen: React.FC = () => {
             <SettingsRow icon="git-branch-outline" tone="blue" title="Chi nhánh" subtitle="Thêm cửa hàng khác của bạn — mỗi chi nhánh nhận đơn gần nó"
               value={branches ? `${branchCount}` : undefined} onPress={() => navigation.navigate('Branches')} />
           ) : null}
+        </SettingsSection>
+
+        <SettingsSection title="Đối tác ReFix" footer="Cấp bậc chỉ ảnh hưởng thứ tự hiển thị khi khách tự tìm gara. Đơn cứu hộ luôn giao cho gara tới nhanh nhất.">
+          <SettingsRow icon="medal-outline" tone="amber" title="Cấp bậc & chất lượng"
+            subtitle={store?.benefitsSuspended ? 'Quyền lợi đang tạm ngưng — xem cách khôi phục' : 'Tiến độ thăng hạng, đánh giá của khách, kháng nghị'}
+            value={store?.tier ? TIER_LABEL[store.tier] : undefined}
+            badge={store?.benefitsSuspended ? { label: 'Tạm ngưng', tone: 'red' } : undefined}
+            onPress={() => navigation.navigate('StorePlan')} />
         </SettingsSection>
 
         <SettingsSection title="Tài khoản">

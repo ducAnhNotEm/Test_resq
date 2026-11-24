@@ -114,24 +114,41 @@ if (existing?.resq) {
   console.error(`  Tắt chương trình đó (${killPortHint(port)}), hoặc dùng cổng khác (PowerShell):  $env:PORT=8788; npm run online\n`);
   process.exit(1);
 } else {
+  // Server sập liên tục (thường do code đang sửa dở có lỗi) → KHÔNG tắt tunnel: chờ lần sửa code tiếp theo rồi tự bật
+  // lại (như `node --watch`). Trước đây trình giám sát tắt CẢ tunnel → mất địa chỉ, điện thoại + admin mất kết nối.
   const crashes: number[] = [];
   let restarting = false;
+  let running = false;
+  let retry: ReturnType<typeof setTimeout> | null = null;
   const start = () => {
+    if (running || stopping) return;
+    running = true;
     const c = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', '--experimental-strip-types', join(ROOT, 'src', 'index.ts')], {
       stdio: 'inherit',
       env: { ...process.env, PORT: String(port) },
     });
     child = c;
     c.on('exit', code => {
+      running = false;
       if (stopping) return;
       if (restarting) { restarting = false; start(); return; }            // khởi động lại có chủ đích (mã đổi)
       const now = Date.now();
       crashes.push(now);
       while (crashes.length && now - crashes[0] > 60_000) crashes.shift();
-      if (crashes.length > 5) { console.error('Server sập liên tục (> 5 lần / phút) — dừng. Xem lỗi ở trên.'); shutdown(1); return; }
+      if (crashes.length > 5) {
+        console.error('\n✖ Server sập liên tục (> 5 lần / phút) — thường do code đang sửa có lỗi (xem lỗi ở trên).');
+        console.error('  Tunnel VẪN GIỮ địa chỉ. Sửa code xong là server tự bật lại.\n');
+        return;
+      }
       console.error(`Server dừng (mã ${code}) — tự bật lại sau 2 giây (tunnel giữ nguyên địa chỉ).`);
-      setTimeout(() => { if (!stopping) start(); }, 2000);
+      retry = setTimeout(() => { retry = null; start(); }, 2000);
     });
+  };
+  /** Mã nguồn vừa đổi: khởi động lại (đang chạy) hoặc thử bật lại ngay (đang sập chờ sửa). */
+  const reload = () => {
+    crashes.length = 0;
+    if (retry) { clearTimeout(retry); retry = null; }
+    if (running) { restarting = true; child?.kill('SIGTERM'); } else start();
   };
   start();
   if (!(await waitFor(local, 20_000))) { console.error('Server không khởi động được.'); shutdown(1); }
@@ -143,8 +160,7 @@ if (existing?.resq) {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
           console.log(`\n↻ Mã nguồn đổi (${file}) — khởi động lại server, tunnel giữ nguyên địa chỉ…`);
-          restarting = true;
-          child?.kill('SIGTERM');
+          reload();
         }, 800);
       });
       console.log('Tự nạp lại server khi sửa mã nguồn: BẬT (tắt: RESQ_WATCH=0).');

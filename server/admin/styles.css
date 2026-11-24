@@ -237,8 +237,26 @@ tbody tr:last-child td { border-bottom: 0; }
 .storage-banner { padding: 10px 24px; background: var(--warning-bg); color: var(--warning); border-bottom: 1px solid var(--border); font-size: 13px; }
 .storage-banner[hidden] { display: none; }
 
+.sos-banner a { color: #fff; text-decoration: underline; }
+.sos-banner-actions { display: inline-flex; gap: 8px; margin-left: 10px; vertical-align: middle; }
+.sos-banner .btn { background: #fff; color: var(--critical); border-color: #fff; font-weight: 700; }
+
+.update-banner { padding: 10px 24px; background: var(--info-bg); color: var(--link); border-bottom: 1px solid var(--border); font-size: 13px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.update-banner[hidden] { display: none; }
+#sirenTestBtn { width: 100%; margin-bottom: 6px; }
+
 /* logo ResQ chính thức (đồng bộ với app) */
 .brand-logo { height: 30px; width: auto; display: block; }
 .login-card .brand-logo { height: 40px; }
 /* xe 3D đang vẽ trên bản đồ: giữ marker DOM trong suốt để vẫn bấm được (mở đơn) */
 .mk-veh.is3d { opacity: 0; width: 46px; height: 46px; }
+
+/* cấp bậc đối tác: huy hiệu nhỏ, màu tự chứa (đọc được cả nền sáng / tối) */
+.chip.tier-free { background: #F1F5F9; color: #475569; }
+.chip.tier-silver { background: #E2E8F0; color: #334155; border: 1px solid #94A3B8; }
+.chip.tier-gold { background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B; }
+.chip.tier-pre { background: #1E1B4B; color: #E0E7FF; border: 1px solid #6366F1; }
+.tier-queue { margin-bottom: 16px; display: grid; gap: 8px; }
+.tier-queue h3 { margin: 6px 0 0; font-size: 15px; }
+.tq-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #E2E8F0; flex-wrap: wrap; }
+label.check { display: flex; gap: 8px; align-items: center; }

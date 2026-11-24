@@ -14,8 +14,9 @@ import { AttemptLimiter, hashPassword, verifyPassword, type TokenSigner } from '
 import { registerHomeRoutes } from './homeApi.ts';
 import { registerNotificationRoutes } from './notificationApi.ts';
 import { registerSosRoutes } from './sosApi.ts';
+import { syncPartners } from './refix.ts';
 import { API_VERSION, FEATURES, type BuildInfo, type StorageInfo } from './build.ts';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import type { GoongClient } from './goong.ts';
 import type { RealtimeHub } from './realtime.ts';
 import { computeAlerts, computeStats, refineCandidates } from './stats.ts';
@@ -212,8 +213,11 @@ export function createApp(deps: AppDeps) {
   add('GET', '/api/orders/:id', ANY, ({ params, user }) => orders.view(params.id, user));
   add('POST', '/api/orders/:id/cancel', ['customer', 'admin'], ({ params, user, body }) =>
     orders.cancel(params.id, user, str(body.reason, 'lý do', { max: 300 }) ?? ''));
-  add('POST', '/api/orders/:id/rate', ['customer'], ({ params, user, body }) =>
-    orders.rate(params.id, user, num(body.rating, 'điểm', { required: true })!));
+  add('POST', '/api/orders/:id/rate', ['customer'], ({ params, user, body }) => {
+    const o = orders.rate(params.id, user, num(body.rating, 'điểm', { required: true })!);
+    syncPartners(store, deps.places);                  // điểm ResQ / cấp bậc của gara vừa đổi → danh sách tìm kiếm thấy ngay
+    return o;
+  });
 
   add('POST', '/api/orders/:id/accept', ['staff', 'garage'], ({ params, user }) => orders.accept(params.id, user));
   add('POST', '/api/orders/:id/decline', ['staff', 'garage'], ({ params, user, body }) =>
@@ -419,6 +423,8 @@ export function createApp(deps: AppDeps) {
     rating: p.rating, reviewsCount: p.reviewsCount, open: openState(p.hours, now), hoursText: p.hoursText,
     images: p.images.map(f => (f.startsWith('/') ? f : `/media/places/${f}`)), trust: p.trust, confidence: p.confidence, flags: p.flags,
     googleCategory: p.googleCategory, sourceUrl: p.sourceUrl, updatedAt: p.updatedAt,
+    // Gói cửa hàng (đối tác ReFix): khách nhìn thấy huy hiệu + biết vì sao được ưu tiên.
+    plan: p.plan ?? 'free',
     // đối tác ReFix: nhận đơn qua app; onDuty = đang có người trực (khách biết trước khi chọn)
     partner: (() => {
       const sid = deps.places?.partners.get(p.id);
@@ -429,7 +435,8 @@ export function createApp(deps: AppDeps) {
     })(),
   });
   const rankedDto = (r: RankedPlace) => ({
-    ...placeDto(r.place), distanceM: r.distanceM, etaMin: r.etaMin, etaSource: r.etaSource, score: r.score, breakdown: r.breakdown, reasons: r.reasons,
+    ...placeDto(r.place), distanceM: r.distanceM, etaMin: r.etaMin, etaSource: r.etaSource, score: r.score, breakdown: r.breakdown,
+    planBoost: r.planBoost, reasons: r.reasons,
   });
 
   add('GET', '/api/places/meta', ANY, () => {
@@ -533,7 +540,7 @@ export function createApp(deps: AppDeps) {
       return json(res, 200, { ok: true, service: 'resq', realtime: deps.realtime?.stats ?? null, ...(deps.build?.health() ?? { apiVersion: API_VERSION, features: FEATURES }), storage: deps.storage ?? null });
     }
     if (url.pathname === '/' ) { res.writeHead(302, { Location: '/admin/' }); res.end(); return; }
-    if (url.pathname.startsWith('/admin')) return serveStatic(deps.adminDir, url.pathname.slice('/admin'.length) || '/', res);
+    if (url.pathname.startsWith('/admin')) return serveStatic(deps.adminDir, url.pathname.slice('/admin'.length) || '/', res, req);
     if (url.pathname.startsWith('/media/places/') && deps.placeImagesDir) return serveImage(deps.placeImagesDir, url.pathname.slice('/media/places/'.length), res);
     if (url.pathname.startsWith('/media/stores/') && deps.storeImagesDir) return serveStoreImage(deps.storeImagesDir, url.pathname.slice('/media/stores/'.length), res);
     if (!url.pathname.startsWith('/api/')) return json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy' } });
@@ -626,6 +633,7 @@ async function readJson(req: IncomingMessage, limit = 256 * 1024): Promise<Recor
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json',
+  '.mp3': 'audio/mpeg',            // còi báo động SOS của trang admin
 };
 
 /** Ảnh địa điểm: tên file cố định theo nội dung → cache 30 ngày. */
@@ -654,19 +662,53 @@ async function serveStoreImage(dir: string, name: string, res: ServerResponse): 
   }
 }
 
-async function serveStatic(root: string, path: string, res: ServerResponse): Promise<void> {
+/**
+ * Phiên bản trang admin = dấu vân tay của app.js + styles.css + index.html. Nhúng vào index.html (?v=… để trình duyệt
+ * không dùng bản cũ trong bộ nhớ đệm) và trả ở /admin/__version → tab admin đang mở TỰ BIẾT có bản mới, hiện "Tải lại".
+ * (Sự cố thật: sửa còi SOS xong, tab admin mở từ trước vẫn chạy code cũ — người dùng nghe vẫn là âm cũ.)
+ */
+const adminVerCache = { at: 0, root: '', v: '' };
+async function adminVersion(root: string): Promise<string> {
+  if (adminVerCache.root === root && Date.now() - adminVerCache.at < 2000) return adminVerCache.v;
+  const h = createHash('sha1');
+  for (const f of ['index.html', 'app.js', 'styles.css']) { try { h.update(await readFile(join(root, f))); } catch { /* thiếu file: bỏ qua */ } }
+  adminVerCache.root = root; adminVerCache.at = Date.now(); adminVerCache.v = h.digest('hex').slice(0, 10);
+  return adminVerCache.v;
+}
+
+async function serveStatic(root: string, path: string, res: ServerResponse, req?: IncomingMessage): Promise<void> {
   const rel = normalize(path === '/' ? '/index.html' : path).replace(/^([/\\])+/, '');
   if (rel.includes('..')) return json(res, 400, { error: { code: 'bad_path', message: 'Đường dẫn không hợp lệ' } });
+  if (rel === '__version') return json(res, 200, { version: await adminVersion(root) });
+  const sendIndex = async () => {
+    const v = await adminVersion(root);
+    const html = (await readFile(join(root, 'index.html'), 'utf8'))
+      .replace('src="app.js"', `src="app.js?v=${v}"`).replace('href="styles.css"', `href="styles.css?v=${v}"`)
+      .replace('</head>', `  <meta name="resq-admin-version" content="${v}" />\n</head>`);
+    res.writeHead(200, { 'Content-Type': MIME['.html'], 'Cache-Control': 'no-store' });
+    res.end(html);
+  };
   try {
+    if (rel === 'index.html') return await sendIndex();
     const buf = await readFile(join(root, rel));
-    res.writeHead(200, { 'Content-Type': MIME[extname(rel)] ?? 'application/octet-stream', 'Cache-Control': 'no-cache' });
+    const type = MIME[extname(rel)] ?? 'application/octet-stream';
+    // Range: trình phát âm thanh (còi SOS lặp lại / tua về đầu) cần tải từng đoạn — thiếu thì Chrome phát chập chờn
+    const m = /^bytes=(\d*)-(\d*)$/.exec(String(req?.headers.range ?? ''));
+    if (m && (m[1] || m[2])) {
+      let start = m[1] ? Number(m[1]) : Math.max(0, buf.length - Number(m[2]));
+      let end = m[1] && m[2] ? Number(m[2]) : buf.length - 1;
+      end = Math.min(end, buf.length - 1);
+      if (start > end || start >= buf.length) {
+        res.writeHead(416, { 'Content-Range': `bytes */${buf.length}` }); res.end(); return;
+      }
+      res.writeHead(206, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Range': `bytes ${start}-${end}/${buf.length}`, 'Content-Length': end - start + 1, 'Cache-Control': 'no-cache' });
+      res.end(buf.subarray(start, end + 1));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': buf.length, 'Cache-Control': 'no-cache' });
     res.end(buf);
   } catch {
     // SPA: đường dẫn lạ → index.html
-    try {
-      const buf = await readFile(join(root, 'index.html'));
-      res.writeHead(200, { 'Content-Type': MIME['.html'] });
-      res.end(buf);
-    } catch { json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy' } }); }
+    try { await sendIndex(); } catch { json(res, 404, { error: { code: 'not_found', message: 'Không tìm thấy' } }); }
   }
 }

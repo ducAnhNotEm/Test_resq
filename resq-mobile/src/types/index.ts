@@ -133,6 +133,8 @@ export type RootStackParamList = {
   StoreLocation: { storeId?: string } | undefined;
   StoreHours: { storeId?: string } | undefined;
   Branches: undefined;
+  /** Cấp bậc đối tác + chất lượng + kháng nghị đánh giá (gara). */
+  StorePlan: undefined;
   BranchCreate: undefined;
   ReMapsNavigation: {
     destinationName?: string;

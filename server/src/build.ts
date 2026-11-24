@@ -12,7 +12,7 @@ import { ROOT } from './env.ts';
 
 /** TĂNG mỗi khi thêm route / đổi hợp đồng mà app mới cần. App so với `REQUIRED_API_VERSION` của nó. */
 export const API_VERSION = 4;
-export const FEATURES = ['usernameLogin', 'registerCustomer', 'home', 'notifications', 'sos', 'branches', 'storeHistory', 'dutySchedule'] as const;
+export const FEATURES = ['usernameLogin', 'registerCustomer', 'home', 'notifications', 'sos', 'branches', 'storeHistory', 'dutySchedule', 'storeTiers'] as const;
 
 const SRC = join(ROOT, 'src');
 

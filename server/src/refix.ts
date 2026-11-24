@@ -6,7 +6,7 @@
 //    vẫn hiện, gắn nhãn "Đối tác ReFix") → khách chọn được, và đơn ghi đúng "gara khách chọn".
 //  - Xe ảo KHÔNG còn chọn gara ngẫu nhiên: luôn xuất phát từ ĐÚNG gara được giao (demo.ts / dispatch.ts).
 import type { Store, StoreRow, WeekHours } from './db.ts';
-import { parseWeek, toStoreInfo } from './db.ts';
+import { parseWeek, storeTier, toStoreInfo } from './db.ts';
 import type { PlaceStore } from './placeStore.ts';
 import { districtOf, type Place, type PlaceService } from './places.ts';
 
@@ -61,9 +61,9 @@ export function storeAsPlace(s: StoreRow): Place {
   return {
     id: s.id, name: s.name, category: 'garage', services: (info.services ?? []) as PlaceService[],
     address: s.address, district: districtOf(s.address), pos: [s.lng, s.lat], phone: s.phone || null, website: null,
-    rating: info.rating ?? null, reviewsCount: s.reviews_count, hours: week, hoursText: hoursText(week),
+    rating: info.rating ?? null, reviewsCount: info.reviewsCount ?? s.reviews_count, hours: week, hoursText: hoursText(week),
     images: (info.images ?? []).map(i => i.url), googleCategory: 'Gara đối tác ReFix', sourceUrl: null,
-    confidence: 0.9, trust: 'high', flags: [], updatedAt: s.updated_at,
+    confidence: 0.9, trust: 'high', flags: [], updatedAt: s.updated_at, plan: storeTier(s).boost,
   };
 }
 
@@ -78,7 +78,15 @@ export function syncPartners(store: Store, places: PlaceStore | undefined): void
   const keep = new Set<string>();
   for (const s of store.listAllStores()) {
     if (!s.active || s.status !== 'active') continue;
-    if (s.place_id && places.byId.has(s.place_id) && !places.isSynthetic(s.place_id)) { places.partners.set(s.place_id, s.id); continue; }
+    if (s.place_id && places.byId.has(s.place_id) && !places.isSynthetic(s.place_id)) {
+      const p = places.byId.get(s.place_id)!;
+      p.plan = storeTier(s).boost;                 // tạm ngưng quyền lợi → 'free' (không huy hiệu, không ưu tiên)
+      // Gara đối tác có đánh giá THẬT trên ResQ → hiển thị điểm trộn (Google + ResQ), không chỉ điểm Google.
+      const info = toStoreInfo(s);
+      if ((info.appReviewsCount ?? 0) > 0) { p.rating = info.rating ?? p.rating; p.reviewsCount = info.reviewsCount ?? p.reviewsCount; }
+      places.partners.set(s.place_id, s.id);
+      continue;
+    }
     places.upsert(storeAsPlace(s), true);
     places.partners.set(s.id, s.id);
     keep.add(s.id);

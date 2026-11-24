@@ -37,6 +37,8 @@ export interface Place {
   trust: Trust;
   flags: string[];
   updatedAt: number;
+  /** Gói cửa hàng của đối tác ReFix (chỉ gara đối tác mới có). Dùng để cộng điểm xếp hạng có giới hạn. */
+  plan?: 'free' | 'silver' | 'gold' | 'pre';
 }
 
 // ======================= tiện ích chữ =======================
@@ -447,6 +449,19 @@ const ISSUE_SERVICE: Record<Issue, PlaceService | null> = {
 
 export const RANK_WEIGHTS = { eta: 0.42, capability: 0.2, open: 0.16, rating: 0.1, trust: 0.12 };
 
+/**
+ * ƯU TIÊN HIỂN THỊ theo cấp đối tác — 3 chốt chặn để "trả tiền" không bao giờ đè "cứu được nhanh":
+ *  1) điểm cộng NHỎ (Pre +0,12 ≈ chênh 1★ hoặc vài phút) — không phải +0,35 (ngang cả trọng số ETA);
+ *  2) CỔNG ETA: chỉ cộng khi nơi đó tới chậm hơn nơi nhanh nhất ≤ PLAN_ETA_GATE_MIN phút, đúng dịch vụ, không đóng cửa;
+ *  3) MINH BẠCH: lý do ghi rõ "ưu tiên hiển thị" (như nhãn quảng cáo) — khách biết vì sao nơi đó đứng trên.
+ * Điều phối đơn cứu hộ (dispatch.ts) KHÔNG dùng cấp bậc. Gara bị tạm ngưng quyền lợi → Place.plan = 'free'.
+ */
+export const PLAN_BOOST: Record<'free' | 'silver' | 'gold' | 'pre', number> = { free: 0, silver: 0.03, gold: 0.07, pre: 0.12 };
+export const PLAN_ETA_GATE_MIN = 5;
+const PLAN_REASON: Record<'free' | 'silver' | 'gold' | 'pre', string | null> = {
+  free: null, silver: 'Đối tác Bạc · ưu tiên hiển thị', gold: 'Đối tác Vàng · ưu tiên hiển thị', pre: 'Đối tác Pre · ưu tiên hiển thị',
+};
+
 export interface RankQuery {
   origin: LngLat;
   category?: PlaceCategory;
@@ -471,6 +486,8 @@ export interface RankedPlace {
   open: OpenState;
   score: number;
   breakdown: Record<keyof typeof RANK_WEIGHTS, number>;
+  /** Điểm cộng minh bạch theo gói cửa hàng (0 nếu không phải đối tác trả phí). */
+  planBoost: number;
   reasons: string[];
 }
 
@@ -506,7 +523,11 @@ export function rankPlaces(index: GridIndex<Place>, query: RankQuery): RankedPla
     const br2 = bayesRating(p.rating, p.reviewsCount);
     br.rating = br2 == null ? 0.4 : Math.max(0, Math.min(1, (br2 - 3) / 2));
     br.trust = p.confidence;
-    const score = (Object.keys(RANK_WEIGHTS) as Array<keyof typeof RANK_WEIGHTS>).reduce((s, k) => s + RANK_WEIGHTS[k] * br[k], 0);
+    const plan = p.plan ?? 'free';
+    // cổng ETA + đúng dịch vụ + không đóng cửa: gói chỉ phân định giữa những nơi NGANG NHAU về khả năng cứu
+    const gateOk = etaMin <= minEta + PLAN_ETA_GATE_MIN && br.capability >= 1 && open.state !== 'closed';
+    const planBoost = gateOk ? PLAN_BOOST[plan] : 0;
+    const score = (Object.keys(RANK_WEIGHTS) as Array<keyof typeof RANK_WEIGHTS>).reduce((s, k) => s + RANK_WEIGHTS[k] * br[k], 0) + planBoost;
 
     const reasons = [`${fmtKm(distM)} · ~${etaMin} phút${override != null ? '' : ' (ước tính)'}`];
     if (want && p.services.includes(want)) reasons.push(`Có dịch vụ ${SERVICE_LABEL[want]}`);
@@ -514,8 +535,9 @@ export function rankPlaces(index: GridIndex<Place>, query: RankQuery): RankedPla
     else if (open.state === 'closing-soon') reasons.push(`Sắp đóng cửa (${open.minutesLeft} phút)`);
     else if (open.state === 'closed') reasons.push('Đang đóng cửa');
     if (p.rating != null && p.reviewsCount > 0) reasons.push(`★${p.rating.toFixed(1)} (${p.reviewsCount} đánh giá)`);
+    if (planBoost > 0 && PLAN_REASON[plan]) reasons.push(PLAN_REASON[plan]!);
     if (p.trust === 'low') reasons.push('Thông tin chưa xác minh');
-    return { place: p, distanceM: Math.round(distM), etaMin, etaSource: override != null ? 'goong' as const : 'estimate' as const, open, score: Math.round(score * 1000) / 1000, breakdown: br, reasons };
+    return { place: p, distanceM: Math.round(distM), etaMin, etaSource: override != null ? 'goong' as const : 'estimate' as const, open, score: Math.round(score * 1000) / 1000, breakdown: br, planBoost, reasons };
   });
 
   return ranked

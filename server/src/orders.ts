@@ -8,6 +8,7 @@ import { ACTIVE_STATUSES, haversine, isTerminal } from './protocol.ts';
 import type { Order, Store } from './db.ts';
 import { decide, overrideNeeded, storeOptions, type StoreOption } from './dispatch.ts';
 import { estimateEtaMin } from './places.ts';
+import { recordStoreReview } from './storePlans.ts';
 
 export class ApiError extends Error {
   status: number;
@@ -294,8 +295,12 @@ export class OrderService {
     if (who.role !== 'customer') throw new ApiError(403, 'forbidden', 'Chỉ khách hàng được đánh giá');
     if (o.status !== 'completed') throw new ApiError(409, 'not_completed', 'Chỉ đánh giá được đơn đã hoàn thành');
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new ApiError(400, 'invalid_rating', 'Điểm đánh giá từ 1 đến 5');
-    this.store.patchOrder(id, { rating });
-    this.store.addEvent(id, who.id, 'customer', 'rated', { rating });
+    this.store.tx(() => {
+      this.store.patchOrder(id, { rating });
+      this.store.addEvent(id, who.id, 'customer', 'rated', { rating });
+      // Đánh giá đã xác thực → ghi sổ đánh giá của GARA ĐÃ PHỤC VỤ, tính lại điểm và xét gói.
+      if (o.store?.id) recordStoreReview(this.store, { storeId: o.store.id, orderId: id, userId: who.id, stars: rating });
+    });
     return this.changed(id);
   }
 
