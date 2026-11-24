@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTheme } from '../../context/ThemeContext';
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/Controls';
+import { ScreenHeader } from '../../components/ScreenHeader';
 import { storeApi } from '../../services/api';
 import { repairRow, repairSummary, type RepairRow } from '../../features/garage/garageLogic';
 import { fmtWhen, friendlyError } from '../../features/account/accountLogic';
@@ -50,12 +51,9 @@ export const GarageHistoryScreen: React.FC = () => {
   const sum = rows ? repairSummary(rows) : null;
 
   return (
-    <View style={[styles.root, { backgroundColor: colors.bgSurface, paddingTop: insets.top + 8 }]}>
-      <View style={styles.head}>
-        <Text style={[styles.h1, { color: colors.textPrimary }]} accessibilityRole="header">Lịch sử sửa chữa</Text>
-        <Text style={[styles.meta, { color: colors.textSecondary }]}>Mọi đơn của gara và các chi nhánh</Text>
-      </View>
-      <View style={[styles.search, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
+    <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
+      <ScreenHeader title="Lịch sử gara" />
+      <View style={[styles.search, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle, marginHorizontal: 16, marginTop: 12 }]}>
         <Ionicons name="search" size={18} color={colors.textSecondary} />
         <TextInput value={q} onChangeText={setQ} placeholder="Tìm tên khách, biển số, mã đơn" placeholderTextColor={colors.textSecondary}
           style={[styles.searchInput, { color: colors.textPrimary }]} autoCapitalize="none" autoCorrect={false} accessibilityLabel="Tìm trong lịch sử" />

@@ -41,7 +41,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
     else if (loc.status !== 'checking') loc.request();
   };
 
-  if (title) {
+  if (onBack) {
     return (
       <View
         style={[
@@ -53,26 +53,22 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
           },
         ]}
       >
-        {onBack ? (
-          <Pressable
-            onPress={onBack}
-            accessibilityLabel="Quay lại"
-            style={[
-              styles.iconBtn,
-              { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
-            ]}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-          </Pressable>
-        ) : (
-          <View style={styles.iconSpacer} />
-        )}
+        <Pressable
+          onPress={onBack}
+          accessibilityLabel="Quay lại"
+          style={[
+            styles.iconBtn,
+            { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
+        </Pressable>
 
         <Text
           numberOfLines={1}
           style={[styles.stackTitle, { color: colors.textPrimary }]}
         >
-          {title}
+          {title ?? ''}
         </Text>
 
         {right ?? <View style={styles.iconSpacer} />}
@@ -84,21 +80,30 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
     <View
       style={[
         styles.brandHeader,
-        { paddingTop: insets.top + 8, backgroundColor: colors.bgSurface },
+        {
+          paddingTop: insets.top + 8,
+          backgroundColor: colors.bgSurface,
+          borderBottomColor: colors.borderSubtle,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+        },
       ]}
     >
-      {brandLogo ? (
-        <Image source={AUTH_LOGO} style={{ width: 104, height: 104 / AUTH_LOGO_RATIO }} resizeMode="contain" accessibilityRole="image" accessibilityLabel="ResQ" />
-      ) : (
-        <View style={styles.brandRow}>
-          <View style={[styles.brandBadge, { backgroundColor: colors.sosBg }]}>
-            <Ionicons name="shield-checkmark" size={20} color={colors.sos} />
+      <View style={styles.brandRow}>
+        <Image
+          source={AUTH_LOGO}
+          style={{ width: 104, height: 104 / AUTH_LOGO_RATIO }}
+          resizeMode="contain"
+          accessibilityRole="image"
+          accessibilityLabel="ResQ"
+        />
+        {title ? (
+          <View style={[styles.titleBadge, { backgroundColor: colors.bgSubtle, borderColor: colors.borderSubtle }]}>
+            <Text numberOfLines={1} style={[styles.titleBadgeText, { color: colors.textSecondary }]}>
+              {title}
+            </Text>
           </View>
-          <Text style={[styles.brandText, { color: colors.textPrimary }]}>
-            Res<Text style={{ color: colors.sos }}>Q</Text>
-          </Text>
-        </View>
-      )}
+        ) : null}
+      </View>
 
       <View style={styles.rightActions}>
         <Pressable
@@ -195,17 +200,16 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+  titleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: METRICS.radiusPill,
+    borderWidth: 1,
   },
-  brandText: {
-    fontFamily: FONTS.extraBold,
-    fontSize: 22,
-    letterSpacing: -0.5,
+  titleBadgeText: {
+    fontFamily: FONTS.bold,
+    fontSize: 11,
+    letterSpacing: 0.3,
   },
   rightActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   locationPill: {

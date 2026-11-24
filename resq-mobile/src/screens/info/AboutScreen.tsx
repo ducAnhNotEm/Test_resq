@@ -7,6 +7,7 @@ import Constants from 'expo-constants';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { BrandLogo } from '../../components/BrandLogo';
 import { SettingsRow, SettingsSection } from '../../components/ui/Settings';
 import { useAppTheme } from '../../context/ThemeContext';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
@@ -28,11 +29,8 @@ export const AboutScreen: React.FC<NativeStackScreenProps<RootStackParamList, 'A
       <ScreenHeader title="Về ResQ" onBack={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.hero}>
-          <View style={[styles.logo, { backgroundColor: colors.sos }]}>
-            <Ionicons name="shield-checkmark" size={52} color="#FFFFFF" />
-          </View>
-          <Text style={[styles.brand, { color: colors.textPrimary }]}>Res<Text style={{ color: colors.sos }}>Q</Text></Text>
-          <Text style={[styles.tagline, { color: colors.textSecondary }]}>Trợ thủ an toàn cho người lái ô tô</Text>
+          <BrandLogo width={160} />
+          <Text style={[styles.tagline, { color: colors.textSecondary, marginTop: 12 }]}>Trợ thủ an toàn cho người lái ô tô</Text>
           {version ? <Text style={[styles.version, { color: colors.textSecondary, backgroundColor: colors.bgSubtle }]}>Phiên bản {version}</Text> : null}
         </View>
 

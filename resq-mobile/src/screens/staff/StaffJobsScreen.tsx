@@ -133,8 +133,12 @@ export const StaffJobsScreen: React.FC = () => {
       {/* ===== định danh ReFix ===== */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <BrandLogo width={92} />
-          <Text style={[styles.partner, { color: colors.sos, marginTop: 4 }]}>ĐỐI TÁC REFIX</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <BrandLogo width={104} />
+            <View style={[{ backgroundColor: colors.sosBg, borderColor: colors.sos, borderWidth: 1, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999 }]}>
+              <Text style={[styles.partner, { color: colors.sos }]}>ĐỐI TÁC REFIX</Text>
+            </View>
+          </View>
           <Text numberOfLines={1} style={[styles.name, { color: colors.textPrimary }]}>{partnerTitle(store?.name, user?.unit)}</Text>
           <Text numberOfLines={1} style={[styles.meta, { color: colors.textSecondary }]}>
             {user?.name}{user?.vehiclePlate ? ` · ${user.vehiclePlate}` : ''}
