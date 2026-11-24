@@ -79,7 +79,7 @@ const StaffTabsNavigator: React.FC = () => {
       <StaffTab.Screen name="StaffHistoryTab" component={GarageHistoryScreen}
         options={{ title: 'Lịch sử', tabBarIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} /> }} />
       <StaffTab.Screen name="StaffMapsTab" component={ReMapsSearchScreen}
-        options={{ title: 'Bản đồ', tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} /> }} />
+        options={{ title: 'ReMaps', tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size} color={color} /> }} />
       <StaffTab.Screen name="StaffSettingsTab" component={GarageSettingsScreen}
         options={{ title: 'Cài đặt', tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} /> }} />
     </StaffTab.Navigator>

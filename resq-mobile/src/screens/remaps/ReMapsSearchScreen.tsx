@@ -6,7 +6,7 @@
 // TÌM NHƯ GOOGLE MAPS: gõ tên cửa hàng / địa chỉ bất kỳ → gợi ý từ bản đồ Goong (kể cả nơi KHÔNG có trong dữ liệu
 // ResQ) → chọn → ghim tím trên bản đồ + đường đi thật + "Dẫn đường" / "Lưu địa điểm".
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -35,7 +35,7 @@ export const ReMapsSearchScreen: React.FC = () => {
   const { colors } = useAppTheme();
   const { mapKey, user } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [cat, setCat] = useState<PlaceCategory>('garage');
+  const [cat, setCat] = useState<PlaceCategory | null>(null);
   const [query, setQuery] = useState('');
   const [q, setQ] = useState('');
   const [items, setItems] = useState<RankedPlaceDto[] | null>(null);
@@ -62,7 +62,7 @@ export const ReMapsSearchScreen: React.FC = () => {
     if (!fix) return;
     let cancelled = false;
     setError(null); setSelected(null);
-    placesApi.nearby({ lat: fix.pos[1], lng: fix.pos[0], category: cat, radiusM: q ? 20_000 : 6000, limit: 25, q: q || undefined })
+    placesApi.nearby({ lat: fix.pos[1], lng: fix.pos[0], category: cat ?? undefined, radiusM: q ? 20_000 : 6000, limit: 25, q: q || undefined })
       .then(r => {
         if (cancelled) return;
         setItems(r.items); setSearch(r);
@@ -86,6 +86,7 @@ export const ReMapsSearchScreen: React.FC = () => {
   useEffect(() => { if (!query.trim()) { setPicked(null); setSaved(null); } }, [query]);
 
   const pick = async (h: PlaceSuggestion) => {
+    Keyboard.dismiss();
     setPicking(h.placeId); setSaved(null);
     try {
       const d = await geoApi.place(h.placeId);
@@ -108,7 +109,7 @@ export const ReMapsSearchScreen: React.FC = () => {
   // đường đi: tới địa điểm vừa chọn từ bản đồ, hoặc tới gara / trạm đang chọn
   const target = picked ? picked.pos : sel?.pos ?? null;
   const pv = useRoutePreview(fix?.pos ?? null, target);
-  const label = CATEGORY_LABEL[cat].toLowerCase();
+  const label = cat ? CATEGORY_LABEL[cat].toLowerCase() : 'địa điểm';
 
   const ordered = useMemo(() => {
     if (!items || !selected) return items;
@@ -119,7 +120,7 @@ export const ReMapsSearchScreen: React.FC = () => {
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
       <ScreenHeader title="ReMaps · Quanh đây" />
-      <View style={styles.top}>
+      <View style={[styles.top, { zIndex: 100 }]}>
         <View style={[styles.search, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
           <Ionicons name="search" size={18} color={colors.textSecondary} />
           <TextInput
@@ -129,17 +130,61 @@ export const ReMapsSearchScreen: React.FC = () => {
             placeholderTextColor={colors.textSecondary}
             style={[styles.input, { color: colors.textPrimary }]}
             returnKeyType="search"
+            onSubmitEditing={() => {
+              if (hits && hits[0]) {
+                void pick(hits[0]);
+              }
+            }}
           />
-          {query ? <Pressable onPress={() => setQuery('')} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textSecondary} /></Pressable> : null}
+          {query ? <Pressable onPress={() => { setQuery(''); setPicked(null); }} hitSlop={8}><Ionicons name="close-circle" size={18} color={colors.textSecondary} /></Pressable> : null}
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          <Pressable
+            onPress={() => setCat(null)}
+            style={[styles.cat, { backgroundColor: cat === null ? colors.blue : colors.bgCard, borderColor: cat === null ? colors.blue : colors.borderSubtle }]}
+          >
+            <Ionicons name="apps" size={15} color={cat === null ? '#FFFFFF' : colors.textSecondary} />
+            <Text style={[styles.catText, { color: cat === null ? '#FFFFFF' : colors.textPrimary }]}>Tất cả</Text>
+          </Pressable>
           {CATS.map(c => (
-            <Pressable key={c.k} onPress={() => setCat(c.k)} style={[styles.cat, { backgroundColor: cat === c.k ? colors.blue : colors.bgCard, borderColor: cat === c.k ? colors.blue : colors.borderSubtle }]}>
+            <Pressable
+              key={c.k}
+              onPress={() => setCat(prev => prev === c.k ? null : c.k)}
+              style={[styles.cat, { backgroundColor: cat === c.k ? colors.blue : colors.bgCard, borderColor: cat === c.k ? colors.blue : colors.borderSubtle }]}
+            >
               <Ionicons name={c.icon} size={15} color={cat === c.k ? '#FFFFFF' : colors.textSecondary} />
               <Text style={[styles.catText, { color: cat === c.k ? '#FFFFFF' : colors.textPrimary }]}>{CATEGORY_LABEL[c.k]}</Text>
             </Pressable>
           ))}
         </ScrollView>
+
+        {/* Dropdown gợi ý nổi đè lên trên bản đồ ngay dưới ô tìm kiếm (Google Maps style) */}
+        {q.length >= 2 && !picked ? (
+          <View style={[styles.floatingDropdown, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
+            <Text style={[styles.hitTitle, { color: colors.textSecondary }]}>ĐỊA ĐIỂM TRÊN BẢN ĐỒ</Text>
+            {hits === null ? <ActivityIndicator color={colors.blue} style={{ marginVertical: 10 }} /> : null}
+            {hitsErr ? <Text style={[styles.msg, styles.hitPad, { color: colors.amberText }]}>{hitsErr}</Text> : null}
+            {hits && !hits.length && !hitsErr ? <Text style={[styles.msg, styles.hitPad, { color: colors.textSecondary }]}>{`Không tìm thấy "${q}" trên bản đồ`}</Text> : null}
+            <ScrollView style={{ maxHeight: 240 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
+              {hits?.map(h => (
+                <Pressable
+                  key={h.placeId}
+                  onPress={() => void pick(h)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${h.name}, ${h.address}`}
+                  style={({ pressed }) => [styles.hit, { borderTopColor: colors.borderSubtle }, pressed && { backgroundColor: colors.bgSubtle }]}
+                >
+                  <Ionicons name="location-outline" size={20} color="#7C3AED" />
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text numberOfLines={1} style={[styles.routeName, { color: colors.textPrimary }]}>{h.name}</Text>
+                    <Text numberOfLines={1} style={[styles.msg, { color: colors.textSecondary }]}>{h.address}</Text>
+                  </View>
+                  {picking === h.placeId ? <ActivityIndicator color={colors.blue} /> : <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ) : null}
       </View>
 
       <ScrollView ref={scrollRef} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -187,27 +232,6 @@ export const ReMapsSearchScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {/* gợi ý từ BẢN ĐỒ (Goong): nơi bất kỳ, kể cả không có trong ResQ */}
-        {q.length >= 2 && !picked ? (
-          <View style={[styles.hitBox, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
-            <Text style={[styles.hitTitle, { color: colors.textSecondary }]}>ĐỊA ĐIỂM TRÊN BẢN ĐỒ</Text>
-            {hits === null ? <ActivityIndicator color={colors.blue} style={{ marginBottom: 10 }} /> : null}
-            {hitsErr ? <Text style={[styles.msg, styles.hitPad, { color: colors.amberText }]}>{hitsErr}</Text> : null}
-            {hits && !hits.length && !hitsErr ? <Text style={[styles.msg, styles.hitPad, { color: colors.textSecondary }]}>{`Không tìm thấy "${q}" trên bản đồ`}</Text> : null}
-            {hits?.map(h => (
-              <Pressable key={h.placeId} onPress={() => void pick(h)} accessibilityRole="button" accessibilityLabel={`${h.name}, ${h.address}`}
-                style={({ pressed }) => [styles.hit, { borderTopColor: colors.borderSubtle }, pressed && { backgroundColor: colors.bgSubtle }]}>
-                <Ionicons name="location-outline" size={20} color="#7C3AED" />
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text numberOfLines={1} style={[styles.routeName, { color: colors.textPrimary }]}>{h.name}</Text>
-                  <Text numberOfLines={1} style={[styles.msg, { color: colors.textSecondary }]}>{h.address}</Text>
-                </View>
-                {picking === h.placeId ? <ActivityIndicator color={colors.blue} /> : <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />}
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-
         {sel ? (
           <View style={[styles.routeBar, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
             <View style={{ flex: 1, gap: 2 }}>
@@ -236,7 +260,7 @@ export const ReMapsSearchScreen: React.FC = () => {
           <Text style={[styles.msg, { color: colors.textSecondary }]}>
             {items.length
               ? `${items.length} ${label} trong ResQ ${q ? `khớp "${q}"` : search?.mode === 'far' ? 'gần bạn nhất' : 'gần bạn'} · chạm số trên bản đồ để xem đường đi`
-              : `Không có ${label} trong ResQ ${q ? `khớp "${q}" — xem địa điểm trên bản đồ ở trên` : 'ở khu vực này'}`}
+              : (q.length >= 2 ? '' : `Không có ${label} trong ResQ ở khu vực này`)}
           </Text>
         ) : null}
 
@@ -257,11 +281,27 @@ export const ReMapsSearchScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  top: { paddingHorizontal: 16, paddingTop: 8, gap: 10 },
+  top: { paddingHorizontal: 16, paddingTop: 8, gap: 10, zIndex: 100 },
   search: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: METRICS.radiusBtn, paddingHorizontal: 12, minHeight: 46 },
   input: { flex: 1, fontFamily: FONTS.regular, fontSize: TYPOGRAPHY.sm },
   cat: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8 },
   catText: { fontFamily: FONTS.bold, fontSize: 12 },
+  floatingDropdown: {
+    position: 'absolute',
+    top: 54,
+    left: 16,
+    right: 16,
+    zIndex: 9999,
+    elevation: 10,
+    borderRadius: METRICS.radiusCard,
+    borderWidth: 1,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    paddingTop: 10,
+    overflow: 'hidden',
+  },
   scroll: { padding: 16, paddingBottom: 36, gap: 12 },
   mapBox: { height: 300, borderRadius: METRICS.radiusCard, borderWidth: 1, overflow: 'hidden' },
   routeBar: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: METRICS.radiusCard, padding: 12 },

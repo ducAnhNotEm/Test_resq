@@ -70,7 +70,7 @@ export const HomeScreen: React.FC = () => {
   const promos = (content?.promos ?? []).slice(0, 3);
 
   const quick: Array<{ icon: IconName; label: string; sub: string; onPress: () => void; tint: string; bg: string }> = [
-    { icon: 'map', label: 'Bản đồ', sub: 'Gara, cây xăng, trạm sạc gần bạn', onPress: () => navigateToTab('ReMapsTab'), tint: colors.blue, bg: colors.blueBg },
+    { icon: 'map', label: 'Bản đồ ReMaps', sub: 'Gara, cây xăng, trạm sạc gần bạn', onPress: () => navigateToTab('ReMapsTab'), tint: colors.blue, bg: colors.blueBg },
     { icon: 'bookmark', label: 'Địa điểm đã lưu', sub: 'Nhà, cơ quan, nơi hay đến', onPress: () => navigation.navigate('SavedPlaces'), tint: colors.greenText, bg: colors.greenBg },
     { icon: 'people', label: 'Người thân', sub: contacts.length ? `${contacts.length} người nhận vị trí khi SOS` : 'Chưa thêm ai', onPress: () => navigation.navigate('EmergencyContacts'), tint: colors.sos, bg: colors.sosBg },
     { icon: 'time', label: 'Lịch sử', sub: 'Các lần gọi cứu hộ', onPress: () => navigation.navigate('ActivityHistory'), tint: colors.amberText, bg: colors.amberBg },
