@@ -17,7 +17,7 @@ interface ScreenHeaderProps {
    * thật — đã bỏ; màn nào có hành động thật thì truyền vào đây.
    */
   right?: React.ReactNode;
-  /** Header thương hiệu: logo ResQ thật (ảnh) thay cho chữ ghép. */
+  /** Header thương hiệu: logo ResQ thật (ảnh). MẶC ĐỊNH bật — logo thống nhất cho mọi vai trò. */
   brandLogo?: boolean;
 }
 
@@ -26,7 +26,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   onBack,
   onLocationPress,
   right,
-  brandLogo = false,
+  brandLogo = true,
 }) => {
   const { colors } = useAppTheme();
   const insets = useSafeAreaInsets();

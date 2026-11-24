@@ -23,6 +23,8 @@ class TtlCache<V> {
 }
 
 export interface ReverseResult { address: string; name: string | null; compound: Record<string, string> | null }
+export interface PlaceSuggestion { placeId: string; name: string; address: string }
+export interface PlaceDetail { placeId: string; name: string; address: string; pos: [number, number] }
 
 export class GoongClient {
   private key: string;
@@ -80,6 +82,47 @@ export class GoongClient {
     const r = body?.results?.[0];
     const out: ReverseResult = { address: r?.formatted_address ?? '', name: r?.name ?? null, compound: r?.compound ?? null };
     if (out.address) this.reverseCache.set(k, out);
+    return out;
+  }
+
+  private suggestCache = new TtlCache<PlaceSuggestion[]>(1000, 10 * 60_000);
+  private placeCache = new TtlCache<PlaceDetail>(2000, 24 * 3600_000);
+
+  /**
+   * TÌM ĐỊA ĐIỂM như Google Maps (Goong Place AutoComplete): tên cửa hàng, công ty, địa chỉ… KỂ CẢ nơi không có trong
+   * dữ liệu ResQ. Ưu tiên kết quả gần `near`. Cache 10 phút theo (từ khóa, ô lưới ~1 km).
+   */
+  async autocomplete(input: string, near: LngLat | null, limit = 8): Promise<PlaceSuggestion[]> {
+    const q = input.trim();
+    const k = `${q.toLowerCase()}|${near ? `${near[1].toFixed(2)},${near[0].toFixed(2)}` : '-'}|${limit}`;
+    const hit = this.suggestCache.get(k);
+    if (hit) return hit;
+    const params: Record<string, string> = { input: q, limit: String(Math.min(Math.max(limit, 1), 10)) };
+    if (near) { params.location = `${near[1]},${near[0]}`; params.radius = '50'; }      // km — ưu tiên, không loại nơi xa
+    const body = await this.get('/Place/AutoComplete', params) as {
+      predictions?: Array<{ place_id?: string; description?: string; structured_formatting?: { main_text?: string; secondary_text?: string } }>;
+    };
+    const out = (body?.predictions ?? []).flatMap(p => p.place_id ? [{
+      placeId: p.place_id,
+      name: p.structured_formatting?.main_text || p.description || '',
+      address: p.structured_formatting?.secondary_text || p.description || '',
+    }] : []);
+    this.suggestCache.set(k, out);
+    return out;
+  }
+
+  /** Tọa độ + tên + địa chỉ của một địa điểm Goong (cache 24 h). null nếu không tìm thấy. */
+  async placeDetail(placeId: string): Promise<PlaceDetail | null> {
+    const hit = this.placeCache.get(placeId);
+    if (hit) return hit;
+    const body = await this.get('/Place/Detail', { place_id: placeId }) as {
+      result?: { name?: string; formatted_address?: string; geometry?: { location?: { lat?: number; lng?: number } } };
+    };
+    const r = body?.result;
+    const l = r?.geometry?.location;
+    if (!r || typeof l?.lat !== 'number' || typeof l?.lng !== 'number') return null;
+    const out: PlaceDetail = { placeId, name: r.name ?? '', address: r.formatted_address ?? '', pos: [l.lng, l.lat] };
+    this.placeCache.set(placeId, out);
     return out;
   }
 

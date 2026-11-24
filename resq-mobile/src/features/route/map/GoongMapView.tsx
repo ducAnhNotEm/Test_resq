@@ -50,6 +50,8 @@ interface Props {
   onPoiPress?: (id: string) => void;
   /** Chạm bản đồ (chọn vị trí). */
   onMapPress?: (pos: LngLat) => void;
+  /** Địa điểm tìm được (kể cả nơi không có trong dữ liệu ResQ): ghim tím + nhãn, bản đồ bay tới. */
+  place?: { pos: LngLat; label: string } | null;
 }
 
 type Phase = 'loading' | 'ready' | 'error';
@@ -92,6 +94,8 @@ export const GoongMapView = memo(function GoongMapView(p: Props) {
     post({ type: 'fitPois' });
   }, [ready, p.pois, post]);
   useEffect(() => { if (ready) post({ type: 'selectPoi', id: p.selectedPoiId ?? null }); }, [ready, p.selectedPoiId, post]);
+  const pl = p.place;
+  useEffect(() => { if (ready) post({ type: 'place', place: pl ? { pos: pl.pos, label: pl.label } : null }); }, [ready, pl?.pos[0], pl?.pos[1], pl?.label, post]);
 
   const onMessage = useCallback((e: WebViewMessageEvent) => {
     let m: { type?: string; message?: string; paused?: boolean; id?: string; pos?: LngLat };

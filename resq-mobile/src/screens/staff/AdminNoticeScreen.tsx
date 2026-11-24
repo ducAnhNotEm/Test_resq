@@ -5,6 +5,7 @@ import { useAppTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { getApiUrl } from '../../config';
 import { FONTS, METRICS, TYPOGRAPHY } from '../../theme/tokens';
+import { BrandLogo } from '../../components/BrandLogo';
 
 /** Tài khoản điều phối dùng trang web (màn hình lớn, bản đồ điều hành), không dùng app di động. */
 export const AdminNoticeScreen: React.FC = () => {
@@ -12,7 +13,8 @@ export const AdminNoticeScreen: React.FC = () => {
   const { user, logout } = useAuth();
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface }]}>
-      <Ionicons name="desktop-outline" size={44} color={colors.blue} />
+      <BrandLogo width={150} />
+      <Ionicons name="desktop-outline" size={36} color={colors.blue} />
       <Text style={[styles.title, { color: colors.textPrimary }]}>Xin chào {user?.name}</Text>
       <Text style={[styles.body, { color: colors.textSecondary }]}>
         Tài khoản điều phối viên làm việc trên trang web quản trị:{'\n'}

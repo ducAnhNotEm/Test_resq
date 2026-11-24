@@ -7,7 +7,12 @@
 //   { type:'dest', pos, accuracyM }     ghim điểm cứu hộ + vòng sai số GPS
 //   { type:'fallback', coords }         đường chim bay nét đứt khi chưa có tuyến
 //   { type:'mode', mode }               'follow' (tài xế: bám xe, xoay theo hướng) | 'overview' (khách: toàn cảnh)
+//   { type:'place', place }             ghim địa điểm tìm được (kiểu Google Maps) + bay tới
+// XE CỨU HỘ: vẽ XE TẢI 3D bằng Three.js (towTruck3d.ts, custom layer). Three.js tải SONG SONG (không làm bản đồ chậm);
+// chưa tải xong / WebGL lỗi → biểu tượng xe cứu hộ 2D. Lỗi 3D KHÔNG bao giờ làm hỏng bản đồ.
 // (Web → RN): { type:'ready' } | { type:'error', code, message } | { type:'follow', paused } | { type:'mapPress', pos }
+
+import { THREE_CDN, TOW_TRUCK_3D_JS } from './towTruck3d';
 
 export const GOONG_JS_VERSION = '1.0.9';
 
@@ -19,8 +24,12 @@ export function buildMapHtml(mapKey: string): string {
 html,body,#map{margin:0;padding:0;height:100%;width:100%;background:#e8eff7;overflow:hidden}
 .veh{width:44px;height:44px;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .veh .halo{position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(37,99,235,.18)}
-.veh .arrow{width:30px;height:30px;border-radius:50%;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;will-change:transform}
+.veh .arrow{width:30px;height:44px;display:flex;align-items:center;justify-content:center;will-change:transform;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
 .veh .arrow svg{display:block}
+.veh.is3d{display:none}
+.place{display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.place .lbl{background:#fff;color:#0f172a;font:700 12px system-ui;padding:4px 8px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.35);margin-bottom:4px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .dot{width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#7c3aed;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .veh.alert .halo{background:rgba(239,68,68,.25)} .veh.muted .halo{background:rgba(100,116,139,.25)}
 .pin{width:26px;height:26px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#e11d48;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
 .poi{width:26px;height:26px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font:800 11px system-ui;cursor:pointer;transition:transform .15s}
@@ -29,6 +38,8 @@ html,body,#map{margin:0;padding:0;height:100%;width:100%;background:#e8eff7;over
 #recenter{position:absolute;right:12px;bottom:12px;display:none;border:0;border-radius:22px;padding:10px 14px;background:#0f172a;color:#fff;font:600 14px system-ui;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 </style></head><body><div id="map"></div><button id="recenter">◎ Về vị trí xe</button>
 <script src="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@${GOONG_JS_VERSION}/dist/goong-js.js"></script>
+<script>${TOW_TRUCK_3D_JS}</script>
+<script async src="${THREE_CDN}" onload="window.__resqThree && window.__resqThree()"></script>
 <script>
 (function(){
 var KEY = ${JSON.stringify(mapKey)};
@@ -39,7 +50,7 @@ window.onerror = function(msg){ post({type:'error', code:'js', message:String(ms
 var map = null, ready = false, mode = 'overview', pausedUntil = 0;
 var routeCoords = null, destPos = null, needFit = true, raf = 0;
 var veh = { el:null, arrow:null, marker:null, from:null, to:null, start:0, dur:0, lastPush:0, cur:null };
-var destMarker = null;
+var destMarker = null, placeMarker = null, truck = null;
 var poiMarkers = {}, poiPos = {}, selectedPoi = null, meMarker = null, mePos = null;
 var CAT = { garage: ['#2563eb','G'], fuel: ['#ea580c','X'], charging: ['#059669','S'], parking: ['#7c3aed','P'] };
 var COLOR_LEFT = '#2563eb', COLOR_DONE = '#94a3b8';
@@ -76,6 +87,7 @@ function init(){
     map.addLayer({ id:'route-casing', type:'line', source:'route', layout:{ 'line-cap':'round', 'line-join':'round' }, paint:{ 'line-color':'#ffffff', 'line-width':11 } });
     map.addLayer({ id:'route', type:'line', source:'route', layout:{ 'line-cap':'round', 'line-join':'round' }, paint:{ 'line-width':7, 'line-gradient': grad(0) } });
     ready = true;
+    tryTruck();
     // chạm bản đồ → RN (chọn vị trí cửa hàng khi đăng ký gara)
     map.on('click', function(e){ post({ type:'mapPress', pos:[e.lngLat.lng, e.lngLat.lat] }); });
     post({ type:'ready' });
@@ -85,6 +97,15 @@ function init(){
   });
   map.on('rotate', function(){ drawVehicle(veh.cur); });
 }
+
+// xe tải cứu hộ 3D: gắn khi CẢ bản đồ lẫn Three.js đã sẵn sàng (thứ tự nào cũng được)
+function tryTruck(){
+  if (truck || !ready || !window.THREE || !window.ResQTruck3D) return;
+  try { truck = ResQTruck3D.attach(map, goongjs, THREE, { px: 64, onError: function(){ if (veh.el) veh.el.classList.remove('is3d'); } }); }
+  catch (e) { truck = null; }
+  if (veh.cur) drawVehicle(veh.cur);
+}
+window.__resqThree = tryTruck;
 
 function grad(frac){
   var f = clamp(frac || 0, 0, 0.9999);
@@ -124,7 +145,10 @@ function sample(now){
 function drawVehicle(s){
   if (!s || !veh.marker) return;
   veh.marker.setLngLat(s.pos);
-  veh.arrow.style.transform = 'rotate(' + (s.h - map.getBearing()).toFixed(1) + 'deg)';
+  var use3d = !!(truck && truck.ready());
+  veh.el.classList.toggle('is3d', use3d);
+  if (use3d) truck.setPose('veh', s.pos, s.h, veh.tone, 0);           // đã nội suy 60 fps ở đây → không trượt thêm
+  else veh.arrow.style.transform = 'rotate(' + (s.h - map.getBearing()).toFixed(1) + 'deg)';
 }
 
 function loop(){
@@ -140,10 +164,18 @@ function loop(){
 function setVehicle(v){
   if (!map) return;
   var now = performance.now();
-  if (!v){ if (veh.marker){ veh.marker.remove(); veh.marker = null; veh.cur = veh.from = veh.to = null; } return; }
+  if (!v){ if (veh.marker){ veh.marker.remove(); veh.marker = null; veh.cur = veh.from = veh.to = null; } if (truck) truck.remove('veh'); return; }
+  veh.tone = v.tone || 'normal';
   if (!veh.marker){
     veh.el = document.createElement('div'); veh.el.className = 'veh';
-    veh.el.innerHTML = '<div class="halo"></div><div class="arrow"><svg width="18" height="20" viewBox="-9 -10 18 20"><path d="M0 -9 L8 8 L0 3.5 L-8 8 Z" fill="#2563eb"/></svg></div>';
+    // dự phòng 2D: xe tải cứu hộ nhìn từ trên (cabin đỏ phía trước, sàn thép, đèn ưu tiên) — xoay theo hướng chạy
+    veh.el.innerHTML = '<div class="halo"></div><div class="arrow"><svg width="26" height="44" viewBox="0 0 26 44">'
+      + '<rect x="2" y="15" width="22" height="27" rx="2" fill="#cbd5e1" stroke="#475569" stroke-width="1.2"/>'
+      + '<rect x="2" y="15" width="2.4" height="27" fill="#d91424"/><rect x="21.6" y="15" width="2.4" height="27" fill="#d91424"/>'
+      + '<rect x="3" y="2" width="20" height="14" rx="3" fill="#d91424" stroke="#7f0d17" stroke-width="1.2"/>'
+      + '<rect x="5" y="3.5" width="16" height="4" rx="1.2" fill="#16263d"/>'
+      + '<rect x="6" y="9.5" width="6" height="2.6" fill="#ffb000"/><rect x="14" y="9.5" width="6" height="2.6" fill="#ffb000"/>'
+      + '<rect x="2" y="38" width="22" height="3" fill="#f5b400"/></svg></div>';
     veh.arrow = veh.el.querySelector('.arrow');
     veh.marker = new goongjs.Marker({ element: veh.el }).setLngLat(v.pos).addTo(map);
     veh.from = veh.to = veh.cur = { pos: v.pos, h: v.heading == null ? 0 : v.heading };
@@ -160,8 +192,8 @@ function setVehicle(v){
     veh.dur = far ? 0 : clamp(now - veh.lastPush, 200, 1500);
     veh.lastPush = now;
   }
-  veh.el.className = 'veh ' + (v.tone || '');
-  veh.arrow.querySelector('path').setAttribute('fill', v.tone === 'alert' ? '#ef4444' : v.tone === 'muted' ? '#64748b' : '#2563eb');
+  veh.el.className = 'veh ' + (v.tone || '') + (truck && truck.ready() ? ' is3d' : '');   // giữ is3d: không chớp biểu tượng 2D mỗi lần cập nhật
+  if (mode === 'overview' && map.getPitch() < 30) map.easeTo({ pitch: 45, duration: 600 });   // nghiêng bản đồ để thấy xe 3D
   if (mode === 'follow' && Date.now() > pausedUntil){
     if (pausedUntil){ pausedUntil = 0; showRecenter(false); }
     follow(veh.to, veh.dur || 400);
@@ -219,6 +251,19 @@ function fitPois(){
   map.fitBounds(b, { padding: { top: 50, bottom: 50, left: 40, right: 40 }, maxZoom: 16, duration: 500 });
 }
 
+// địa điểm tìm được (Goong Place — kể cả nơi KHÔNG có trong dữ liệu ResQ): ghim tím + nhãn, bay tới
+function setPlace(pl){
+  if (!map) return;
+  if (!pl){ if (placeMarker){ placeMarker.remove(); placeMarker = null; } return; }
+  if (!placeMarker){
+    var el = document.createElement('div'); el.className = 'place';
+    el.innerHTML = '<div class="lbl"></div><div class="dot"></div>';
+    placeMarker = new goongjs.Marker({ element: el, anchor: 'bottom' }).setLngLat(pl.pos).addTo(map);
+  } else placeMarker.setLngLat(pl.pos);
+  placeMarker.getElement().querySelector('.lbl').textContent = pl.label || '';
+  map.easeTo({ center: pl.pos, zoom: Math.max(map.getZoom(), 15.5), duration: 600 });
+}
+
 function setDest(d){
   if (!map) return;
   if (!d){ if (destMarker){ destMarker.remove(); destMarker = null; } destPos = null; map.getSource('acc').setData(fc()); return; }
@@ -247,6 +292,7 @@ window.__resq = function(m){
     else if (m.type === 'pois'){ setPois(m.items); }
     else if (m.type === 'selectPoi'){ selectPoi(m.id); }
     else if (m.type === 'fitPois'){ fitPois(); }
+    else if (m.type === 'place'){ setPlace(m.place); }
   } catch (e) { post({ type:'error', code:'js', message: String(e && e.message || e) }); }
 };
 init();

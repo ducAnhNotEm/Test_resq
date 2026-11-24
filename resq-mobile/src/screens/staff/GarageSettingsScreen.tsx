@@ -20,6 +20,7 @@ import { formatPhone } from '../../features/account/accountLogic';
 import { FONTS, METRICS, SHADOWS, TYPOGRAPHY } from '../../theme/tokens';
 import { RootStackParamList } from '../../types';
 import { ServerIssueBanner } from '../../components/ServerIssueBanner';
+import { BrandLogo } from '../../components/BrandLogo';
 
 const HOTLINE = '19006868';
 const APP_VERSION = Constants.expoConfig?.version ?? '';
@@ -58,6 +59,7 @@ export const GarageSettingsScreen: React.FC = () => {
   return (
     <View style={[styles.root, { backgroundColor: colors.bgSurface, paddingTop: insets.top + 8 }]}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]} showsVerticalScrollIndicator={false}>
+        <BrandLogo width={96} />
         <Text accessibilityRole="header" style={[styles.heading, { color: colors.textPrimary }]}>Cài đặt gara</Text>
         <ServerIssueBanner />
 

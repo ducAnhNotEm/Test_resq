@@ -138,6 +138,29 @@ export function createApp(deps: AppDeps) {
   add('GET', '/api/config', PUBLIC, () => ({ goongMapKey: deps.mapKey, geocoding: goong.enabled, demoMode: store.demoMode() }));
 
   // ================= GEO (proxy Goong, key ở server) =================
+  // ================= TÌM ĐỊA ĐIỂM kiểu Google Maps (Goong Place) =================
+  // Nơi KHÔNG có trong dữ liệu ResQ (cửa hàng, công ty, địa chỉ bất kỳ) vẫn tìm được và hiện vị trí. Key Goong ở server.
+  const placeLimiter = new AttemptLimiter(120, 10 * 60_000);              // gõ tìm: tối đa 120 lần / 10 phút / người
+  const placeGuard = (userId: number) => {
+    if (placeLimiter.blocked(`u:${userId}`)) throw new ApiError(429, 'too_many_requests', 'Tìm kiếm quá nhanh, thử lại sau ít phút');
+    placeLimiter.fail(`u:${userId}`);
+  };
+  add('GET', '/api/geo/search', ANY, async ({ query, user }) => {
+    const q = str(query.get('q'), 'từ khóa', { required: true, min: 2, max: 120 })!;
+    placeGuard(user.id);
+    const lat = num(query.get('lat'), 'lat', { min: -90, max: 90 });
+    const lng = num(query.get('lng'), 'lng', { min: -180, max: 180 });
+    const near: [number, number] | null = lat != null && lng != null ? [lng, lat] : null;
+    return { items: await goong.autocomplete(q, near, 8) };
+  });
+  add('GET', '/api/geo/place/:id', ANY, async ({ params, user }) => {
+    placeGuard(user.id);
+    const id = str(params.id, 'mã địa điểm', { required: true, max: 300 })!;
+    const p = await goong.placeDetail(decodeURIComponent(id));
+    if (!p) throw new ApiError(404, 'place_not_found', 'Không tìm thấy vị trí của địa điểm này');
+    return p;
+  });
+
   add('GET', '/api/geo/directions', ANY, async ({ query }) => {
     const parse = (s: string | null, name: string): [number, number] => {
       const [lat, lng] = (s ?? '').split(',').map(Number);

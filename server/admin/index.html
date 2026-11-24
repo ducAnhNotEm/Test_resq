@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>ResQ Điều phối</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.css" />
+  <link rel="icon" href="resq-logo.png" />
   <link rel="stylesheet" href="styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/@goongmaps/goong-js@1.0.9/dist/goong-js.js"></script>
+  <!-- xe tải cứu hộ 3D trên bản đồ điều hành (tải song song; lỗi / chưa tải → biểu tượng 2D) -->
+  <script async src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+  <script src="towtruck3d.js"></script>
 </head>
 <body>
   <!-- Đăng nhập -->
   <section id="login" class="login" hidden>
     <form id="loginForm" class="login-card">
-      <div class="brand"><span class="brand-mark">R</span> ResQ <small>Điều phối</small></div>
+      <div class="brand"><img src="resq-logo.png" alt="ResQ" class="brand-logo" /> <small>Điều phối</small></div>
       <label>Email hoặc tài khoản<input name="email" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required value="admin@resq.vn" /></label>
       <label>Mật khẩu<input name="password" type="password" autocomplete="current-password" required /></label>
       <p id="loginError" class="error" role="alert"></p>
@@ -25,7 +29,7 @@
   <!-- Ứng dụng -->
   <div id="app" class="shell" hidden>
     <aside class="nav">
-      <div class="brand"><span class="brand-mark">R</span> ResQ</div>
+      <div class="brand"><img src="resq-logo.png" alt="ResQ" class="brand-logo" /></div>
       <a href="#/sos" data-route="sos" class="nav-sos">🚨 SOS khẩn cấp <span id="sosBadge" class="nav-badge" hidden></span></a>
       <a href="#/overview" data-route="overview">Tổng quan</a>
       <a href="#/ops" data-route="ops">Bản đồ điều hành</a>

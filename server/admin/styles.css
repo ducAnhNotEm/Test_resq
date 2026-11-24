@@ -236,3 +236,9 @@ tbody tr:last-child td { border-bottom: 0; }
 
 .storage-banner { padding: 10px 24px; background: var(--warning-bg); color: var(--warning); border-bottom: 1px solid var(--border); font-size: 13px; }
 .storage-banner[hidden] { display: none; }
+
+/* logo ResQ chính thức (đồng bộ với app) */
+.brand-logo { height: 30px; width: auto; display: block; }
+.login-card .brand-logo { height: 40px; }
+/* xe 3D đang vẽ trên bản đồ: giữ marker DOM trong suốt để vẫn bấm được (mở đơn) */
+.mk-veh.is3d { opacity: 0; width: 46px; height: 46px; }

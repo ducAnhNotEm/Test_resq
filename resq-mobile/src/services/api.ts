@@ -271,7 +271,16 @@ export const staffApi = {
   me: () => api<{ available: boolean; presenceAt: number | null; store: StoreInfo | null }>('GET', '/api/staff/me'),
 };
 
+/** Gợi ý địa điểm kiểu Google Maps (Goong Place) — kể cả nơi không có trong dữ liệu ResQ. */
+export interface PlaceSuggestion { placeId: string; name: string; address: string }
+export interface PlaceDetail extends PlaceSuggestion { pos: [number, number] }
+
 export const geoApi = {
+  /** Tìm địa điểm bất kỳ theo tên / địa chỉ, ưu tiên gần `near` [lng, lat]. */
+  search: (q: string, near?: [number, number] | null) =>
+    api<{ items: PlaceSuggestion[] }>('GET', `/api/geo/search?q=${encodeURIComponent(q)}${near ? `&lat=${near[1]}&lng=${near[0]}` : ''}`),
+  /** Tọa độ của một gợi ý (gọi khi người dùng chọn). */
+  place: (placeId: string) => api<PlaceDetail>('GET', `/api/geo/place/${encodeURIComponent(placeId)}`),
   /** Địa chỉ → tọa độ (công khai, có giới hạn tần suất). */
   geocode: (address: string) => api<{ items: Array<{ address: string; pos: [number, number] }> }>('GET', `/api/geo/geocode?address=${encodeURIComponent(address)}`),
   reverse: (lat: number, lng: number) => api<{ address: string; name: string | null; compound: Record<string, string> | null }>('GET', `/api/geo/reverse?lat=${lat}&lng=${lng}`),

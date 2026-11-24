@@ -27,6 +27,7 @@ import { DutyCard } from '../../components/DutyCard';
 import { useUnreadNotifications } from '../../features/notifications/useUnreadNotifications';
 import { badgeText } from '../../features/home/homeLogic';
 import { ServerIssueBanner } from '../../components/ServerIssueBanner';
+import { BrandLogo } from '../../components/BrandLogo';
 
 const OFFER_MS = 90_000;
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -132,7 +133,8 @@ export const StaffJobsScreen: React.FC = () => {
       {/* ===== định danh ReFix ===== */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.partner, { color: colors.sos }]}>ĐỐI TÁC REFIX</Text>
+          <BrandLogo width={92} />
+          <Text style={[styles.partner, { color: colors.sos, marginTop: 4 }]}>ĐỐI TÁC REFIX</Text>
           <Text numberOfLines={1} style={[styles.name, { color: colors.textPrimary }]}>{partnerTitle(store?.name, user?.unit)}</Text>
           <Text numberOfLines={1} style={[styles.meta, { color: colors.textSecondary }]}>
             {user?.name}{user?.vehiclePlate ? ` · ${user.vehiclePlate}` : ''}

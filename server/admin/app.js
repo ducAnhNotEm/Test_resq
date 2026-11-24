@@ -324,6 +324,14 @@ function pageOps(view) {
     </div>`;
   const map = makeMap($('#opsMap'));
   const markers = { staff: new Map(), order: new Map(), veh: new Map() };
+  // XE TẢI CỨU HỘ 3D (towtruck3d.js — cùng mô hình với app). Three.js tải song song: chưa xong / WebGL lỗi → mũi tên 2D.
+  let truck3d = null;
+  const use3d = () => !!(truck3d && truck3d.ready());
+  const tryTruck = () => {
+    if (truck3d || !map || !map.loaded() || !window.THREE || !window.ResQTruck3D) return;
+    try { truck3d = ResQTruck3D.attach(map, goongjs, THREE, { px: 56, id: 'ops-trucks', onError: () => render() }); } catch { truck3d = null; }
+  };
+  const truckTimer = setInterval(() => { tryTruck(); if (truck3d) { clearInterval(truckTimer); render(); } }, 500);
 
   const load = guard(async () => {
     const live = await api('GET', '/api/admin/live');
@@ -374,8 +382,14 @@ function pageOps(view) {
       e.title = `${p.name} · ${p.available ? 'sẵn sàng' : 'tắt nhận đơn'} · ${ago(p.updatedAt)}`;
       return e;
     }, p => p.pos);
-    syncMarkers('veh', [...state.live.frames.values()], f => f.orderId, f => {
-      const e = document.createElement('div'); e.className = 'mk-veh'; e.title = `${f.simulated ? 'XE ẢO · ' : ''}Xe đơn ${f.orderId} · ${f.speedMps != null ? Math.round(f.speedMps * 3.6) + ' km/h' : ''}${f.timeScale ? ` · tua nhanh ×${f.timeScale}` : ''}`;
+    const frames = [...state.live.frames.values()];
+    if (use3d()) {
+      for (const f of frames) truck3d.setPose(f.orderId, f.pos, f.heading, state.live.orders.get(f.orderId)?.priority === 'sos' ? 'alert' : 'normal', 600);
+      const live = new Set(frames.map(f => f.orderId));
+      for (const id of truck3d.ids()) if (!live.has(id)) truck3d.remove(id);
+    }
+    syncMarkers('veh', frames, f => f.orderId, f => {
+      const e = document.createElement('div'); e.className = use3d() ? 'mk-veh is3d' : 'mk-veh'; e.title = `${f.simulated ? 'XE ẢO · ' : ''}Xe đơn ${f.orderId} · ${f.speedMps != null ? Math.round(f.speedMps * 3.6) + ' km/h' : ''}${f.timeScale ? ` · tua nhanh ×${f.timeScale}` : ''}`;
       e.innerHTML = `<span style="transform:rotate(${f.heading ?? 0}deg)"></span>`; e.onclick = () => openOrder(f.orderId); return e;
     }, f => f.pos);
     const src = map.getSource('routes');
@@ -403,7 +417,7 @@ function pageOps(view) {
   listeners.add(onLive);
   load();
   const tick = setInterval(render, 15_000);        // làm mới nhãn "x giây trước" / màu mất tín hiệu
-  return () => { listeners.delete(onLive); clearInterval(tick); map?.remove(); };
+  return () => { listeners.delete(onLive); clearInterval(tick); clearInterval(truckTimer); truck3d?.clear(); map?.remove(); };
 }
 
 // ======================= ĐƠN CỨU HỘ =======================
