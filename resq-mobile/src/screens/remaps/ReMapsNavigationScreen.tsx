@@ -233,6 +233,17 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
         </View>
 
         <View style={styles.statusRow}>
+          {/* Cảnh báo camera phạt nguội minh họa */}
+          <View style={[styles.cameraAlertPill, { backgroundColor: 'rgba(15,23,42,0.94)', borderColor: '#F59E0B' }]}>
+            <View style={styles.cameraIconBox}>
+              <Ionicons name="videocam" size={13} color="#F59E0B" />
+            </View>
+            <Text style={styles.cameraAlertTitle}>Camera phạt nguội</Text>
+            <View style={styles.cameraDistBadge}>
+              <Text style={styles.cameraDistText}>300m</Text>
+            </View>
+          </View>
+
           {virtual ? (
             <View style={[styles.pill, { backgroundColor: 'rgba(245,158,11,0.95)' }]}>
               <View style={styles.pillDot} />
@@ -259,9 +270,14 @@ export const ReMapsNavigationScreen: React.FC<Props> = ({ navigation, route }) =
       {/* ===== HUD dưới ===== */}
       <View style={[styles.bottomHud, { paddingBottom: Math.max(insets.bottom + 12, 20) }]} pointerEvents="box-none">
         <View style={styles.toolsRow} pointerEvents="box-none">
-          <View style={[styles.speed, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
-            <Text style={[styles.speedNum, { color: colors.textPrimary }]}>{speedKmh ?? '--'}</Text>
-            <Text style={[styles.speedUnit, { color: colors.textSecondary }]}>km/h</Text>
+          {/* Tốc độ hiện tại */}
+          <View style={[styles.speed, { backgroundColor: (speedKmh ?? 0) > 60 ? '#FEF2F2' : colors.bgCard, borderColor: (speedKmh ?? 0) > 60 ? '#DC2626' : colors.borderSubtle }]}>
+            <Text style={[styles.speedNum, { color: (speedKmh ?? 0) > 60 ? '#DC2626' : colors.textPrimary }]}>{speedKmh ?? '--'}</Text>
+            <Text style={[styles.speedUnit, { color: (speedKmh ?? 0) > 60 ? '#DC2626' : colors.textSecondary }]}>km/h</Text>
+          </View>
+          {/* Biển báo giới hạn tốc độ chuẩn P.127 */}
+          <View style={styles.speedLimitSign} accessibilityLabel="Giới hạn tốc độ 60 km/h">
+            <Text style={styles.speedLimitNum}>60</Text>
           </View>
           <View style={[styles.gps, { backgroundColor: colors.bgCard, borderColor: colors.borderSubtle }]}>
             <Ionicons name="locate" size={14} color={debug.accuracyM > 30 ? colors.sos : colors.green} />
@@ -374,14 +390,75 @@ const styles = StyleSheet.create({
   turnThen: { fontFamily: FONTS.regular, fontSize: 11, color: '#94A3B8', marginTop: 1 },
   panelBtn: { padding: 8 },
   statusRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  cameraAlertPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: METRICS.radiusPill,
+    borderWidth: 1.5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  cameraIconBox: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(245, 158, 11, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraAlertTitle: {
+    fontFamily: FONTS.bold,
+    fontSize: 11,
+    color: '#FFFFFF',
+    letterSpacing: 0.2,
+  },
+  cameraDistBadge: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: 999,
+  },
+  cameraDistText: {
+    fontFamily: FONTS.extraBold,
+    fontSize: 10,
+    color: '#000000',
+  },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, maxWidth: '100%' },
   pillDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
   pillText: { fontFamily: FONTS.bold, fontSize: 11, color: '#FFFFFF' },
   bottomHud: { paddingHorizontal: 12, gap: 8 },
   toolsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  speed: { width: 58, height: 58, borderRadius: 29, borderWidth: 1, alignItems: 'center', justifyContent: 'center', ...SHADOWS.card },
+  speed: { width: 58, height: 58, borderRadius: 29, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', ...SHADOWS.card },
   speedNum: { fontFamily: FONTS.extraBold, fontSize: 19, lineHeight: 21 },
   speedUnit: { fontFamily: FONTS.regular, fontSize: 10 },
+  speedLimitSign: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3.5,
+    borderColor: '#DC2626',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  speedLimitNum: {
+    fontFamily: FONTS.extraBold,
+    fontSize: 15,
+    color: '#0F172A',
+    lineHeight: 18,
+    textAlign: 'center',
+  },
   gps: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 7 },
   gpsText: { fontFamily: FONTS.bold, fontSize: 12 },
   roundBtn: { width: METRICS.touchMin, height: METRICS.touchMin, borderRadius: METRICS.radiusBtn, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
