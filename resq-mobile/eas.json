@@ -11,6 +11,10 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_GOONG_API_KEY": "CGluykv91nOq8gS1k8aJXWK6r7hsjdPUgRY7y8OK",
+        "EXPO_PUBLIC_GOONG_MAP_KEY": "IwFGJU9gwi7MGheGbEfX0AvPDzJUa3aY2nsjMiRp"
       }
     },
     "production": {
